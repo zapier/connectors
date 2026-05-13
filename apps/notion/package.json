@@ -1,0 +1,20 @@
+{
+  "name": "@zapier-agent-tools/notion",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Agent-callable tools for Notion — search and database-item creation against the Notion REST API.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    "./scripts/search": "./scripts/search.ts",
+    "./scripts/create-database-item": "./scripts/create-database-item.ts"
+  },
+  "dependencies": {
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "optionalDependencies": {
+    "@zapier/skills": "^0.1.0",
+    "@zapier/zapier-sdk": "^0.48.0"
+  }
+}
