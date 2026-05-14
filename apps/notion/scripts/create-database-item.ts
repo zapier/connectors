@@ -92,6 +92,14 @@ export const tool: Tool = {
   },
 };
 
+/**
+ * `buildDirectFetch` only handles the auth concern (Authorization header).
+ * Notion's protocol headers (`Notion-Version`, `Content-Type`) are set by
+ * `execute()` instead, because they're a property of the API call, not the
+ * caller's auth — alternative auth wrappers like `@zapier/skills`'
+ * `buildZapierFetch` shouldn't have to know they're talking to Notion to add
+ * a Notion-Version header.
+ */
 export const buildDirectFetch =
   (token: string): typeof globalThis.fetch =>
   (url, init = {}) =>
@@ -100,8 +108,6 @@ export const buildDirectFetch =
       headers: {
         ...(init?.headers ?? {}),
         Authorization: `Bearer ${token}`,
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
       },
     });
 
@@ -115,6 +121,10 @@ export default async function execute(
   };
   const res = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",
+    headers: {
+      "Notion-Version": "2022-06-28",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) {

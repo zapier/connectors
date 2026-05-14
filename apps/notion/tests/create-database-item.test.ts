@@ -90,7 +90,7 @@ describe("create-database-item.ts: inputDependencies", () => {
 });
 
 describe("create-database-item.ts: buildDirectFetch", () => {
-  it("adds Notion auth + version + content-type headers", async () => {
+  it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (_url: string, init?: RequestInit) => {
@@ -105,8 +105,8 @@ describe("create-database-item.ts: buildDirectFetch", () => {
     }
     const headers = captured?.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer secret_test_token");
-    expect(headers["Notion-Version"]).toBe("2022-06-28");
-    expect(headers["Content-Type"]).toBe("application/json");
+    expect(headers["Notion-Version"]).toBeUndefined();
+    expect(headers["Content-Type"]).toBeUndefined();
   });
 });
 
@@ -151,6 +151,34 @@ describe("create-database-item.ts: execute", () => {
     });
 
     expect(outputSchema.safeParse(result).success).toBe(true);
+  });
+
+  it("sets `Notion-Version` and `Content-Type` on the request — they're protocol concerns, not auth", async () => {
+    const calls: Array<{ init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      calls.push({ init });
+      return jsonResponse({
+        object: "page",
+        id: "x",
+        created_time: "2026-05-13T10:00:00.000Z",
+        last_edited_time: "2026-05-13T10:00:00.000Z",
+        parent: { type: "database_id", database_id: PROJECTS_DB_UUID },
+        properties: {},
+        url: "https://www.notion.so/x",
+      });
+    }) as typeof globalThis.fetch;
+
+    await execute(
+      {
+        databaseId: PROJECTS_DB_UUID,
+        properties: { Title: { title: [{ text: { content: "x" } }] } },
+      },
+      fakeFetch,
+    );
+
+    const headers = calls[0]?.init?.headers as Record<string, string>;
+    expect(headers["Notion-Version"]).toBe("2022-06-28");
+    expect(headers["Content-Type"]).toBe("application/json");
   });
 
   it("throws a tagged error including the response status on non-OK", async () => {

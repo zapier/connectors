@@ -98,7 +98,7 @@ describe("search.ts: tool descriptor", () => {
 });
 
 describe("search.ts: buildDirectFetch", () => {
-  it("adds Notion auth + version + content-type headers", async () => {
+  it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (_url: string, init?: RequestInit) => {
@@ -113,8 +113,8 @@ describe("search.ts: buildDirectFetch", () => {
     }
     const headers = captured?.headers as Record<string, string>;
     expect(headers.Authorization).toBe("Bearer secret_test_token");
-    expect(headers["Notion-Version"]).toBe("2022-06-28");
-    expect(headers["Content-Type"]).toBe("application/json");
+    expect(headers["Notion-Version"]).toBeUndefined();
+    expect(headers["Content-Type"]).toBeUndefined();
   });
 
   it("preserves caller-provided headers when merging", async () => {
@@ -160,6 +160,20 @@ describe("search.ts: execute", () => {
 
     expect(outputSchema.safeParse(result).success).toBe(true);
     expect(result.results).toHaveLength(1);
+  });
+
+  it("sets `Notion-Version` and `Content-Type` on the request — they're protocol concerns, not auth", async () => {
+    const calls: Array<{ init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      calls.push({ init });
+      return jsonResponse({ results: [], has_more: false, next_cursor: null });
+    }) as typeof globalThis.fetch;
+
+    await execute({ query: "x" }, fakeFetch);
+
+    const headers = calls[0]?.init?.headers as Record<string, string>;
+    expect(headers["Notion-Version"]).toBe("2022-06-28");
+    expect(headers["Content-Type"]).toBe("application/json");
   });
 
   it("throws a tagged error including the response status on non-OK", async () => {
