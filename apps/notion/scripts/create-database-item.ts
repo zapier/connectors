@@ -1,48 +1,12 @@
 import { z } from "zod";
 import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
 
-/**
- * Out-of-band per-script dependency graph for `create-database-item`'s input.
- *
- * Adapter consumers that understand dependent fields (Sidekick, code-Zaps,
- * dependent-field-aware harnesses) read this descriptor at install /
- * register time to drive option-loading and schema-resolution chains. The
- * descriptor is published in two places by `defineTool`:
- *
- *   1. `script.inputDependencies` — programmatic readers reach for it
- *      directly off the script's default export.
- *   2. `script.tool._meta["zapier:inputDependencies"]` — adapters that only
- *      see the MCP `Tool` over the wire find the same chain there.
- *
- * Adapter consumers that don't understand dependent fields (vanilla MCP
- * servers, `tools/list` consumers) safely ignore both surfaces — the
- * `Tool` descriptor itself is still standards-compliant.
- *
- * Shape rationale: dependencies use tool-name strings (not function
- * references like `optionsFrom(otherTool)`) so the chain stays serializable
- * across the wire and through MCP's `_meta` namespace. Argument values that
- * reference other input fields use `$<fieldName>` syntax — read by the
- * adapter, not evaluated in this module.
- */
-const inputDependencies = {
-  databaseId: {
-    kind: "options",
-    fromTool: "list-databases",
-    fromArgs: {},
-  },
-  properties: {
-    kind: "schema",
-    fromTool: "get-database-schema",
-    fromArgs: { databaseId: "$databaseId" },
-  },
-} as const;
-
 const script = defineTool({
   appKey: "notion",
   name: "create_database_item",
   title: "Create row in a Notion database",
   description:
-    "Add a new row (page) to a Notion database. The `properties` field's accepted shape depends on the chosen database's schema — see `inputDependencies` on this script, or read `_meta[\"zapier:inputDependencies\"]` on this tool over MCP wire. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.",
+    "Add a new row (page) to a Notion database. The `properties` field's accepted shape depends on the chosen database's schema. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.",
   inputSchema: z.object({
     databaseId: z
       .string()
@@ -52,7 +16,7 @@ const script = defineTool({
     properties: z
       .record(z.string(), z.unknown())
       .describe(
-        "Key/value map of property values for the new row. Keys are the database's property names (NOT API field keys — Notion's UI labels). Values follow the Notion property-value shape for the property's type (text → { rich_text: [{ text: { content }}] }, number → { number }, select → { select: { name } }, etc.). The exact property shape DEPENDS on the chosen database — see `inputDependencies` below.",
+        "Key/value map of property values for the new row. Keys are the database's property names (NOT API field keys — Notion's UI labels). Values follow the Notion property-value shape for the property's type (text → { rich_text: [{ text: { content }}] }, number → { number }, select → { select: { name } }, etc.). The exact property shape depends on the chosen database's schema.",
       ),
   }),
   outputSchema: z.object({
@@ -89,7 +53,18 @@ const script = defineTool({
       label: "Create a new row in a Notion database",
     },
   ],
-  inputDependencies,
+  inputDependencies: {
+    databaseId: {
+      kind: "options",
+      fromTool: "list-databases",
+      fromArgs: {},
+    },
+    properties: {
+      kind: "schema",
+      fromTool: "get-database-schema",
+      fromArgs: { databaseId: "$databaseId" },
+    },
+  } as const,
   securitySchemes: {
     apiKey: {
       env: ["NOTION_TOKEN"],
