@@ -52,6 +52,7 @@ const script = defineTool({
     },
   ],
   connection: {
+    appKey: "notion",
     securitySchemes: {
       apiKey: {
         env: ["NOTION_TOKEN"],
@@ -65,7 +66,6 @@ const script = defineTool({
               },
             })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
       },
-      zapier: "notion",
     },
   },
   run: async (ctx, input) => {

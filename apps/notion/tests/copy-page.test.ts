@@ -1,9 +1,10 @@
 /**
  * Unit tests for `scripts/copy-page.ts` — the canonical multi-connection
- * example. Two slots (`source` + `target`), each carrying the same dual
- * `{ apiKey, zapier }` scheme map the single-connection Notion scripts
- * ship. Per-slot env-prefix routing (`SOURCE_` / `TARGET_`) keeps the
- * two slots' credentials isolated at the CLI / `callerConfig` boundary.
+ * example. Two slots (`source` + `target`), each declaring slot-level
+ * `appKey: "notion"` (synthesizing the internal `zapier` scheme) plus a
+ * BYO `apiKey` scheme reading `NOTION_TOKEN`. Per-slot env-prefix routing
+ * (`SOURCE_` / `TARGET_`) keeps the two slots' credentials isolated at
+ * the CLI / `callerConfig` boundary.
  *
  * Strategy: build a context via `copyPage.resolveContext({ connections: {
  * source: <Fetch>, target: <Fetch> } })`, then either call
@@ -11,7 +12,8 @@
  * `copyPage(input, { connections })`. Assertions:
  *
  *   - `script.connections` has both slots with both schemes (`apiKey` +
- *     synthesized `zapier`) and the expected env prefixes.
+ *     synthesized `zapier`), the slot-level `appKey`, and the expected
+ *     env prefixes.
  *   - The `source` fetch is hit for GET /v1/pages/{id} and the `target`
  *     fetch is hit for POST /v1/pages — slot isolation works.
  *   - The BYO `apiKey` scheme routes `NOTION_TOKEN` into the slot's
@@ -62,19 +64,23 @@ describe("copy-page.ts: connections shape (multi-slot)", () => {
     expect(copyPage.connections.target!.envPrefix).toBe("TARGET_");
   });
 
-  it("carries both schemes (apiKey + synthesized zapier) on each slot", () => {
+  it("carries both schemes (apiKey + synthesized zapier) and a slot-level appKey", () => {
     for (const slotName of ["source", "target"] as const) {
-      const schemes = copyPage.connections[slotName]!.securitySchemes;
+      const slot = copyPage.connections[slotName]!;
+      expect(slot.appKey).toBe("notion");
+
+      const schemes = slot.securitySchemes;
       expect(Object.keys(schemes).sort()).toEqual(["apiKey", "zapier"]);
 
       // BYO apiKey scheme — declared inline by the script, reads
       // NOTION_TOKEN from the slot's partitioned env bag. No `appKey`
-      // (that field is only set on synthesized Zapier schemes).
+      // on the scheme itself (that field is only set on the synthesized
+      // Zapier entry the framework adds from slot-level `appKey`).
       const apiKey = schemes.apiKey!;
       expect(apiKey.env).toEqual(["NOTION_TOKEN"]);
       expect(apiKey.appKey).toBeUndefined();
 
-      // Synthesized Zapier scheme — from the `"notion"` string shorthand.
+      // Synthesized Zapier scheme — derived from slot-level `appKey`.
       const zapier = schemes.zapier!;
       expect(zapier.appKey).toBe("notion");
       expect(zapier.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);

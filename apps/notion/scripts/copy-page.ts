@@ -5,11 +5,11 @@ import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
  * Canonical *multi-connection* example: copy a Notion page from one
  * workspace ("source") to another ("target"). Each slot supports the same
  * two auth paths the single-connection Notion scripts do — a BYO `apiKey`
- * scheme reading `NOTION_TOKEN`, or a Zapier-relayed scheme synthesized
- * from the `"notion"` appKey shorthand reading `NOTION_ZAPIER_CONNECTION_ID`.
- * Per-slot env-prefix partitioning routes each slot's credentials at the
- * CLI / `callerConfig` boundary, so the same script handles migration
- * between two distinct Notion accounts.
+ * scheme reading `NOTION_TOKEN`, or the Zapier-relayed scheme synthesized
+ * from the slot-level `appKey: "notion"` declaration reading
+ * `NOTION_ZAPIER_CONNECTION_ID`. Per-slot env-prefix partitioning routes
+ * each slot's credentials at the CLI / `callerConfig` boundary, so the
+ * same script handles migration between two distinct Notion accounts.
  *
  * Env contract (CLI):
  *   SOURCE_NOTION_TOKEN=...  (or SOURCE_NOTION_ZAPIER_CONNECTION_ID=...)
@@ -23,11 +23,12 @@ import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
  *     },
  *   });
  *
- * Author surface: `run` receives a `ctx` with per-slot fetches —
- * `ctx.fetches.source` reads the original page, `ctx.fetches.target` creates
- * the copy. No threading of separate Fetch arguments through the script
- * body, no per-call auth logic, no env-var plumbing in the script itself —
- * all of that is handled by the framework and surfaces via `ctx`.
+ * Author surface: `run` receives a `ctx` carrying one resolved authed
+ * `Fetch` per slot — `ctx.connections.source` reads the original page,
+ * `ctx.connections.target` creates the copy. No threading of separate
+ * Fetch arguments through the script body, no per-call auth logic, no
+ * env-var plumbing in the script itself — all of that is handled by the
+ * framework and surfaces via `ctx.connections.<slot>`.
  */
 
 /**
@@ -96,20 +97,16 @@ const script = defineTool({
   ],
   connections: {
     source: {
-      securitySchemes: {
-        apiKey: notionApiKeyScheme,
-        zapier: "notion",
-      },
+      appKey: "notion",
+      securitySchemes: { apiKey: notionApiKeyScheme },
     },
     target: {
-      securitySchemes: {
-        apiKey: notionApiKeyScheme,
-        zapier: "notion",
-      },
+      appKey: "notion",
+      securitySchemes: { apiKey: notionApiKeyScheme },
     },
   },
   run: async (ctx, input) => {
-    const readRes = await ctx.fetches.source(
+    const readRes = await ctx.connections.source(
       `https://api.notion.com/v1/pages/${input.sourcePageId}`,
       {
         method: "GET",
@@ -126,7 +123,7 @@ const script = defineTool({
       properties: Record<string, unknown>;
     };
 
-    const createRes = await ctx.fetches.target(
+    const createRes = await ctx.connections.target(
       "https://api.notion.com/v1/pages",
       {
         method: "POST",
