@@ -13,12 +13,15 @@ import skill from "../scripts/create-database-item.ts";
 const { inputSchema, outputSchema, tool, buildDirectFetch, execute } = skill;
 // `inputDependencies` is optional on the generic `Skill` shape; this script
 // passes one to `defineTool`, so it's always defined at runtime here.
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
 const inputDependencies = skill.inputDependencies!;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
 
-function jsonResponse(body: unknown, init: { status?: number; ok?: boolean } = {}): Response {
+function jsonResponse(
+  body: unknown,
+  init: { status?: number; ok?: boolean } = {},
+): Response {
   const status = init.status ?? 200;
   const ok = init.ok ?? (status >= 200 && status < 300);
   return {
@@ -46,7 +49,9 @@ describe("create-database-item.ts: inputSchema", () => {
 
   it("requires databaseId and properties", () => {
     expect(inputSchema.safeParse({ properties: {} }).success).toBe(false);
-    expect(inputSchema.safeParse({ databaseId: PROJECTS_DB_UUID }).success).toBe(false);
+    expect(
+      inputSchema.safeParse({ databaseId: PROJECTS_DB_UUID }).success,
+    ).toBe(false);
   });
 });
 
@@ -62,14 +67,14 @@ describe("create-database-item.ts: tool descriptor", () => {
     expect(tool.annotations?.idempotentHint).toBe(false);
   });
 
-  it("co-locates `effect: \"ask\"` governance via `_meta[\"zapier:statements\"]`", () => {
+  it('co-locates `effect: "ask"` governance via `_meta["zapier:statements"]`', () => {
     const statements = (
       tool._meta as { "zapier:statements"?: ReadonlyArray<{ effect: string }> }
     )?.["zapier:statements"];
     expect(statements?.[0]?.effect).toBe("ask");
   });
 
-  it("mirrors `inputDependencies` into `_meta[\"zapier:inputDependencies\"]`", () => {
+  it('mirrors `inputDependencies` into `_meta["zapier:inputDependencies"]`', () => {
     const wire = (
       tool._meta as { "zapier:inputDependencies"?: typeof inputDependencies }
     )["zapier:inputDependencies"];
@@ -86,7 +91,9 @@ describe("create-database-item.ts: inputDependencies", () => {
   it("declares `properties` as a schema chain off get-database-schema, parameterised by databaseId", () => {
     expect(inputDependencies.properties.kind).toBe("schema");
     expect(inputDependencies.properties.fromTool).toBe("get-database-schema");
-    expect(inputDependencies.properties.fromArgs.databaseId).toBe("$databaseId");
+    expect(inputDependencies.properties.fromArgs.databaseId).toBe(
+      "$databaseId",
+    );
   });
 });
 
@@ -100,7 +107,10 @@ describe("create-database-item.ts: buildDirectFetch", () => {
     }) as typeof globalThis.fetch;
     try {
       const f = buildDirectFetch("secret_test_token");
-      await f("https://api.notion.com/v1/pages", { method: "POST", body: "{}" });
+      await f("https://api.notion.com/v1/pages", {
+        method: "POST",
+        body: "{}",
+      });
     } finally {
       globalThis.fetch = originalFetch;
     }
@@ -114,7 +124,10 @@ describe("create-database-item.ts: buildDirectFetch", () => {
 describe("create-database-item.ts: execute", () => {
   it("wraps the input in Notion's `parent` envelope and POSTs to /v1/pages", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
-    const fakeFetch: typeof globalThis.fetch = (async (url: string, init?: RequestInit) => {
+    const fakeFetch: typeof globalThis.fetch = (async (
+      url: string,
+      init?: RequestInit,
+    ) => {
       calls.push({ url, init });
       return jsonResponse({
         object: "page",
@@ -146,7 +159,10 @@ describe("create-database-item.ts: execute", () => {
       parent: { type: string; database_id: string };
       properties: Record<string, unknown>;
     };
-    expect(sent.parent).toEqual({ type: "database_id", database_id: PROJECTS_DB_UUID });
+    expect(sent.parent).toEqual({
+      type: "database_id",
+      database_id: PROJECTS_DB_UUID,
+    });
     expect(sent.properties.Title).toEqual({
       title: [{ text: { content: "Website redesign" } }],
     });
@@ -156,7 +172,10 @@ describe("create-database-item.ts: execute", () => {
 
   it("sets `Notion-Version` and `Content-Type` on the request — they're protocol concerns, not auth", async () => {
     const calls: Array<{ init: RequestInit | undefined }> = [];
-    const fakeFetch: typeof globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+    const fakeFetch: typeof globalThis.fetch = (async (
+      _url: string,
+      init?: RequestInit,
+    ) => {
       calls.push({ init });
       return jsonResponse({
         object: "page",

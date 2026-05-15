@@ -29,28 +29,28 @@ function extractNotionId(urlOrId: string): string {
 
 Every page and database has a parent. The shape varies by parent type:
 
-| Parent type | JSON shape | Use when |
-|---|---|---|
-| Page | `{ "type": "page_id", "page_id": "..." }` | Creating a sub-page under a page |
-| Database | `{ "type": "database_id", "database_id": "..." }` | Creating a row in a database |
-| Workspace | `{ "type": "workspace", "workspace": true }` | Root-level pages (public integrations only) |
+| Parent type | JSON shape                                        | Use when                                    |
+| ----------- | ------------------------------------------------- | ------------------------------------------- |
+| Page        | `{ "type": "page_id", "page_id": "..." }`         | Creating a sub-page under a page            |
+| Database    | `{ "type": "database_id", "database_id": "..." }` | Creating a row in a database                |
+| Workspace   | `{ "type": "workspace", "workspace": true }`      | Root-level pages (public integrations only) |
 
 ## Property values by type
 
-The `properties` object in `create_database_item` (and in update calls) uses Notion's property-value shapes. The accepted shape per type is fixed; the property *names* depend on the database's schema (see `inputDependencies`).
+The `properties` object in `create_database_item` (and in update calls) uses Notion's property-value shapes. The accepted shape per type is fixed; the property _names_ depend on the database's schema (see `inputDependencies`).
 
-| Property type | Value shape |
-|---|---|
-| Title | `{ title: [{ text: { content: "string" }}] }` |
-| Rich text | `{ rich_text: [{ text: { content: "string" }}] }` |
-| Number | `{ number: 42 }` |
-| Select | `{ select: { name: "Option A" }}` |
-| Multi-select | `{ multi_select: [{ name: "Tag1" }, { name: "Tag2" }] }` |
-| Date | `{ date: { start: "2026-01-15" }}` |
-| Checkbox | `{ checkbox: true }` |
-| URL | `{ url: "https://example.com" }` |
-| Email | `{ email: "user@example.com" }` |
-| Relation | `{ relation: [{ id: "page_id_1" }] }` |
+| Property type | Value shape                                              |
+| ------------- | -------------------------------------------------------- |
+| Title         | `{ title: [{ text: { content: "string" }}] }`            |
+| Rich text     | `{ rich_text: [{ text: { content: "string" }}] }`        |
+| Number        | `{ number: 42 }`                                         |
+| Select        | `{ select: { name: "Option A" }}`                        |
+| Multi-select  | `{ multi_select: [{ name: "Tag1" }, { name: "Tag2" }] }` |
+| Date          | `{ date: { start: "2026-01-15" }}`                       |
+| Checkbox      | `{ checkbox: true }`                                     |
+| URL           | `{ url: "https://example.com" }`                         |
+| Email         | `{ email: "user@example.com" }`                          |
+| Relation      | `{ relation: [{ id: "page_id_1" }] }`                    |
 
 ## Pagination
 
@@ -64,7 +64,11 @@ const all: unknown[] = [];
 while (hasMore) {
   const res = await fetch(url, {
     method: "POST",
-    body: JSON.stringify({ ...body, page_size: 100, start_cursor: startCursor }),
+    body: JSON.stringify({
+      ...body,
+      page_size: 100,
+      start_cursor: startCursor,
+    }),
   });
   const data = await res.json();
   all.push(...data.results);
