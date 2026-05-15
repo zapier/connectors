@@ -2,18 +2,19 @@
  * Unit tests for `scripts/create-database-item.ts`. Covers the literal MCP
  * `Tool` descriptor (including the dependent-fields surface via
  * `_meta["zapier:inputDependencies"]`), the per-app auth wrapper, and the
- * `execute` function's request envelope. The named-export
- * `inputDependencies` is also asserted here — it's the part of the contract
- * adapter consumers read at install / register time.
+ * `execute` function's request envelope. The bundled `inputDependencies` is
+ * also asserted here — it's the part of the contract adapter consumers read
+ * at install / register time, mirrored on both `skill.inputDependencies` and
+ * `skill.tool._meta["zapier:inputDependencies"]`.
  */
 import { describe, expect, it } from "vitest";
-import execute, {
-  buildDirectFetch,
-  inputDependencies,
-  inputSchema,
-  outputSchema,
-  tool,
-} from "../scripts/create-database-item.ts";
+import skill from "../scripts/create-database-item.ts";
+
+const { inputSchema, outputSchema, tool, buildDirectFetch, execute } = skill;
+// `inputDependencies` is optional on the generic `Skill` shape; this script
+// passes one to `defineTool`, so it's always defined at runtime here.
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const inputDependencies = skill.inputDependencies!;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
 

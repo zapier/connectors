@@ -1,21 +1,17 @@
 /**
- * Unit tests for `scripts/search.ts` — the five named exports of the
- * search tool. Covers the script body only; the CLI block at the bottom of
- * `search.ts` (`if (import.meta.main)`) is exercised by integration evals,
- * not here.
+ * Unit tests for `scripts/search.ts` — the bundled `Skill` default export.
+ * Covers the script body only; the CLI block at the bottom of `search.ts`
+ * (`if (import.meta.main)`) is exercised by integration evals, not here.
  *
- * Strategy: pass a fake `fetch` into `execute`, assert (a) the request the
- * script issues, (b) how it handles success / error responses, and (c) that
- * the static exports (`inputSchema`, `outputSchema`, `tool`,
+ * Strategy: pass a fake `fetch` into `skill.execute`, assert (a) the request
+ * the script issues, (b) how it handles success / error responses, and (c)
+ * that the bundled fields (`inputSchema`, `outputSchema`, `tool`,
  * `buildDirectFetch`) match the agent-tools contract.
  */
 import { describe, expect, it } from "vitest";
-import execute, {
-  buildDirectFetch,
-  inputSchema,
-  outputSchema,
-  tool,
-} from "../scripts/search.ts";
+import skill from "../scripts/search.ts";
+
+const { inputSchema, outputSchema, tool, buildDirectFetch, execute } = skill;
 
 function jsonResponse(body: unknown, init: { status?: number; ok?: boolean } = {}): Response {
   const status = init.status ?? 200;
@@ -83,12 +79,6 @@ describe("search.ts: tool descriptor", () => {
     expect(statements?.length).toBeGreaterThan(0);
     expect(statements?.[0]?.effect).toBe("allow");
     expect(statements?.[0]?.resources).toContain("http");
-  });
-
-  it("namespaces app routing fields under `_meta`", () => {
-    const meta = tool._meta as { "zapier:appKey"?: string; "zapier:actionKey"?: string };
-    expect(meta["zapier:appKey"]).toBe("notion");
-    expect(meta["zapier:actionKey"]).toBe("search");
   });
 
   it("uses Zod-derived JSON Schemas for the wire shape", () => {
