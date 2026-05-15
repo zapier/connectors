@@ -1,18 +1,18 @@
 /**
- * Unit tests for `scripts/search.ts` — the bundled `Skill` default export.
- * Covers the script body only; the `runCli(import.meta, skill)` call at the
+ * Unit tests for `scripts/search.ts` — the bundled `Script` default export.
+ * Covers the script body only; the `runCli(import.meta, search)` call at the
  * bottom of `search.ts` is exercised by integration evals (and unit-tested
  * for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
  *
- * Strategy: pass a fake `fetch` into `skill.execute` (Connection shape 1),
+ * Strategy: pass a fake `fetch` into `search.execute` (Connection shape 1),
  * assert (a) the request the script issues, (b) how it handles success /
  * error responses, and (c) that the bundled fields (`inputSchema`,
  * `outputSchema`, `tool`, `buildFetch`) match the agent-tools contract.
  */
 import { describe, expect, it } from "vitest";
-import skill from "../scripts/search.ts";
+import search from "../scripts/search.ts";
 
-const { inputSchema, outputSchema, tool, buildFetch, execute } = skill;
+const { inputSchema, outputSchema, tool, buildFetch, execute } = search;
 
 function jsonResponse(
   body: unknown,

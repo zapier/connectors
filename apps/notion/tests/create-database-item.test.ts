@@ -4,17 +4,18 @@
  * `_meta["zapier:inputDependencies"]`), the per-app auth wrapper, and the
  * `execute` function's request envelope. The bundled `inputDependencies` is
  * also asserted here — it's the part of the contract adapter consumers read
- * at install / register time, mirrored on both `skill.inputDependencies` and
- * `skill.tool._meta["zapier:inputDependencies"]`.
+ * at install / register time, mirrored on both `createDatabaseItem.inputDependencies` and
+ * `createDatabaseItem.tool._meta["zapier:inputDependencies"]`.
  */
 import { describe, expect, it } from "vitest";
-import skill from "../scripts/create-database-item.ts";
+import createDatabaseItem from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema, tool, buildFetch, execute } = skill;
-// `inputDependencies` is optional on the generic `Skill` shape; this script
+const { inputSchema, outputSchema, tool, buildFetch, execute } =
+  createDatabaseItem;
+// `inputDependencies` is optional on the generic `Script` shape; this script
 // passes one to `defineTool`, so it's always defined at runtime here.
 
-const inputDependencies = skill.inputDependencies!;
+const inputDependencies = createDatabaseItem.inputDependencies!;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
 

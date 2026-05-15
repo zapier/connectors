@@ -9,9 +9,9 @@ import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
  * register time to drive option-loading and schema-resolution chains. The
  * descriptor is published in two places by `defineTool`:
  *
- *   1. `skill.inputDependencies` — programmatic readers reach for it
+ *   1. `script.inputDependencies` — programmatic readers reach for it
  *      directly off the script's default export.
- *   2. `skill.tool._meta["zapier:inputDependencies"]` — adapters that only
+ *   2. `script.tool._meta["zapier:inputDependencies"]` — adapters that only
  *      see the MCP `Tool` over the wire find the same chain there.
  *
  * Adapter consumers that don't understand dependent fields (vanilla MCP
@@ -56,12 +56,12 @@ const buildFetch: BuildFetch<{ NOTION_TOKEN: string }> =
       },
     });
 
-const skill = defineTool({
+const createDatabaseItem = defineTool({
   appKey: "notion",
   name: "create_database_item",
   title: "Create row in a Notion database",
   description:
-    "Add a new row (page) to a Notion database. The `properties` field's accepted shape depends on the chosen database's schema — see `inputDependencies` on this skill, or read `_meta[\"zapier:inputDependencies\"]` on this tool over MCP wire. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.",
+    "Add a new row (page) to a Notion database. The `properties` field's accepted shape depends on the chosen database's schema — see `inputDependencies` on this script, or read `_meta[\"zapier:inputDependencies\"]` on this tool over MCP wire. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.",
   inputSchema: z.object({
     databaseId: z
       .string()
@@ -142,6 +142,6 @@ const skill = defineTool({
   },
 });
 
-export default skill;
+export default createDatabaseItem;
 
-await runCli(import.meta, skill);
+await runCli(import.meta, createDatabaseItem);
