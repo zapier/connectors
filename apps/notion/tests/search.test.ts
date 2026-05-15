@@ -11,9 +11,12 @@
  *
  * Note: tests reach for the `apiKey` scheme's `buildFetch` via
  * `search.resolveConnection({ NOTION_TOKEN: ... })` rather than going
- * `search.securitySchemes!.apiKey.buildFetch({...})` directly — the public
+ * `search.securitySchemes.apiKey.buildFetch({...})` directly — the public
  * surface is the resolver, and the resolver picks the right scheme by
- * auto-discrimination against the env bag.
+ * auto-discrimination against the env bag. (Both paths typecheck —
+ * `script.securitySchemes.apiKey` is statically known to exist on the
+ * narrowed `Script` type — but the resolver path mirrors how every
+ * consumer in `examples/03 / 04 / 05` builds its Fetch.)
  */
 import { describe, expect, it } from "vitest";
 import search from "../scripts/search.ts";
