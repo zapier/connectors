@@ -1,19 +1,21 @@
 /**
  * Unit tests for `scripts/copy-page.ts` — the canonical multi-connection
- * example. Two slots (`source` + `target`), each declared via the
- * `securityScheme: "notion"` shorthand. Both slots resolve to their own
- * Zapier-relayed scheme on the `notion` appKey, with per-slot env-prefix
- * routing (`SOURCE_NOTION_ZAPIER_CONNECTION_ID` / `TARGET_NOTION_ZAPIER_CONNECTION_ID`).
+ * example. Two slots (`source` + `target`), each carrying the same dual
+ * `{ apiKey, zapier }` scheme map the single-connection Notion scripts
+ * ship. Per-slot env-prefix routing (`SOURCE_` / `TARGET_`) keeps the
+ * two slots' credentials isolated at the CLI / `callerConfig` boundary.
  *
  * Strategy: build a context via `copyPage.resolveContext({ connections: {
  * source: <Fetch>, target: <Fetch> } })`, then either call
  * `copyPage.run(context, input)` or the callable
  * `copyPage(input, { connections })`. Assertions:
  *
- *   - `script.connections` has both slots with synthesized Zapier schemes
- *     and the expected env prefixes (`SOURCE_` / `TARGET_`).
+ *   - `script.connections` has both slots with both schemes (`apiKey` +
+ *     synthesized `zapier`) and the expected env prefixes.
  *   - The `source` fetch is hit for GET /v1/pages/{id} and the `target`
  *     fetch is hit for POST /v1/pages — slot isolation works.
+ *   - The BYO `apiKey` scheme routes `NOTION_TOKEN` into the slot's
+ *     `Authorization` header.
  *   - Single-conn `callerConfig` against this multi-conn script throws
  *     with a useful migration message.
  */
@@ -60,14 +62,61 @@ describe("copy-page.ts: connections shape (multi-slot)", () => {
     expect(copyPage.connections.target!.envPrefix).toBe("TARGET_");
   });
 
-  it("synthesizes a Zapier scheme on each slot from the string shorthand", () => {
+  it("carries both schemes (apiKey + synthesized zapier) on each slot", () => {
     for (const slotName of ["source", "target"] as const) {
       const schemes = copyPage.connections[slotName]!.securitySchemes;
-      expect(Object.keys(schemes)).toEqual(["default"]);
-      const def = schemes.default!;
-      expect(def.appKey).toBe("notion");
-      expect(def.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
+      expect(Object.keys(schemes).sort()).toEqual(["apiKey", "zapier"]);
+
+      // BYO apiKey scheme — declared inline by the script, reads
+      // NOTION_TOKEN from the slot's partitioned env bag. No `appKey`
+      // (that field is only set on synthesized Zapier schemes).
+      const apiKey = schemes.apiKey!;
+      expect(apiKey.env).toEqual(["NOTION_TOKEN"]);
+      expect(apiKey.appKey).toBeUndefined();
+
+      // Synthesized Zapier scheme — from the `"notion"` string shorthand.
+      const zapier = schemes.zapier!;
+      expect(zapier.appKey).toBe("notion");
+      expect(zapier.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
     }
+  });
+});
+
+describe("copy-page.ts: BYO apiKey routes per-slot tokens", () => {
+  it("each slot's NOTION_TOKEN ends up in that slot's Authorization header", async () => {
+    const sourceAuth: string[] = [];
+    const targetAuth: string[] = [];
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (
+      url: string,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      const auth = (init?.headers as Record<string, string> | undefined)
+        ?.Authorization;
+      if (url.includes("/v1/pages/src-uuid") && auth) sourceAuth.push(auth);
+      else if (url === "https://api.notion.com/v1/pages" && auth)
+        targetAuth.push(auth);
+      return jsonResponse(
+        url.includes("/v1/pages/src-uuid")
+          ? { properties: {} }
+          : { object: "page", id: "new-id", url: "x" },
+      );
+    }) as typeof globalThis.fetch;
+    try {
+      await copyPage(
+        { sourcePageId: "src-uuid", targetParentPageId: "tgt-parent" },
+        {
+          connections: {
+            source: { NOTION_TOKEN: "src-token" },
+            target: { NOTION_TOKEN: "tgt-token" },
+          },
+        },
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+    expect(sourceAuth).toEqual(["Bearer src-token"]);
+    expect(targetAuth).toEqual(["Bearer tgt-token"]);
   });
 });
 
