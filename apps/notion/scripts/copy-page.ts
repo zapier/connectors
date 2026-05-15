@@ -1,44 +1,6 @@
 import { z } from "zod";
 import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
 
-/**
- * Canonical *multi-connection* example: copy a Notion page from one
- * workspace ("source") to another ("target"). Each slot supports the same
- * two auth paths the single-connection Notion scripts do — a BYO `apiKey`
- * scheme reading `NOTION_TOKEN`, or the Zapier-relayed scheme synthesized
- * from the slot-level `zapier: "notion"` declaration reading
- * `NOTION_ZAPIER_CONNECTION_ID`. Per-slot env-prefix partitioning routes
- * each slot's credentials at the CLI / `callerConfig` boundary, so the
- * same script handles migration between two distinct Notion accounts.
- *
- * Env contract (CLI):
- *   SOURCE_NOTION_TOKEN=...  (or SOURCE_NOTION_ZAPIER_CONNECTION_ID=...)
- *   TARGET_NOTION_TOKEN=...  (or TARGET_NOTION_ZAPIER_CONNECTION_ID=...)
- *
- * Programmatic:
- *   await copyPage(input, {
- *     connections: {
- *       source: { NOTION_TOKEN: "..." },
- *       target: { NOTION_TOKEN: "..." },
- *     },
- *   });
- *
- * Author surface: `run` receives a `ctx` carrying one resolved authed
- * `Fetch` per slot — `ctx.connections.source` reads the original page,
- * `ctx.connections.target` creates the copy. No threading of separate
- * Fetch arguments through the script body, no per-call auth logic, no
- * env-var plumbing in the script itself — all of that is handled by the
- * framework and surfaces via `ctx.connections.<slot>`.
- */
-
-/**
- * The BYO `apiKey` scheme each slot reuses. Pulled out so both `source`
- * and `target` declare the exact same dual-scheme contract — identical to
- * what the single-connection Notion scripts ship. Both slots' partitioned
- * env bags surface the same `NOTION_TOKEN` key after the CLI strips the
- * per-slot prefix (`SOURCE_` / `TARGET_`), so this scheme works
- * unmodified across slots.
- */
 const notionApiKeyScheme = {
   env: ["NOTION_TOKEN"] as const,
   buildFetch: (({ NOTION_TOKEN }) =>
