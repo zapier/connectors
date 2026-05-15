@@ -35,8 +35,8 @@ Each script's body is one `export default defineTool({...})` — the [`defineToo
 - `script.inputSchema` (Zod) — source of truth for the input contract.
 - `script.outputSchema` (Zod) — return shape contract.
 - `script.tool` — literal MCP [`Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool) descriptor, composed by `defineTool`: JSON Schema derivations of the Zod sources, plus `_meta["zapier:statements"]` carrying co-located policy hints and (for `create-database-item`) `_meta["zapier:inputDependencies"]` mirroring the dependency declaration.
-- `script.run(ctx, input)` — prebuilt-ctx entry. Same `(ctx, input)` signature the author wrote. Used by long-running consumers after `script.resolveCtx(callerConfig)`.
-- `script.resolveCtx(callerConfig)` — same auto-discrimination as the callable, but returns the full `ctx` (with per-slot fetches resolved) for long-running consumers to reuse across many `script.run` calls.
+- `script.run(context, input)` — prebuilt-context entry. Same `(ctx, input)` signature the author wrote (the run parameter is `ctx`; local variables holding a prebuilt one use the full word). Used by long-running consumers after `script.resolveContext(callerConfig)`.
+- `script.resolveContext(callerConfig)` — same auto-discrimination as the callable, but returns the full `Context` (with per-slot fetches resolved) for long-running consumers to reuse across many `script.run` calls.
 - `script.connections` — the resolved slots map. Each slot exposes `securitySchemes` (the scheme objects, including the synthesized Zapier-relayed scheme when an entry's value was a string appKey shorthand) and the effective CLI `envPrefix`.
 - `script.inputDependencies` (only when relevant) — the per-script dependent-fields graph; mirrored on `script.tool._meta["zapier:inputDependencies"]` for adapters that only see the wire `Tool`.
 

@@ -4,18 +4,19 @@
  * the bottom of `search.ts` is exercised by integration evals (and
  * unit-tested for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
  *
- * Strategy: build a ctx with a fake Fetch via `search.resolveCtx({
- * connection: <Fetch> })` and pass it to `search.run(ctx, input)`, OR call
- * the callable form `search(input, { connection: <Fetch> })` directly.
- * Assertions cover (a) the request the script issues, (b) error
+ * Strategy: build a context with a fake Fetch via `search.resolveContext({
+ * connection: <Fetch> })` and pass it to `search.run(context, input)`, OR
+ * call the callable form `search(input, { connection: <Fetch> })`
+ * directly. Assertions cover (a) the request the script issues, (b) error
  * propagation, and (c) the bundled fields (`inputSchema`, `outputSchema`,
  * `tool`, `connections`) match the agent-tools contract.
  *
  * Auth surface: `script.connections.default.securitySchemes.apiKey` is the
  * BYO scheme; `.zapier` is the synthesized Zapier-relayed scheme (with
  * `appKey: "notion"` preserved for introspection). Tests reach for the
- * apiKey scheme via `resolveCtx({ connection: { NOTION_TOKEN } })` —
- * mirroring how every consumer in `examples/03 / 04 / 05` builds its ctx.
+ * apiKey scheme via `resolveContext({ connection: { NOTION_TOKEN } })` —
+ * mirroring how every consumer in `examples/03 / 04 / 05` builds its
+ * context.
  */
 import { describe, expect, it } from "vitest";
 import search from "../scripts/search.ts";
@@ -140,13 +141,14 @@ describe("search.ts: apiKey scheme's authed Fetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const ctx = await search.resolveCtx({
+      const context = await search.resolveContext({
         connection: { NOTION_TOKEN: "secret_test_token" },
       });
-      // Narrow to the single-conn ctx shape — singular sugar always
-      // produces `ctx.fetch` for the only slot.
-      if (!("fetch" in ctx)) throw new Error("expected single-conn ctx");
-      await ctx.fetch("https://api.notion.com/v1/search", {
+      // Narrow to the single-conn context shape — singular sugar always
+      // produces `context.fetch` for the only slot.
+      if (!("fetch" in context))
+        throw new Error("expected single-conn context");
+      await context.fetch("https://api.notion.com/v1/search", {
         method: "POST",
         body: "{}",
       });
@@ -167,11 +169,12 @@ describe("search.ts: apiKey scheme's authed Fetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const ctx = await search.resolveCtx({
+      const context = await search.resolveContext({
         connection: { NOTION_TOKEN: "tok" },
       });
-      if (!("fetch" in ctx)) throw new Error("expected single-conn ctx");
-      await ctx.fetch("https://api.notion.com/v1/search", {
+      if (!("fetch" in context))
+        throw new Error("expected single-conn context");
+      await context.fetch("https://api.notion.com/v1/search", {
         method: "POST",
         headers: { "X-Request-Id": "abc" },
       });
@@ -246,7 +249,7 @@ describe("search.ts: run", () => {
 });
 
 describe("search.ts: callable + .run parity", () => {
-  it("`search(input, { connection })` matches `search.run(await resolveCtx(...), input)`", async () => {
+  it("`search(input, { connection })` matches `search.run(await resolveContext(...), input)`", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       url: string,
@@ -264,8 +267,8 @@ describe("search.ts: callable + .run parity", () => {
       { query: "Q4 planning" },
       { connection: fakeFetch },
     );
-    const ctx = await search.resolveCtx({ connection: fakeFetch });
-    const explicitResult = await search.run(ctx, { query: "Q4 planning" });
+    const context = await search.resolveContext({ connection: fakeFetch });
+    const explicitResult = await search.run(context, { query: "Q4 planning" });
 
     expect(callableResult).toEqual(explicitResult);
     expect(calls).toHaveLength(2);

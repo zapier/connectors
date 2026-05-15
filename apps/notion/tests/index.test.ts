@@ -8,10 +8,10 @@
  *       `import { search } from "@zapier-agent-tools/notion"; search(...)`
  *   - Each bundled script is callable AND carries the full `Script`
  *     property surface (`tool`, `inputSchema`, `outputSchema`,
- *     `connections`, `run`, `resolveCtx`).
+ *     `connections`, `run`, `resolveContext`).
  *   - The default object's keys match the named exports (no drift).
- *   - The default-callable form delegates to `script.run(ctx, input)`
- *     after building ctx from `process.env` — auto-discriminating
+ *   - The default-callable form delegates to `script.run(context, input)`
+ *     after building the context from `process.env` — auto-discriminating
  *     against the env bag the same way the explicit path does.
  *
  * Per-script HTTP-shape coverage stays in `tests/search.test.ts`,
@@ -59,7 +59,7 @@ describe("bundle: shape", () => {
     ]) {
       expect(typeof script).toBe("function");
       expect(typeof script.run).toBe("function");
-      expect(typeof script.resolveCtx).toBe("function");
+      expect(typeof script.resolveContext).toBe("function");
       expect(script.tool).toBeDefined();
       expect(typeof script.tool.name).toBe("string");
       expect(script.inputSchema).toBeDefined();
@@ -143,7 +143,7 @@ describe("bundle: callable form (the ticket's example)", () => {
     expect(capturedAuth).toBe("Bearer explicit-override-token");
   });
 
-  it("`script(input)` and `script.run(await resolveCtx({ connection: process.env }), input)` produce the same result", async () => {
+  it("`script(input)` and `script.run(await resolveContext({ connection: process.env }), input)` produce the same result", async () => {
     globalThis.fetch = (async () =>
       jsonResponse({
         results: [{ id: "same" }],
@@ -152,8 +152,10 @@ describe("bundle: callable form (the ticket's example)", () => {
       })) as typeof globalThis.fetch;
 
     const callable = await notion.search({ query: "same" });
-    const ctx = await notion.search.resolveCtx({ connection: process.env });
-    const explicit = await notion.search.run(ctx, { query: "same" });
+    const context = await notion.search.resolveContext({
+      connection: process.env,
+    });
+    const explicit = await notion.search.run(context, { query: "same" });
     expect(callable).toEqual(explicit);
   });
 });

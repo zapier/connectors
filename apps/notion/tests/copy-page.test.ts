@@ -5,9 +5,10 @@
  * Zapier-relayed scheme on the `notion` appKey, with per-slot env-prefix
  * routing (`SOURCE_NOTION_ZAPIER_CONNECTION_ID` / `TARGET_NOTION_ZAPIER_CONNECTION_ID`).
  *
- * Strategy: build a ctx via `copyPage.resolveCtx({ connections: { source:
- * <Fetch>, target: <Fetch> } })`, then either call `copyPage.run(ctx, input)`
- * or the callable `copyPage(input, { connections })`. Assertions:
+ * Strategy: build a context via `copyPage.resolveContext({ connections: {
+ * source: <Fetch>, target: <Fetch> } })`, then either call
+ * `copyPage.run(context, input)` or the callable
+ * `copyPage(input, { connections })`. Assertions:
  *
  *   - `script.connections` has both slots with synthesized Zapier schemes
  *     and the expected env prefixes (`SOURCE_` / `TARGET_`).
@@ -153,8 +154,8 @@ describe("copy-page.ts: run with separate source/target fetches", () => {
   });
 });
 
-describe("copy-page.ts: build-once via resolveCtx", () => {
-  it("`copyPage.run(ctx, input)` reuses a prebuilt ctx across requests", async () => {
+describe("copy-page.ts: build-once via resolveContext", () => {
+  it("`copyPage.run(context, input)` reuses a prebuilt context across requests", async () => {
     let sourceHits = 0;
     let targetHits = 0;
     const sourceFetch: typeof globalThis.fetch =
@@ -172,12 +173,12 @@ describe("copy-page.ts: build-once via resolveCtx", () => {
         });
       }) as typeof globalThis.fetch;
 
-    const ctx = await copyPage.resolveCtx({
+    const context = await copyPage.resolveContext({
       connections: { source: sourceFetch, target: targetFetch },
     });
 
-    await copyPage.run(ctx, { sourcePageId: "a", targetParentPageId: "b" });
-    await copyPage.run(ctx, { sourcePageId: "c", targetParentPageId: "d" });
+    await copyPage.run(context, { sourcePageId: "a", targetParentPageId: "b" });
+    await copyPage.run(context, { sourcePageId: "c", targetParentPageId: "d" });
 
     expect(sourceHits).toBe(2);
     expect(targetHits).toBe(2);

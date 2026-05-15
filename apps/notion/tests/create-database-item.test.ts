@@ -115,11 +115,12 @@ describe("create-database-item.ts: apiKey scheme's authed Fetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const ctx = await createDatabaseItem.resolveCtx({
+      const context = await createDatabaseItem.resolveContext({
         connection: { NOTION_TOKEN: "secret_test_token" },
       });
-      if (!("fetch" in ctx)) throw new Error("expected single-conn ctx");
-      await ctx.fetch("https://api.notion.com/v1/pages", {
+      if (!("fetch" in context))
+        throw new Error("expected single-conn context");
+      await context.fetch("https://api.notion.com/v1/pages", {
         method: "POST",
         body: "{}",
       });
@@ -237,7 +238,7 @@ describe("create-database-item.ts: run", () => {
 });
 
 describe("create-database-item.ts: callable + .run parity", () => {
-  it("`createDatabaseItem(input, { connection })` matches `.run(await resolveCtx(...), input)`", async () => {
+  it("`createDatabaseItem(input, { connection })` matches `.run(await resolveContext(...), input)`", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       url: string,
@@ -263,8 +264,10 @@ describe("create-database-item.ts: callable + .run parity", () => {
     const callableResult = await createDatabaseItem(input, {
       connection: fakeFetch,
     });
-    const ctx = await createDatabaseItem.resolveCtx({ connection: fakeFetch });
-    const explicitResult = await createDatabaseItem.run(ctx, input);
+    const context = await createDatabaseItem.resolveContext({
+      connection: fakeFetch,
+    });
+    const explicitResult = await createDatabaseItem.run(context, input);
 
     expect(callableResult).toEqual(explicitResult);
     expect(calls).toHaveLength(2);
