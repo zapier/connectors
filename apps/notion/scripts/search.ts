@@ -7,9 +7,11 @@ const skill = defineTool({
   description:
     "Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).",
   inputSchema: z.object({
-    query: z.string().describe(
-      "The text query to search for in the user's Notion workspace. Searches both page titles and database titles.",
-    ),
+    query: z
+      .string()
+      .describe(
+        "The text query to search for in the user's Notion workspace. Searches both page titles and database titles.",
+      ),
     filter: z
       .object({
         property: z.literal("object"),
@@ -106,6 +108,6 @@ if ((import.meta as { main?: boolean }).main) {
   } else {
     throw new Error("Set NOTION_TOKEN or NOTION_ZAPIER_CONNECTION_ID.");
   }
-  // eslint-disable-next-line no-console
+
   console.log(JSON.stringify(await skill.execute(input, authedFetch), null, 2));
 }

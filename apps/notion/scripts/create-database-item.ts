@@ -41,7 +41,7 @@ const skill = defineTool({
   name: "create_database_item",
   title: "Create row in a Notion database",
   description:
-    'Add a new row (page) to a Notion database. The `properties` field\'s accepted shape depends on the chosen database\'s schema — see `inputDependencies` on this skill, or read `_meta["zapier:inputDependencies"]` on this tool over MCP wire. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.',
+    "Add a new row (page) to a Notion database. The `properties` field's accepted shape depends on the chosen database's schema — see `inputDependencies` on this skill, or read `_meta[\"zapier:inputDependencies\"]` on this tool over MCP wire. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.",
   inputSchema: z.object({
     databaseId: z
       .string()
@@ -154,6 +154,6 @@ if ((import.meta as { main?: boolean }).main) {
   } else {
     throw new Error("Set NOTION_TOKEN or NOTION_ZAPIER_CONNECTION_ID.");
   }
-  // eslint-disable-next-line no-console
+
   console.log(JSON.stringify(await skill.execute(input, authedFetch), null, 2));
 }
