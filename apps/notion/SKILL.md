@@ -35,8 +35,8 @@ Each script's body is one `export default defineTool({...})` — the [`defineToo
 - `script.outputSchema` (Zod) — return shape contract.
 - `script.tool` — literal MCP [`Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool) descriptor, composed by `defineTool`: JSON Schema derivations of the Zod sources, plus `_meta["zapier:statements"]` carrying co-located policy hints and (for `create-database-item`) `_meta["zapier:inputDependencies"]` mirroring the dependency declaration.
 - `script.execute(input, connection)` — the API call. `connection` accepts four shapes: a pre-built Fetch, a Zapier connection-ID string, a flat env bag (`process.env`) for auto-discrimination, or a `{ <schemeKey>: { ENV_VAR: "..." } }` object for explicit scheme selection.
-- `script.buildFetch({ NOTION_TOKEN })` — labelled pointer for programmatic callers who want the direct authed `fetch` without going through `script.execute`.
-- `script.securitySchemes` — `{ zapier, apiKey }`. The `zapier` entry is synthesized from `appKey: "notion"`; `apiKey` is declared inline by each script.
+- `script.resolveConnection(connection)` — same auto-discrimination as `execute`, but returns the authed `Fetch` once for long-running consumers to reuse across many `execute` calls.
+- `script.securitySchemes` — `{ zapier, apiKey }`. The `zapier` entry is synthesized from `appKey: "notion"`; `apiKey` is declared inline by each script. Each entry exposes `.env` (required env vars) and `.buildFetch(envBag)` if you ever need to bypass auto-discrimination and reach for one scheme directly.
 - `script.inputDependencies` (only when relevant) — the per-script dependent-fields graph; mirrored on `script.tool._meta["zapier:inputDependencies"]` for adapters that only see the wire `Tool`.
 
 Importing the script gives you the `Script` object as the default; named imports (`import { tool, execute } from "./search.ts"`) no longer exist.

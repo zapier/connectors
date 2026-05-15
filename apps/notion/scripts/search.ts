@@ -7,7 +7,7 @@ import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
  * `execute()` instead, because they're a property of the API call, not the
  * caller's auth — alternative auth wrappers like the synthesized Zapier
  * scheme shouldn't have to know they're talking to Notion to add a
- * Notion-Version header.
+ * Notion-Version header. Referenced by the `apiKey` security scheme below.
  */
 const buildFetch: BuildFetch<{ NOTION_TOKEN: string }> =
   ({ NOTION_TOKEN }) =>
@@ -71,7 +71,6 @@ const script = defineTool({
       label: "Search the connected Notion workspace",
     },
   ],
-  buildFetch,
   securitySchemes: {
     apiKey: { env: ["NOTION_TOKEN"], buildFetch },
   },

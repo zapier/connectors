@@ -10,8 +10,7 @@
 import { describe, expect, it } from "vitest";
 import createDatabaseItem from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema, tool, buildFetch, execute } =
-  createDatabaseItem;
+const { inputSchema, outputSchema, tool, execute } = createDatabaseItem;
 // `inputDependencies` is optional on the generic `Script` shape; this script
 // passes one to `defineTool`, so it's always defined at runtime here.
 
@@ -98,7 +97,7 @@ describe("create-database-item.ts: inputDependencies", () => {
   });
 });
 
-describe("create-database-item.ts: buildFetch", () => {
+describe("create-database-item.ts: apiKey scheme's authed Fetch", () => {
   it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
@@ -107,7 +106,9 @@ describe("create-database-item.ts: buildFetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = await buildFetch!({ NOTION_TOKEN: "secret_test_token" });
+      const f = await createDatabaseItem.resolveConnection({
+        NOTION_TOKEN: "secret_test_token",
+      });
       await f("https://api.notion.com/v1/pages", {
         method: "POST",
         body: "{}",

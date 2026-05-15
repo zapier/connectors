@@ -7,12 +7,18 @@
  * Strategy: pass a fake `fetch` into `search.execute` (Connection shape 1),
  * assert (a) the request the script issues, (b) how it handles success /
  * error responses, and (c) that the bundled fields (`inputSchema`,
- * `outputSchema`, `tool`, `buildFetch`) match the agent-tools contract.
+ * `outputSchema`, `tool`, `securitySchemes`) match the agent-tools contract.
+ *
+ * Note: tests reach for the `apiKey` scheme's `buildFetch` via
+ * `search.resolveConnection({ NOTION_TOKEN: ... })` rather than going
+ * `search.securitySchemes!.apiKey.buildFetch({...})` directly — the public
+ * surface is the resolver, and the resolver picks the right scheme by
+ * auto-discrimination against the env bag.
  */
 import { describe, expect, it } from "vitest";
 import search from "../scripts/search.ts";
 
-const { inputSchema, outputSchema, tool, buildFetch, execute } = search;
+const { inputSchema, outputSchema, tool, execute } = search;
 
 function jsonResponse(
   body: unknown,
@@ -102,7 +108,7 @@ describe("search.ts: tool descriptor", () => {
   });
 });
 
-describe("search.ts: buildFetch", () => {
+describe("search.ts: apiKey scheme's authed Fetch", () => {
   it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
@@ -111,7 +117,9 @@ describe("search.ts: buildFetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = await buildFetch!({ NOTION_TOKEN: "secret_test_token" });
+      const f = await search.resolveConnection({
+        NOTION_TOKEN: "secret_test_token",
+      });
       await f("https://api.notion.com/v1/search", {
         method: "POST",
         body: "{}",
@@ -133,7 +141,7 @@ describe("search.ts: buildFetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = await buildFetch!({ NOTION_TOKEN: "tok" });
+      const f = await search.resolveConnection({ NOTION_TOKEN: "tok" });
       await f("https://api.notion.com/v1/search", {
         method: "POST",
         headers: { "X-Request-Id": "abc" },
