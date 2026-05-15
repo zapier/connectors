@@ -1,17 +1,18 @@
 /**
  * Unit tests for `scripts/search.ts` — the bundled `Skill` default export.
- * Covers the script body only; the CLI block at the bottom of `search.ts`
- * (`if (import.meta.main)`) is exercised by integration evals, not here.
+ * Covers the script body only; the `runCli(import.meta, skill)` call at the
+ * bottom of `search.ts` is exercised by integration evals (and unit-tested
+ * for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
  *
- * Strategy: pass a fake `fetch` into `skill.execute`, assert (a) the request
- * the script issues, (b) how it handles success / error responses, and (c)
- * that the bundled fields (`inputSchema`, `outputSchema`, `tool`,
- * `buildDirectFetch`) match the agent-tools contract.
+ * Strategy: pass a fake `fetch` into `skill.execute` (Connection shape 1),
+ * assert (a) the request the script issues, (b) how it handles success /
+ * error responses, and (c) that the bundled fields (`inputSchema`,
+ * `outputSchema`, `tool`, `buildFetch`) match the agent-tools contract.
  */
 import { describe, expect, it } from "vitest";
 import skill from "../scripts/search.ts";
 
-const { inputSchema, outputSchema, tool, buildDirectFetch, execute } = skill;
+const { inputSchema, outputSchema, tool, buildFetch, execute } = skill;
 
 function jsonResponse(
   body: unknown,
@@ -101,7 +102,7 @@ describe("search.ts: tool descriptor", () => {
   });
 });
 
-describe("search.ts: buildDirectFetch", () => {
+describe("search.ts: buildFetch", () => {
   it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
@@ -110,7 +111,7 @@ describe("search.ts: buildDirectFetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = buildDirectFetch("secret_test_token");
+      const f = await buildFetch!({ NOTION_TOKEN: "secret_test_token" });
       await f("https://api.notion.com/v1/search", {
         method: "POST",
         body: "{}",
@@ -132,7 +133,7 @@ describe("search.ts: buildDirectFetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = buildDirectFetch("tok");
+      const f = await buildFetch!({ NOTION_TOKEN: "tok" });
       await f("https://api.notion.com/v1/search", {
         method: "POST",
         headers: { "X-Request-Id": "abc" },

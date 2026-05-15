@@ -10,7 +10,7 @@
 import { describe, expect, it } from "vitest";
 import skill from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema, tool, buildDirectFetch, execute } = skill;
+const { inputSchema, outputSchema, tool, buildFetch, execute } = skill;
 // `inputDependencies` is optional on the generic `Skill` shape; this script
 // passes one to `defineTool`, so it's always defined at runtime here.
 
@@ -97,7 +97,7 @@ describe("create-database-item.ts: inputDependencies", () => {
   });
 });
 
-describe("create-database-item.ts: buildDirectFetch", () => {
+describe("create-database-item.ts: buildFetch", () => {
   it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
@@ -106,7 +106,7 @@ describe("create-database-item.ts: buildDirectFetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = buildDirectFetch("secret_test_token");
+      const f = await buildFetch!({ NOTION_TOKEN: "secret_test_token" });
       await f("https://api.notion.com/v1/pages", {
         method: "POST",
         body: "{}",

@@ -30,11 +30,13 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 
 Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/zapier-skills/README.md#definetoolconfig--authoring-helper) from `@zapier/skills` bundles the script's surface into a single `Skill` object whose fields consumers reach for by dot-access:
 
+- `skill.appKey` — the app slug (`"notion"`).
 - `skill.inputSchema` (Zod) — source of truth for the input contract.
 - `skill.outputSchema` (Zod) — return shape contract.
 - `skill.tool` — literal MCP [`Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool) descriptor, composed by `defineTool`: JSON Schema derivations of the Zod sources, plus `_meta["zapier:statements"]` carrying co-located policy hints and (for `create-database-item`) `_meta["zapier:inputDependencies"]` mirroring the dependency declaration.
-- `skill.execute(input, fetch)` — the actual API call.
-- `skill.buildDirectFetch(token)` — per-app auth wrapper for direct-mode invocation.
+- `skill.execute(input, connection)` — the API call. `connection` accepts four shapes: a pre-built Fetch, a Zapier connection-ID string, a flat env bag (`process.env`) for auto-discrimination, or a `{ <schemeKey>: { ENV_VAR: "..." } }` object for explicit scheme selection.
+- `skill.buildFetch({ NOTION_TOKEN })` — labelled pointer for programmatic callers who want the direct authed `fetch` without going through `skill.execute`.
+- `skill.securitySchemes` — `{ zapier, apiKey }`. The `zapier` entry is synthesized from `appKey: "notion"`; `apiKey` is declared inline by each script.
 - `skill.inputDependencies` (only when relevant) — the per-script dependent-fields graph; mirrored on `skill.tool._meta["zapier:inputDependencies"]` for adapters that only see the wire `Tool`.
 
 Importing the script gives you the `Skill` object as the default; named imports (`import { tool, execute } from "./search.ts"`) no longer exist.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineTool } from "@zapier/skills";
+import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
 
 /**
  * Out-of-band per-script dependency graph for `create-database-item`'s input.
@@ -37,7 +37,27 @@ const inputDependencies = {
   },
 } as const;
 
+/**
+ * `buildFetch` only handles the auth concern (Authorization header).
+ * Notion's protocol headers (`Notion-Version`, `Content-Type`) are set by
+ * `execute()` instead, because they're a property of the API call, not the
+ * caller's auth — alternative auth wrappers like the synthesized Zapier
+ * scheme shouldn't have to know they're talking to Notion to add a
+ * Notion-Version header.
+ */
+const buildFetch: BuildFetch<{ NOTION_TOKEN: string }> =
+  ({ NOTION_TOKEN }) =>
+  (url, init = {}) =>
+    globalThis.fetch(url, {
+      ...init,
+      headers: {
+        ...(init?.headers ?? {}),
+        Authorization: `Bearer ${NOTION_TOKEN}`,
+      },
+    });
+
 const skill = defineTool({
+  appKey: "notion",
   name: "create_database_item",
   title: "Create row in a Notion database",
   description:
@@ -89,24 +109,10 @@ const skill = defineTool({
     },
   ],
   inputDependencies,
-  /**
-   * `buildDirectFetch` only handles the auth concern (Authorization header).
-   * Notion's protocol headers (`Notion-Version`, `Content-Type`) are set by
-   * `execute()` instead, because they're a property of the API call, not the
-   * caller's auth — alternative auth wrappers like `buildZapierFetch`
-   * shouldn't have to know they're talking to Notion to add a Notion-Version
-   * header.
-   */
-  buildDirectFetch:
-    (token: string): typeof globalThis.fetch =>
-    (url, init = {}) =>
-      globalThis.fetch(url, {
-        ...init,
-        headers: {
-          ...(init?.headers ?? {}),
-          Authorization: `Bearer ${token}`,
-        },
-      }),
+  buildFetch,
+  securitySchemes: {
+    apiKey: { env: ["NOTION_TOKEN"], buildFetch },
+  },
   execute: async (input, fetch) => {
     const body = {
       parent: { type: "database_id" as const, database_id: input.databaseId },
@@ -138,22 +144,4 @@ const skill = defineTool({
 
 export default skill;
 
-if ((import.meta as { main?: boolean }).main) {
-  const raw =
-    process.argv[2] ??
-    (await new Response(process.stdin as unknown as ReadableStream).text());
-  const input = skill.inputSchema.parse(JSON.parse(raw));
-  const connId = process.env.NOTION_ZAPIER_CONNECTION_ID;
-  const token = process.env.NOTION_TOKEN;
-  let authedFetch: typeof globalThis.fetch;
-  if (connId) {
-    const { buildZapierFetch } = await import("@zapier/skills");
-    authedFetch = await buildZapierFetch(connId);
-  } else if (token) {
-    authedFetch = skill.buildDirectFetch(token);
-  } else {
-    throw new Error("Set NOTION_TOKEN or NOTION_ZAPIER_CONNECTION_ID.");
-  }
-
-  console.log(JSON.stringify(await skill.execute(input, authedFetch), null, 2));
-}
+await runCli(import.meta, skill);
