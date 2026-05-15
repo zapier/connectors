@@ -37,25 +37,6 @@ const inputDependencies = {
   },
 } as const;
 
-/**
- * `buildFetch` only handles the auth concern (Authorization header).
- * Notion's protocol headers (`Notion-Version`, `Content-Type`) are set by
- * `execute()` instead, because they're a property of the API call, not the
- * caller's auth — alternative auth wrappers like the synthesized Zapier
- * scheme shouldn't have to know they're talking to Notion to add a
- * Notion-Version header. Referenced by the `apiKey` security scheme below.
- */
-const buildFetch: BuildFetch<{ NOTION_TOKEN: string }> =
-  ({ NOTION_TOKEN }) =>
-  (url, init = {}) =>
-    globalThis.fetch(url, {
-      ...init,
-      headers: {
-        ...(init?.headers ?? {}),
-        Authorization: `Bearer ${NOTION_TOKEN}`,
-      },
-    });
-
 const script = defineTool({
   appKey: "notion",
   name: "create_database_item",
@@ -110,7 +91,18 @@ const script = defineTool({
   ],
   inputDependencies,
   securitySchemes: {
-    apiKey: { env: ["NOTION_TOKEN"], buildFetch },
+    apiKey: {
+      env: ["NOTION_TOKEN"],
+      buildFetch: (({ NOTION_TOKEN }) =>
+        (url, init = {}) =>
+          globalThis.fetch(url, {
+            ...init,
+            headers: {
+              ...(init?.headers ?? {}),
+              Authorization: `Bearer ${NOTION_TOKEN}`,
+            },
+          })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
+    },
   },
   execute: async (input, fetch) => {
     const body = {
