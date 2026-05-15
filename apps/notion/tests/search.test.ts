@@ -1,6 +1,6 @@
 /**
  * Unit tests for `scripts/search.ts` — the bundled `Script` default export.
- * Covers the script body only; the `runCli(import.meta, search)` call at the
+ * Covers the script body only; the `runCli(import.meta, script)` call at the
  * bottom of `search.ts` is exercised by integration evals (and unit-tested
  * for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
  *

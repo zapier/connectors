@@ -20,7 +20,7 @@ const buildFetch: BuildFetch<{ NOTION_TOKEN: string }> =
       },
     });
 
-const search = defineTool({
+const script = defineTool({
   appKey: "notion",
   name: "search",
   title: "Search Notion",
@@ -96,6 +96,6 @@ const search = defineTool({
   },
 });
 
-export default search;
+export default script;
 
-await runCli(import.meta, search);
+await runCli(import.meta, script);

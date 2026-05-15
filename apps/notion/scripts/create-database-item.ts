@@ -56,7 +56,7 @@ const buildFetch: BuildFetch<{ NOTION_TOKEN: string }> =
       },
     });
 
-const createDatabaseItem = defineTool({
+const script = defineTool({
   appKey: "notion",
   name: "create_database_item",
   title: "Create row in a Notion database",
@@ -142,6 +142,6 @@ const createDatabaseItem = defineTool({
   },
 });
 
-export default createDatabaseItem;
+export default script;
 
-await runCli(import.meta, createDatabaseItem);
+await runCli(import.meta, script);
