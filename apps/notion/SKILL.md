@@ -26,17 +26,18 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | Script | Tool name | What it does | Has dependent fields? |
 |---|---|---|---|
 | [`scripts/search.ts`](scripts/search.ts) | `search` | Search Notion pages and databases by query string. Returns matching items with metadata. | No |
-| [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `create_database_item` | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema. | **Yes** — `properties` depends on `databaseId`. See `inputDependencies` named export. |
+| [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `create_database_item` | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema. | **Yes** — `properties` depends on `databaseId`. See `skill.inputDependencies` on the default export. |
 
-Both scripts use the same five-named-export contract:
+Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/zapier-skills/README.md#definetoolconfig--authoring-helper) from `@zapier/skills` bundles the script's surface into a single `Skill` object whose fields consumers reach for by dot-access:
 
-- `inputSchema` (Zod) — source of truth for the input contract.
-- `outputSchema` (Zod) — return shape contract.
-- `tool` — literal MCP [`Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool) descriptor with JSON Schema derivations from the Zod sources, plus `_meta["zapier:statements"]` carrying co-located policy hints and (for `create-database-item`) `_meta["zapier:inputDependencies"]` mirroring the named-export dependency declaration.
-- `default` — the `execute(input, fetch)` function.
-- `buildDirectFetch` — per-app auth wrapper for direct-mode invocation.
+- `skill.inputSchema` (Zod) — source of truth for the input contract.
+- `skill.outputSchema` (Zod) — return shape contract.
+- `skill.tool` — literal MCP [`Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool) descriptor, composed by `defineTool`: JSON Schema derivations of the Zod sources, plus `_meta["zapier:statements"]` carrying co-located policy hints and (for `create-database-item`) `_meta["zapier:inputDependencies"]` mirroring the dependency declaration.
+- `skill.execute(input, fetch)` — the actual API call.
+- `skill.buildDirectFetch(token)` — per-app auth wrapper for direct-mode invocation.
+- `skill.inputDependencies` (only when relevant) — the per-script dependent-fields graph; mirrored on `skill.tool._meta["zapier:inputDependencies"]` for adapters that only see the wire `Tool`.
 
-Scripts with dependent fields export an additional `inputDependencies` named export — see `create-database-item.ts`.
+Importing the script gives you the `Skill` object as the default; named imports (`import { tool, execute } from "./search.ts"`) no longer exist.
 
 ## Auth
 
