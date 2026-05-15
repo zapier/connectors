@@ -6,8 +6,10 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    "./scripts/search": "./scripts/search.ts",
-    "./scripts/create-database-item": "./scripts/create-database-item.ts"
+    ".": "./index.ts"
+  },
+  "bin": {
+    "@zapier-agent-tools/notion": "./cli.ts"
   },
   "dependencies": {
     "zod": "^4.0.0",

@@ -215,3 +215,34 @@ describe("search.ts: execute", () => {
     );
   });
 });
+
+describe("search.ts: callable-merged shape (STAFF-3763)", () => {
+  it("`search(input, connection)` is shorthand for `search.execute(input, connection)`", async () => {
+    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ url, init });
+      return jsonResponse({
+        results: [{ id: "abc" }],
+        has_more: false,
+        next_cursor: null,
+      });
+    }) as typeof globalThis.fetch;
+
+    const callableResult = await search({ query: "Q4 planning" }, fakeFetch);
+    const explicitResult = await search.execute(
+      { query: "Q4 planning" },
+      fakeFetch,
+    );
+
+    expect(callableResult).toEqual(explicitResult);
+    expect(calls).toHaveLength(2);
+    // Both invocations hit the same endpoint with the same body — the
+    // callable form is a transparent wrapper around `.execute`, not a
+    // new code path.
+    expect(calls[0]?.url).toBe(calls[1]?.url);
+    expect(calls[0]?.init?.body).toBe(calls[1]?.init?.body);
+  });
+});
