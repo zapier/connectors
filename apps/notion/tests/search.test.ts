@@ -1,27 +1,26 @@
 /**
  * Unit tests for `scripts/search.ts` — the bundled `Script` default export.
- * Covers the script body only; the `runCli(import.meta, script)` call at the
- * bottom of `search.ts` is exercised by integration evals (and unit-tested
- * for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
+ * Covers the script body only; the `runCli(import.meta, script)` call at
+ * the bottom of `search.ts` is exercised by integration evals (and
+ * unit-tested for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
  *
- * Strategy: pass a fake `fetch` into `search.execute` (Connection shape 1),
- * assert (a) the request the script issues, (b) how it handles success /
- * error responses, and (c) that the bundled fields (`inputSchema`,
- * `outputSchema`, `tool`, `securitySchemes`) match the agent-tools contract.
+ * Strategy: build a ctx with a fake Fetch via `search.resolveCtx({
+ * connection: <Fetch> })` and pass it to `search.run(ctx, input)`, OR call
+ * the callable form `search(input, { connection: <Fetch> })` directly.
+ * Assertions cover (a) the request the script issues, (b) error
+ * propagation, and (c) the bundled fields (`inputSchema`, `outputSchema`,
+ * `tool`, `connections`) match the agent-tools contract.
  *
- * Note: tests reach for the `apiKey` scheme's `buildFetch` via
- * `search.resolveConnection({ NOTION_TOKEN: ... })` rather than going
- * `search.securitySchemes.apiKey.buildFetch({...})` directly — the public
- * surface is the resolver, and the resolver picks the right scheme by
- * auto-discrimination against the env bag. (Both paths typecheck —
- * `script.securitySchemes.apiKey` is statically known to exist on the
- * narrowed `Script` type — but the resolver path mirrors how every
- * consumer in `examples/03 / 04 / 05` builds its Fetch.)
+ * Auth surface: `script.connections.default.securitySchemes.apiKey` is the
+ * BYO scheme; `.zapier` is the synthesized Zapier-relayed scheme (with
+ * `appKey: "notion"` preserved for introspection). Tests reach for the
+ * apiKey scheme via `resolveCtx({ connection: { NOTION_TOKEN } })` —
+ * mirroring how every consumer in `examples/03 / 04 / 05` builds its ctx.
  */
 import { describe, expect, it } from "vitest";
 import search from "../scripts/search.ts";
 
-const { inputSchema, outputSchema, tool, execute } = search;
+const { inputSchema, outputSchema, tool } = search;
 
 function jsonResponse(
   body: unknown,
@@ -111,8 +110,29 @@ describe("search.ts: tool descriptor", () => {
   });
 });
 
+describe("search.ts: connections shape", () => {
+  it("normalizes singular `connection` to `{ default: ... }`", () => {
+    expect(Object.keys(search.connections)).toEqual(["default"]);
+    expect(search.connections.default!.envPrefix).toBe("");
+  });
+
+  it("preserves the BYO apiKey scheme with its env contract", () => {
+    const apiKey = search.connections.default!.securitySchemes.apiKey;
+    expect(apiKey).toBeDefined();
+    expect(apiKey!.env).toEqual(["NOTION_TOKEN"]);
+    expect(apiKey!.appKey).toBeUndefined();
+  });
+
+  it("synthesizes the Zapier scheme from the string shorthand, preserving appKey for introspection", () => {
+    const zapier = search.connections.default!.securitySchemes.zapier;
+    expect(zapier).toBeDefined();
+    expect(zapier!.appKey).toBe("notion");
+    expect(zapier!.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
+  });
+});
+
 describe("search.ts: apiKey scheme's authed Fetch", () => {
-  it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
+  it("only adds the Authorization header — protocol headers are run()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (_url: string, init?: RequestInit) => {
@@ -120,10 +140,13 @@ describe("search.ts: apiKey scheme's authed Fetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = await search.resolveConnection({
-        NOTION_TOKEN: "secret_test_token",
+      const ctx = await search.resolveCtx({
+        connection: { NOTION_TOKEN: "secret_test_token" },
       });
-      await f("https://api.notion.com/v1/search", {
+      // Narrow to the single-conn ctx shape — singular sugar always
+      // produces `ctx.fetch` for the only slot.
+      if (!("fetch" in ctx)) throw new Error("expected single-conn ctx");
+      await ctx.fetch("https://api.notion.com/v1/search", {
         method: "POST",
         body: "{}",
       });
@@ -144,8 +167,11 @@ describe("search.ts: apiKey scheme's authed Fetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = await search.resolveConnection({ NOTION_TOKEN: "tok" });
-      await f("https://api.notion.com/v1/search", {
+      const ctx = await search.resolveCtx({
+        connection: { NOTION_TOKEN: "tok" },
+      });
+      if (!("fetch" in ctx)) throw new Error("expected single-conn ctx");
+      await ctx.fetch("https://api.notion.com/v1/search", {
         method: "POST",
         headers: { "X-Request-Id": "abc" },
       });
@@ -158,7 +184,7 @@ describe("search.ts: apiKey scheme's authed Fetch", () => {
   });
 });
 
-describe("search.ts: execute", () => {
+describe("search.ts: run", () => {
   it("POSTs the validated input to /v1/search and returns the parsed body", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
@@ -173,7 +199,10 @@ describe("search.ts: execute", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await execute({ query: "Q4 planning" }, fakeFetch);
+    const result = await search(
+      { query: "Q4 planning" },
+      { connection: fakeFetch },
+    );
 
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://api.notion.com/v1/search");
@@ -196,7 +225,7 @@ describe("search.ts: execute", () => {
       return jsonResponse({ results: [], has_more: false, next_cursor: null });
     }) as typeof globalThis.fetch;
 
-    await execute({ query: "x" }, fakeFetch);
+    await search({ query: "x" }, { connection: fakeFetch });
 
     const headers = calls[0]?.init?.headers as Record<string, string>;
     expect(headers["Notion-Version"]).toBe("2022-06-28");
@@ -210,14 +239,14 @@ describe("search.ts: execute", () => {
         { status: 400 },
       )) as typeof globalThis.fetch;
 
-    await expect(execute({ query: "x" }, fakeFetch)).rejects.toThrow(
-      /Notion search 400/,
-    );
+    await expect(
+      search({ query: "x" }, { connection: fakeFetch }),
+    ).rejects.toThrow(/Notion search 400/);
   });
 });
 
-describe("search.ts: callable-merged shape (STAFF-3763)", () => {
-  it("`search(input, connection)` is shorthand for `search.execute(input, connection)`", async () => {
+describe("search.ts: callable + .run parity", () => {
+  it("`search(input, { connection })` matches `search.run(await resolveCtx(...), input)`", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       url: string,
@@ -231,17 +260,15 @@ describe("search.ts: callable-merged shape (STAFF-3763)", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const callableResult = await search({ query: "Q4 planning" }, fakeFetch);
-    const explicitResult = await search.execute(
+    const callableResult = await search(
       { query: "Q4 planning" },
-      fakeFetch,
+      { connection: fakeFetch },
     );
+    const ctx = await search.resolveCtx({ connection: fakeFetch });
+    const explicitResult = await search.run(ctx, { query: "Q4 planning" });
 
     expect(callableResult).toEqual(explicitResult);
     expect(calls).toHaveLength(2);
-    // Both invocations hit the same endpoint with the same body — the
-    // callable form is a transparent wrapper around `.execute`, not a
-    // new code path.
     expect(calls[0]?.url).toBe(calls[1]?.url);
     expect(calls[0]?.init?.body).toBe(calls[1]?.init?.body);
   });

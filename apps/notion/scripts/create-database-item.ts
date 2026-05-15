@@ -2,7 +2,6 @@ import { z } from "zod";
 import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
 
 const script = defineTool({
-  appKey: "notion",
   name: "create_database_item",
   title: "Create row in a Notion database",
   description:
@@ -65,26 +64,29 @@ const script = defineTool({
       fromArgs: { databaseId: "$databaseId" },
     },
   } as const,
-  securitySchemes: {
-    apiKey: {
-      env: ["NOTION_TOKEN"],
-      buildFetch: (({ NOTION_TOKEN }) =>
-        (url, init = {}) =>
-          globalThis.fetch(url, {
-            ...init,
-            headers: {
-              ...(init?.headers ?? {}),
-              Authorization: `Bearer ${NOTION_TOKEN}`,
-            },
-          })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
+  connection: {
+    securitySchemes: {
+      apiKey: {
+        env: ["NOTION_TOKEN"],
+        buildFetch: (({ NOTION_TOKEN }) =>
+          (url, init = {}) =>
+            globalThis.fetch(url, {
+              ...init,
+              headers: {
+                ...(init?.headers ?? {}),
+                Authorization: `Bearer ${NOTION_TOKEN}`,
+              },
+            })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
+      },
+      zapier: "notion",
     },
   },
-  execute: async (input, fetch) => {
+  run: async (ctx, input) => {
     const body = {
       parent: { type: "database_id" as const, database_id: input.databaseId },
       properties: input.properties,
     };
-    const res = await fetch("https://api.notion.com/v1/pages", {
+    const res = await ctx.fetch("https://api.notion.com/v1/pages", {
       method: "POST",
       headers: {
         "Notion-Version": "2022-06-28",
