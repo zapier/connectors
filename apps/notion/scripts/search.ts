@@ -52,7 +52,7 @@ const script = defineTool({
     },
   ],
   connection: {
-    appKey: "notion",
+    zapier: "notion",
     securitySchemes: {
       apiKey: {
         env: ["NOTION_TOKEN"],

@@ -98,11 +98,13 @@ describe("create-database-item.ts: inputDependencies", () => {
 describe("create-database-item.ts: connections shape", () => {
   it("normalizes singular `connection` to `{ default: ... }` with both schemes", () => {
     expect(Object.keys(createDatabaseItem.connections)).toEqual(["default"]);
-    const schemes = createDatabaseItem.connections.default!.securitySchemes;
+    const slot = createDatabaseItem.connections.default!;
+    expect(slot.zapier).toBe("notion");
+    const schemes = slot.securitySchemes;
     expect(schemes.apiKey).toBeDefined();
     expect(schemes.apiKey!.env).toEqual(["NOTION_TOKEN"]);
     expect(schemes.zapier).toBeDefined();
-    expect(schemes.zapier!.appKey).toBe("notion");
+    expect(schemes.zapier!.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
   });
 });
 

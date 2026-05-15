@@ -12,9 +12,10 @@
  * `tool`, `connections`) match the agent-tools contract.
  *
  * Auth surface: `script.connections.default.securitySchemes.apiKey` is the
- * BYO scheme; `.zapier` is the synthesized Zapier-relayed scheme (with
- * `appKey: "notion"` preserved for introspection). Tests reach for the
- * apiKey scheme via `resolveContext({ connection: { NOTION_TOKEN } })` —
+ * BYO scheme; `.zapier` is the synthesized Zapier-relayed scheme. The
+ * slot-level `script.connections.default.zapier` field preserves the
+ * `"notion"` app slug for introspection. Tests reach for the apiKey
+ * scheme via `resolveContext({ connection: { NOTION_TOKEN } })` —
  * mirroring how every consumer in `examples/03 / 04 / 05` builds its
  * context.
  */
@@ -121,13 +122,13 @@ describe("search.ts: connections shape", () => {
     const apiKey = search.connections.default!.securitySchemes.apiKey;
     expect(apiKey).toBeDefined();
     expect(apiKey!.env).toEqual(["NOTION_TOKEN"]);
-    expect(apiKey!.appKey).toBeUndefined();
   });
 
-  it("synthesizes the Zapier scheme from the string shorthand, preserving appKey for introspection", () => {
-    const zapier = search.connections.default!.securitySchemes.zapier;
+  it("synthesizes the matching `zapier` scheme from slot-level `zapier`", () => {
+    const slot = search.connections.default!;
+    expect(slot.zapier).toBe("notion");
+    const zapier = slot.securitySchemes.zapier;
     expect(zapier).toBeDefined();
-    expect(zapier!.appKey).toBe("notion");
     expect(zapier!.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
   });
 });

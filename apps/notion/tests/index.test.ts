@@ -80,7 +80,7 @@ describe("bundle: callable form (the ticket's example)", () => {
     // Each callable invocation walks `script.connections.default.securitySchemes`
     // against the env bag. Both Notion single-conn scripts declare an
     // `apiKey` scheme reading `NOTION_TOKEN` plus the framework-synthesized
-    // `zapier` scheme (from `appKey: "notion"`) reading
+    // `zapier` scheme (from `zapier: "notion"`) reading
     // `NOTION_ZAPIER_CONNECTION_ID`. Exposing only `NOTION_TOKEN` keeps the
     // test path predictable (apiKey wins by insertion order).
     process.env.NOTION_TOKEN = "secret_test_token";

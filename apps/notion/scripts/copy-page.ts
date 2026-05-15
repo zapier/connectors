@@ -6,7 +6,7 @@ import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
  * workspace ("source") to another ("target"). Each slot supports the same
  * two auth paths the single-connection Notion scripts do — a BYO `apiKey`
  * scheme reading `NOTION_TOKEN`, or the Zapier-relayed scheme synthesized
- * from the slot-level `appKey: "notion"` declaration reading
+ * from the slot-level `zapier: "notion"` declaration reading
  * `NOTION_ZAPIER_CONNECTION_ID`. Per-slot env-prefix partitioning routes
  * each slot's credentials at the CLI / `callerConfig` boundary, so the
  * same script handles migration between two distinct Notion accounts.
@@ -97,11 +97,11 @@ const script = defineTool({
   ],
   connections: {
     source: {
-      appKey: "notion",
+      zapier: "notion",
       securitySchemes: { apiKey: notionApiKeyScheme },
     },
     target: {
-      appKey: "notion",
+      zapier: "notion",
       securitySchemes: { apiKey: notionApiKeyScheme },
     },
   },
