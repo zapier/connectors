@@ -225,3 +225,37 @@ describe("create-database-item.ts: execute", () => {
     ).rejects.toThrow(/Notion create_database_item 400/);
   });
 });
+
+describe("create-database-item.ts: callable-merged shape (STAFF-3763)", () => {
+  it("`createDatabaseItem(input, connection)` is shorthand for `.execute(input, connection)`", async () => {
+    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ url, init });
+      return jsonResponse({
+        object: "page",
+        id: "row-id",
+        created_time: "2026-05-13T10:00:00.000Z",
+        last_edited_time: "2026-05-13T10:00:00.000Z",
+        parent: { type: "database_id", database_id: PROJECTS_DB_UUID },
+        properties: {},
+        url: "https://www.notion.so/row-id",
+      });
+    }) as typeof globalThis.fetch;
+
+    const input = {
+      databaseId: PROJECTS_DB_UUID,
+      properties: { Title: { title: [{ text: { content: "x" } }] } },
+    };
+
+    const callableResult = await createDatabaseItem(input, fakeFetch);
+    const explicitResult = await createDatabaseItem.execute(input, fakeFetch);
+
+    expect(callableResult).toEqual(explicitResult);
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.url).toBe(calls[1]?.url);
+    expect(calls[0]?.init?.body).toBe(calls[1]?.init?.body);
+  });
+});
