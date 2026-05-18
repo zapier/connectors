@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
+import { defineTool, runCli, type BuildFetch } from "@zapier/connectors-sdk";
 
 const script = defineTool({
   name: "create_database_item",
