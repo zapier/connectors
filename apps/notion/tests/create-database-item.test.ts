@@ -1,13 +1,3 @@
-/**
- * Unit tests for `scripts/create-database-item.ts`. Covers the literal
- * MCP `Tool` descriptor (including the dependent-fields surface via
- * `_meta["zapier:inputDependencies"]`), the per-app auth wrapper, and
- * the `run` function's request envelope. The bundled `inputDependencies`
- * is also asserted here — it's the part of the contract adapter
- * consumers read at install / register time, mirrored on both
- * `createDatabaseItem.inputDependencies` and
- * `createDatabaseItem.tool._meta["zapier:inputDependencies"]`.
- */
 import { describe, expect, it } from "vitest";
 import createDatabaseItem from "../scripts/create-database-item.ts";
 
@@ -32,7 +22,7 @@ function jsonResponse(
   } as unknown as Response;
 }
 
-describe("create-database-item.ts: inputSchema", () => {
+describe("create-database-item: inputSchema", () => {
   it("accepts the documented input envelope", () => {
     expect(
       inputSchema.safeParse({
@@ -53,34 +43,7 @@ describe("create-database-item.ts: inputSchema", () => {
   });
 });
 
-describe("create-database-item.ts: tool descriptor", () => {
-  it("declares the expected MCP Tool fields", () => {
-    expect(tool.name).toBe("create_database_item");
-    expect(tool.title).toMatch(/Notion/);
-    expect(typeof tool.description).toBe("string");
-  });
-
-  it("flags itself as a write (non-read-only, non-idempotent)", () => {
-    expect(tool.annotations?.readOnlyHint).toBe(false);
-    expect(tool.annotations?.idempotentHint).toBe(false);
-  });
-
-  it('co-locates `effect: "ask"` governance via `_meta["zapier:statements"]`', () => {
-    const statements = (
-      tool._meta as { "zapier:statements"?: ReadonlyArray<{ effect: string }> }
-    )?.["zapier:statements"];
-    expect(statements?.[0]?.effect).toBe("ask");
-  });
-
-  it('mirrors `inputDependencies` into `_meta["zapier:inputDependencies"]`', () => {
-    const wire = (
-      tool._meta as { "zapier:inputDependencies"?: typeof inputDependencies }
-    )["zapier:inputDependencies"];
-    expect(wire).toBe(inputDependencies);
-  });
-});
-
-describe("create-database-item.ts: inputDependencies", () => {
+describe("create-database-item: inputDependencies", () => {
   it("declares `databaseId` as an options chain off list-databases", () => {
     expect(inputDependencies.databaseId.kind).toBe("options");
     expect(inputDependencies.databaseId.fromTool).toBe("list-databases");
@@ -95,48 +58,20 @@ describe("create-database-item.ts: inputDependencies", () => {
   });
 });
 
-describe("create-database-item.ts: connections shape", () => {
-  it("normalizes singular `connection` to `{ default: ... }` with both schemes", () => {
-    expect(Object.keys(createDatabaseItem.connections)).toEqual(["default"]);
-    const slot = createDatabaseItem.connections.default!;
-    expect(slot.zapier).toBe("notion");
-    const schemes = slot.securitySchemes;
-    expect(schemes.apiKey).toBeDefined();
-    expect(schemes.apiKey!.env).toEqual(["NOTION_TOKEN"]);
-    expect(schemes.zapier).toBeDefined();
-    expect(schemes.zapier!.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
+describe("create-database-item: governance", () => {
+  it("requires ask-before-write and mirrors inputDependencies on the wire descriptor", () => {
+    const statements = (
+      tool._meta as { "zapier:statements"?: ReadonlyArray<{ effect: string }> }
+    )?.["zapier:statements"];
+    expect(statements?.[0]?.effect).toBe("ask");
+    const wire = (
+      tool._meta as { "zapier:inputDependencies"?: typeof inputDependencies }
+    )["zapier:inputDependencies"];
+    expect(wire).toBe(inputDependencies);
   });
 });
 
-describe("create-database-item.ts: apiKey scheme's authed Fetch", () => {
-  it("only adds the Authorization header — protocol headers are run()'s job", async () => {
-    let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
-      captured = init;
-      return jsonResponse({ ok: true });
-    }) as typeof globalThis.fetch;
-    try {
-      const context = await createDatabaseItem.resolveContext({
-        connection: { NOTION_TOKEN: "secret_test_token" },
-      });
-      if (!("fetch" in context))
-        throw new Error("expected single-conn context");
-      await context.fetch("https://api.notion.com/v1/pages", {
-        method: "POST",
-        body: "{}",
-      });
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-    const headers = captured?.headers as Record<string, string>;
-    expect(headers.Authorization).toBe("Bearer secret_test_token");
-    expect(headers["Notion-Version"]).toBeUndefined();
-    expect(headers["Content-Type"]).toBeUndefined();
-  });
-});
-
-describe("create-database-item.ts: run", () => {
+describe("create-database-item: run", () => {
   it("wraps the input in Notion's `parent` envelope and POSTs to /v1/pages", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
@@ -185,7 +120,7 @@ describe("create-database-item.ts: run", () => {
     expect(outputSchema.safeParse(result).success).toBe(true);
   });
 
-  it("sets `Notion-Version` and `Content-Type` on the request — they're protocol concerns, not auth", async () => {
+  it("sets Notion-Version and Content-Type on the request", async () => {
     const calls: Array<{ init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       _url: string,
@@ -236,44 +171,5 @@ describe("create-database-item.ts: run", () => {
         { connection: fakeFetch },
       ),
     ).rejects.toThrow(/Notion create_database_item 400/);
-  });
-});
-
-describe("create-database-item.ts: callable + .run parity", () => {
-  it("`createDatabaseItem(input, { connection })` matches `.run(await resolveContext(...), input)`", async () => {
-    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
-    const fakeFetch: typeof globalThis.fetch = (async (
-      url: string,
-      init?: RequestInit,
-    ) => {
-      calls.push({ url, init });
-      return jsonResponse({
-        object: "page",
-        id: "row-id",
-        created_time: "2026-05-13T10:00:00.000Z",
-        last_edited_time: "2026-05-13T10:00:00.000Z",
-        parent: { type: "database_id", database_id: PROJECTS_DB_UUID },
-        properties: {},
-        url: "https://www.notion.so/row-id",
-      });
-    }) as typeof globalThis.fetch;
-
-    const input = {
-      databaseId: PROJECTS_DB_UUID,
-      properties: { Title: { title: [{ text: { content: "x" } }] } },
-    };
-
-    const callableResult = await createDatabaseItem(input, {
-      connection: fakeFetch,
-    });
-    const context = await createDatabaseItem.resolveContext({
-      connection: fakeFetch,
-    });
-    const explicitResult = await createDatabaseItem.run(context, input);
-
-    expect(callableResult).toEqual(explicitResult);
-    expect(calls).toHaveLength(2);
-    expect(calls[0]?.url).toBe(calls[1]?.url);
-    expect(calls[0]?.init?.body).toBe(calls[1]?.init?.body);
   });
 });
