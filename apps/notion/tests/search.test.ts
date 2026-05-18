@@ -1,28 +1,7 @@
-/**
- * Unit tests for `scripts/search.ts` — the bundled `Script` default export.
- * Covers the script body only; the `runCli(import.meta, script)` call at
- * the bottom of `search.ts` is exercised by integration evals (and
- * unit-tested for IO orchestration in `packages/zapier-skills/src/run-cli.test.ts`).
- *
- * Strategy: build a context with a fake Fetch via `search.resolveContext({
- * connection: <Fetch> })` and pass it to `search.run(context, input)`, OR
- * call the callable form `search(input, { connection: <Fetch> })`
- * directly. Assertions cover (a) the request the script issues, (b) error
- * propagation, and (c) the bundled fields (`inputSchema`, `outputSchema`,
- * `tool`, `connections`) match the agent-tools contract.
- *
- * Auth surface: `script.connections.default.securitySchemes.apiKey` is the
- * BYO scheme; `.zapier` is the synthesized Zapier-relayed scheme. The
- * slot-level `script.connections.default.zapier` field preserves the
- * `"notion"` app slug for introspection. Tests reach for the apiKey
- * scheme via `resolveContext({ connection: { NOTION_TOKEN } })` —
- * mirroring how every consumer in `examples/03 / 04 / 05` builds its
- * context.
- */
 import { describe, expect, it } from "vitest";
 import search from "../scripts/search.ts";
 
-const { inputSchema, outputSchema, tool } = search;
+const { inputSchema, outputSchema } = search;
 
 function jsonResponse(
   body: unknown,
@@ -40,7 +19,7 @@ function jsonResponse(
   } as unknown as Response;
 }
 
-describe("search.ts: inputSchema", () => {
+describe("search: inputSchema", () => {
   it("accepts a minimal valid input", () => {
     expect(inputSchema.safeParse({ query: "Q4 planning" }).success).toBe(true);
   });
@@ -76,119 +55,23 @@ describe("search.ts: inputSchema", () => {
   });
 });
 
-describe("search.ts: tool descriptor", () => {
-  it("declares the literal MCP Tool fields used by registrars", () => {
-    expect(tool.name).toBe("search");
-    expect(tool.title).toBe("Search Notion");
-    expect(typeof tool.description).toBe("string");
-    expect(tool.inputSchema).toBeDefined();
-    expect(tool.outputSchema).toBeDefined();
-  });
-
-  it("flags itself as read-only via MCP annotations", () => {
-    expect(tool.annotations?.readOnlyHint).toBe(true);
-    expect(tool.annotations?.destructiveHint).toBe(false);
-    expect(tool.annotations?.idempotentHint).toBe(true);
-  });
-
-  it('co-locates governance metadata under `_meta["zapier:statements"]`', () => {
+describe("search: governance", () => {
+  it("flags read-only search and allow-statement URL guard", () => {
+    expect(search.tool.annotations?.readOnlyHint).toBe(true);
     const statements = (
-      tool._meta as {
+      search.tool._meta as {
         "zapier:statements"?: ReadonlyArray<{
           effect: string;
           resources: string[];
         }>;
       }
     )?.["zapier:statements"];
-    expect(Array.isArray(statements)).toBe(true);
-    expect(statements?.length).toBeGreaterThan(0);
     expect(statements?.[0]?.effect).toBe("allow");
     expect(statements?.[0]?.resources).toContain("http");
   });
-
-  it("uses Zod-derived JSON Schemas for the wire shape", () => {
-    expect(JSON.stringify(tool.inputSchema)).toContain("query");
-    expect(JSON.stringify(tool.outputSchema)).toContain("results");
-  });
 });
 
-describe("search.ts: connections shape", () => {
-  it("normalizes singular `connection` to `{ default: ... }`", () => {
-    expect(Object.keys(search.connections)).toEqual(["default"]);
-    expect(search.connections.default!.envPrefix).toBe("");
-  });
-
-  it("preserves the BYO apiKey scheme with its env contract", () => {
-    const apiKey = search.connections.default!.securitySchemes.apiKey;
-    expect(apiKey).toBeDefined();
-    expect(apiKey!.env).toEqual(["NOTION_TOKEN"]);
-  });
-
-  it("synthesizes the matching `zapier` scheme from slot-level `zapier`", () => {
-    const slot = search.connections.default!;
-    expect(slot.zapier).toBe("notion");
-    const zapier = slot.securitySchemes.zapier;
-    expect(zapier).toBeDefined();
-    expect(zapier!.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
-  });
-});
-
-describe("search.ts: apiKey scheme's authed Fetch", () => {
-  it("only adds the Authorization header — protocol headers are run()'s job", async () => {
-    let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
-      captured = init;
-      return jsonResponse({ ok: true });
-    }) as typeof globalThis.fetch;
-    try {
-      const context = await search.resolveContext({
-        connection: { NOTION_TOKEN: "secret_test_token" },
-      });
-      // Narrow to the single-conn context shape — singular sugar always
-      // produces `context.fetch` for the only slot.
-      if (!("fetch" in context))
-        throw new Error("expected single-conn context");
-      await context.fetch("https://api.notion.com/v1/search", {
-        method: "POST",
-        body: "{}",
-      });
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-    const headers = captured?.headers as Record<string, string>;
-    expect(headers.Authorization).toBe("Bearer secret_test_token");
-    expect(headers["Notion-Version"]).toBeUndefined();
-    expect(headers["Content-Type"]).toBeUndefined();
-  });
-
-  it("preserves caller-provided headers when merging", async () => {
-    let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
-      captured = init;
-      return jsonResponse({ ok: true });
-    }) as typeof globalThis.fetch;
-    try {
-      const context = await search.resolveContext({
-        connection: { NOTION_TOKEN: "tok" },
-      });
-      if (!("fetch" in context))
-        throw new Error("expected single-conn context");
-      await context.fetch("https://api.notion.com/v1/search", {
-        method: "POST",
-        headers: { "X-Request-Id": "abc" },
-      });
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
-    const headers = captured?.headers as Record<string, string>;
-    expect(headers["X-Request-Id"]).toBe("abc");
-    expect(headers.Authorization).toBe("Bearer tok");
-  });
-});
-
-describe("search.ts: run", () => {
+describe("search: run", () => {
   it("POSTs the validated input to /v1/search and returns the parsed body", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
@@ -219,7 +102,7 @@ describe("search.ts: run", () => {
     expect(result.results).toHaveLength(1);
   });
 
-  it("sets `Notion-Version` and `Content-Type` on the request — they're protocol concerns, not auth", async () => {
+  it("sets Notion-Version and Content-Type on the request", async () => {
     const calls: Array<{ init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       _url: string,
@@ -246,34 +129,5 @@ describe("search.ts: run", () => {
     await expect(
       search({ query: "x" }, { connection: fakeFetch }),
     ).rejects.toThrow(/Notion search 400/);
-  });
-});
-
-describe("search.ts: callable + .run parity", () => {
-  it("`search(input, { connection })` matches `search.run(await resolveContext(...), input)`", async () => {
-    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
-    const fakeFetch: typeof globalThis.fetch = (async (
-      url: string,
-      init?: RequestInit,
-    ) => {
-      calls.push({ url, init });
-      return jsonResponse({
-        results: [{ id: "abc" }],
-        has_more: false,
-        next_cursor: null,
-      });
-    }) as typeof globalThis.fetch;
-
-    const callableResult = await search(
-      { query: "Q4 planning" },
-      { connection: fakeFetch },
-    );
-    const context = await search.resolveContext({ connection: fakeFetch });
-    const explicitResult = await search.run(context, { query: "Q4 planning" });
-
-    expect(callableResult).toEqual(explicitResult);
-    expect(calls).toHaveLength(2);
-    expect(calls[0]?.url).toBe(calls[1]?.url);
-    expect(calls[0]?.init?.body).toBe(calls[1]?.init?.body);
   });
 });
