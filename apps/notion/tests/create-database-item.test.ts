@@ -1,19 +1,17 @@
 /**
- * Unit tests for `scripts/create-database-item.ts`. Covers the literal MCP
- * `Tool` descriptor (including the dependent-fields surface via
- * `_meta["zapier:inputDependencies"]`), the per-app auth wrapper, and the
- * `execute` function's request envelope. The bundled `inputDependencies` is
- * also asserted here — it's the part of the contract adapter consumers read
- * at install / register time, mirrored on both `createDatabaseItem.inputDependencies` and
+ * Unit tests for `scripts/create-database-item.ts`. Covers the literal
+ * MCP `Tool` descriptor (including the dependent-fields surface via
+ * `_meta["zapier:inputDependencies"]`), the per-app auth wrapper, and
+ * the `run` function's request envelope. The bundled `inputDependencies`
+ * is also asserted here — it's the part of the contract adapter
+ * consumers read at install / register time, mirrored on both
+ * `createDatabaseItem.inputDependencies` and
  * `createDatabaseItem.tool._meta["zapier:inputDependencies"]`.
  */
 import { describe, expect, it } from "vitest";
 import createDatabaseItem from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema, tool, execute } = createDatabaseItem;
-// `inputDependencies` is optional on the generic `Script` shape; this script
-// passes one to `defineTool`, so it's always defined at runtime here.
-
+const { inputSchema, outputSchema, tool } = createDatabaseItem;
 const inputDependencies = createDatabaseItem.inputDependencies!;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
@@ -97,8 +95,21 @@ describe("create-database-item.ts: inputDependencies", () => {
   });
 });
 
+describe("create-database-item.ts: connections shape", () => {
+  it("normalizes singular `connection` to `{ default: ... }` with both schemes", () => {
+    expect(Object.keys(createDatabaseItem.connections)).toEqual(["default"]);
+    const slot = createDatabaseItem.connections.default!;
+    expect(slot.zapier).toBe("notion");
+    const schemes = slot.securitySchemes;
+    expect(schemes.apiKey).toBeDefined();
+    expect(schemes.apiKey!.env).toEqual(["NOTION_TOKEN"]);
+    expect(schemes.zapier).toBeDefined();
+    expect(schemes.zapier!.env).toEqual(["NOTION_ZAPIER_CONNECTION_ID"]);
+  });
+});
+
 describe("create-database-item.ts: apiKey scheme's authed Fetch", () => {
-  it("only adds the Authorization header — protocol headers are execute()'s job", async () => {
+  it("only adds the Authorization header — protocol headers are run()'s job", async () => {
     let captured: Parameters<typeof globalThis.fetch>[1] | undefined;
     const originalFetch = globalThis.fetch;
     globalThis.fetch = (async (_url: string, init?: RequestInit) => {
@@ -106,10 +117,12 @@ describe("create-database-item.ts: apiKey scheme's authed Fetch", () => {
       return jsonResponse({ ok: true });
     }) as typeof globalThis.fetch;
     try {
-      const f = await createDatabaseItem.resolveConnection({
-        NOTION_TOKEN: "secret_test_token",
+      const context = await createDatabaseItem.resolveContext({
+        connection: { NOTION_TOKEN: "secret_test_token" },
       });
-      await f("https://api.notion.com/v1/pages", {
+      if (!("fetch" in context))
+        throw new Error("expected single-conn context");
+      await context.fetch("https://api.notion.com/v1/pages", {
         method: "POST",
         body: "{}",
       });
@@ -123,7 +136,7 @@ describe("create-database-item.ts: apiKey scheme's authed Fetch", () => {
   });
 });
 
-describe("create-database-item.ts: execute", () => {
+describe("create-database-item.ts: run", () => {
   it("wraps the input in Notion's `parent` envelope and POSTs to /v1/pages", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
@@ -142,7 +155,7 @@ describe("create-database-item.ts: execute", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await execute(
+    const result = await createDatabaseItem(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: {
@@ -150,7 +163,7 @@ describe("create-database-item.ts: execute", () => {
           Status: { select: { name: "In progress" } },
         },
       },
-      fakeFetch,
+      { connection: fakeFetch },
     );
 
     expect(calls).toHaveLength(1);
@@ -190,12 +203,12 @@ describe("create-database-item.ts: execute", () => {
       });
     }) as typeof globalThis.fetch;
 
-    await execute(
+    await createDatabaseItem(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: { Title: { title: [{ text: { content: "x" } }] } },
       },
-      fakeFetch,
+      { connection: fakeFetch },
     );
 
     const headers = calls[0]?.init?.headers as Record<string, string>;
@@ -215,19 +228,19 @@ describe("create-database-item.ts: execute", () => {
       )) as typeof globalThis.fetch;
 
     await expect(
-      execute(
+      createDatabaseItem(
         {
           databaseId: PROJECTS_DB_UUID,
           properties: { Title: { title: [{ text: { content: "x" } }] } },
         },
-        fakeFetch,
+        { connection: fakeFetch },
       ),
     ).rejects.toThrow(/Notion create_database_item 400/);
   });
 });
 
-describe("create-database-item.ts: callable-merged shape (STAFF-3763)", () => {
-  it("`createDatabaseItem(input, connection)` is shorthand for `.execute(input, connection)`", async () => {
+describe("create-database-item.ts: callable + .run parity", () => {
+  it("`createDatabaseItem(input, { connection })` matches `.run(await resolveContext(...), input)`", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       url: string,
@@ -250,8 +263,13 @@ describe("create-database-item.ts: callable-merged shape (STAFF-3763)", () => {
       properties: { Title: { title: [{ text: { content: "x" } }] } },
     };
 
-    const callableResult = await createDatabaseItem(input, fakeFetch);
-    const explicitResult = await createDatabaseItem.execute(input, fakeFetch);
+    const callableResult = await createDatabaseItem(input, {
+      connection: fakeFetch,
+    });
+    const context = await createDatabaseItem.resolveContext({
+      connection: fakeFetch,
+    });
+    const explicitResult = await createDatabaseItem.run(context, input);
 
     expect(callableResult).toEqual(explicitResult);
     expect(calls).toHaveLength(2);

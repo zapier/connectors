@@ -23,23 +23,24 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 
 ## Scripts
 
-| Script                                                               | Default export       | Tool name              | What it does                                                                                    | Has dependent fields?                                                                                             |
-| -------------------------------------------------------------------- | -------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| [`scripts/search.ts`](scripts/search.ts)                             | `search`             | `search`               | Search Notion pages and databases by query string. Returns matching items with metadata.        | No                                                                                                                |
-| [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema. | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
+| Script                                                               | Default export       | Tool name              | Connections                 | What it does                                                                                                                                                                                 | Has dependent fields?                                                                                             |
+| -------------------------------------------------------------------- | -------------------- | ---------------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [`scripts/search.ts`](scripts/search.ts)                             | `search`             | `search`               | Single (`default`)          | Search Notion pages and databases by query string. Returns matching items with metadata.                                                                                                     | No                                                                                                                |
+| [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`default`)          | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.                                                                                              | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
+| [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example — each slot declares `zapier: "notion"` plus a BYO `apiKey` scheme independently. | No                                                                                                                |
 
-Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/zapier-skills/README.md#definetoolconfig--authoring-helper) from `@zapier/skills` bundles the script's surface into a single `Script` object whose fields consumers reach for by dot-access. (The default export is conventionally named after the script's filename, hence `search` / `createDatabaseItem`; the snippets below use the generic name `script` for brevity.)
+Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/zapier-skills/README.md#authoring-shape) from `@zapier/skills` bundles the script's surface into a single `Script` object whose fields consumers reach for by dot-access. (The default export is conventionally named after the script's filename, hence `search` / `createDatabaseItem` / `copyPage`; the snippets below use the generic name `script` for brevity.)
 
-- `script.appKey` — the app slug (`"notion"`).
+- `script` itself is **callable** — `await script(input)` runs the tool against `process.env` (defaulting `callerConfig` to `{ connection: process.env }` for single-conn; per-slot env-prefix partitioning for multi-conn).
 - `script.inputSchema` (Zod) — source of truth for the input contract.
 - `script.outputSchema` (Zod) — return shape contract.
 - `script.tool` — literal MCP [`Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool) descriptor, composed by `defineTool`: JSON Schema derivations of the Zod sources, plus `_meta["zapier:statements"]` carrying co-located policy hints and (for `create-database-item`) `_meta["zapier:inputDependencies"]` mirroring the dependency declaration.
-- `script.execute(input, connection)` — the API call. `connection` accepts four shapes: a pre-built Fetch, a Zapier connection-ID string, a flat env bag (`process.env`) for auto-discrimination, or a `{ <schemeKey>: { ENV_VAR: "..." } }` object for explicit scheme selection.
-- `script.resolveConnection(connection)` — same auto-discrimination as `execute`, but returns the authed `Fetch` once for long-running consumers to reuse across many `execute` calls.
-- `script.securitySchemes` — `{ zapier, apiKey }`, statically typed. The `zapier` entry is synthesized from `appKey: "notion"`; `apiKey` is declared inline by each script. Both keys exist on the narrowed `Script` type, so `script.securitySchemes.apiKey` typechecks without `?.` / `!`. Each entry exposes `.env` (required env vars) and `.buildFetch(envBag)` if you ever need to bypass auto-discrimination and reach for one scheme directly.
+- `script.run(context, input)` — prebuilt-context entry. Same `(ctx, input)` signature the author wrote (the run parameter is `ctx`; local variables holding a prebuilt one use the full word). Used by long-running consumers after `script.resolveContext(callerConfig)`.
+- `script.resolveContext(callerConfig)` — same auto-discrimination as the callable, but returns the full `Context` (with per-slot fetches resolved at `ctx.connections.<slot>`) for long-running consumers to reuse across many `script.run` calls.
+- `script.connections` — the resolved slots map. Each slot exposes the lifted `zapier` app slug (if any), `securitySchemes` (BYO schemes plus the matching `zapier` entry synthesized from the slot-level `zapier` field), and the effective CLI `envPrefix`.
 - `script.inputDependencies` (only when relevant) — the per-script dependent-fields graph; mirrored on `script.tool._meta["zapier:inputDependencies"]` for adapters that only see the wire `Tool`.
 
-Importing the script gives you the `Script` object as the default; named imports (`import { tool, execute } from "./search.ts"`) no longer exist.
+Importing the script gives you the `Script` object as the default; named imports (`import { tool, run } from "./search.ts"`) no longer exist.
 
 ## Auth
 
@@ -62,11 +63,17 @@ If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPI
 ## Running locally
 
 ```bash
-# Zapier-via-Relay — Zapier Notion connection UUID (recommended)
+# Single-conn — Zapier-via-Relay — Zapier Notion connection UUID (recommended)
 NOTION_ZAPIER_CONNECTION_ID=conn_xxx echo '{"query":"foo"}' | bun scripts/search.ts
 
-# Direct — Notion integration token (fallback)
+# Single-conn — Direct — Notion integration token (fallback)
 NOTION_TOKEN=secret_xxx echo '{"query":"foo"}' | bun scripts/search.ts
+
+# Multi-conn — copy a page between two Zapier-connected workspaces.
+# Per-slot env prefixes route credentials to the right slot (no agent context).
+SOURCE_NOTION_ZAPIER_CONNECTION_ID=conn_src \
+TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
+echo '{"sourcePageId":"...","targetParentPageId":"..."}' | bun scripts/copy-page.ts
 ```
 
 Auth recipe for direct mode: Bearer token in the `Authorization` header. The Notion-Version header is required on every request and pinned in each script (currently `2022-06-28`; bump as needed when API contracts evolve).

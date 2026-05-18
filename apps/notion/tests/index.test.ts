@@ -8,18 +8,18 @@
  *       `import { search } from "@zapier-agent-tools/notion"; search(...)`
  *   - Each bundled script is callable AND carries the full `Script`
  *     property surface (`tool`, `inputSchema`, `outputSchema`,
- *     `securitySchemes`, `execute`, `resolveConnection`).
+ *     `connections`, `run`, `resolveContext`).
  *   - The default object's keys match the named exports (no drift).
- *   - The default-callable form delegates to `script.execute(input,
- *     process.env)` — auto-discriminating against the env bag the same
- *     way the explicit `.execute` path does.
+ *   - The default-callable form delegates to `script.run(context, input)`
+ *     after building the context from `process.env` — auto-discriminating
+ *     against the env bag the same way the explicit path does.
  *
- * Per-script HTTP-shape coverage stays in `tests/search.test.ts` and
- * `tests/create-database-item.test.ts`; this file only covers the bundle
- * wiring.
+ * Per-script HTTP-shape coverage stays in `tests/search.test.ts`,
+ * `tests/create-database-item.test.ts`, and `tests/copy-page.test.ts`;
+ * this file only covers the bundle wiring.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import notion, { search, createDatabaseItem } from "../index.ts";
+import notion, { search, createDatabaseItem, copyPage } from "../index.ts";
 
 const ORIGINAL_FETCH = globalThis.fetch;
 const ORIGINAL_NOTION_TOKEN = process.env.NOTION_TOKEN;
@@ -44,38 +44,45 @@ afterEach(() => {
 describe("bundle: shape", () => {
   it("default export's keys match the named exports", () => {
     expect(Object.keys(notion).sort()).toEqual(
-      ["createDatabaseItem", "search"].sort(),
+      ["copyPage", "createDatabaseItem", "search"].sort(),
     );
     expect(notion.search).toBe(search);
     expect(notion.createDatabaseItem).toBe(createDatabaseItem);
+    expect(notion.copyPage).toBe(copyPage);
   });
 
   it("each bundled script is callable AND carries the full Script surface", () => {
-    for (const script of [notion.search, notion.createDatabaseItem]) {
+    for (const script of [
+      notion.search,
+      notion.createDatabaseItem,
+      notion.copyPage,
+    ]) {
       expect(typeof script).toBe("function");
-      expect(typeof script.execute).toBe("function");
-      expect(typeof script.resolveConnection).toBe("function");
+      expect(typeof script.run).toBe("function");
+      expect(typeof script.resolveContext).toBe("function");
       expect(script.tool).toBeDefined();
       expect(typeof script.tool.name).toBe("string");
       expect(script.inputSchema).toBeDefined();
       expect(script.outputSchema).toBeDefined();
-      expect(script.securitySchemes).toBeDefined();
+      expect(script.connections).toBeDefined();
     }
   });
 
   it("preserves each script's literal `tool.name`", () => {
     expect(notion.search.tool.name).toBe("search");
     expect(notion.createDatabaseItem.tool.name).toBe("create_database_item");
+    expect(notion.copyPage.tool.name).toBe("copy_page");
   });
 });
 
 describe("bundle: callable form (the ticket's example)", () => {
   beforeEach(() => {
-    // Each callable invocation walks `script.securitySchemes` against
-    // `process.env`. Both Notion scripts declare `apiKey: ["NOTION_TOKEN"]`,
-    // and `appKey: "notion"` synthesizes a `zapier` scheme keyed off
+    // Each callable invocation walks `script.connections.default.securitySchemes`
+    // against the env bag. Both Notion single-conn scripts declare an
+    // `apiKey` scheme reading `NOTION_TOKEN` plus the framework-synthesized
+    // `zapier` scheme (from `zapier: "notion"`) reading
     // `NOTION_ZAPIER_CONNECTION_ID`. Exposing only `NOTION_TOKEN` keeps the
-    // test path predictable (apiKey wins).
+    // test path predictable (apiKey wins by insertion order).
     process.env.NOTION_TOKEN = "secret_test_token";
   });
 
@@ -117,7 +124,7 @@ describe("bundle: callable form (the ticket's example)", () => {
     expect(a).toEqual(b);
   });
 
-  it("`script(input, connection)` honors an explicit Connection (overrides process.env)", async () => {
+  it("`script(input, { connection })` honors an explicit ConnectionValue (overrides process.env)", async () => {
     let capturedAuth: string | undefined;
     globalThis.fetch = (async (_url: string, init?: RequestInit) => {
       capturedAuth = (init?.headers as Record<string, string>)?.Authorization;
@@ -130,13 +137,13 @@ describe("bundle: callable form (the ticket's example)", () => {
 
     await notion.search(
       { query: "x" },
-      { apiKey: { NOTION_TOKEN: "explicit-override-token" } },
+      { connection: { apiKey: { NOTION_TOKEN: "explicit-override-token" } } },
     );
 
     expect(capturedAuth).toBe("Bearer explicit-override-token");
   });
 
-  it("`script(input)` and `script.execute(input, process.env)` produce the same result", async () => {
+  it("`script(input)` and `script.run(await resolveContext({ connection: process.env }), input)` produce the same result", async () => {
     globalThis.fetch = (async () =>
       jsonResponse({
         results: [{ id: "same" }],
@@ -145,10 +152,10 @@ describe("bundle: callable form (the ticket's example)", () => {
       })) as typeof globalThis.fetch;
 
     const callable = await notion.search({ query: "same" });
-    const explicit = await notion.search.execute(
-      { query: "same" },
-      process.env,
-    );
+    const context = await notion.search.resolveContext({
+      connection: process.env,
+    });
+    const explicit = await notion.search.run(context, { query: "same" });
     expect(callable).toEqual(explicit);
   });
 });

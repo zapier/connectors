@@ -2,7 +2,6 @@ import { z } from "zod";
 import { defineTool, runCli, type BuildFetch } from "@zapier/skills";
 
 const script = defineTool({
-  appKey: "notion",
   name: "search",
   title: "Search Notion",
   description:
@@ -52,22 +51,25 @@ const script = defineTool({
       label: "Search the connected Notion workspace",
     },
   ],
-  securitySchemes: {
-    apiKey: {
-      env: ["NOTION_TOKEN"],
-      buildFetch: (({ NOTION_TOKEN }) =>
-        (url, init = {}) =>
-          globalThis.fetch(url, {
-            ...init,
-            headers: {
-              ...(init?.headers ?? {}),
-              Authorization: `Bearer ${NOTION_TOKEN}`,
-            },
-          })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
+  connection: {
+    zapier: "notion",
+    securitySchemes: {
+      apiKey: {
+        env: ["NOTION_TOKEN"],
+        buildFetch: (({ NOTION_TOKEN }) =>
+          (url, init = {}) =>
+            globalThis.fetch(url, {
+              ...init,
+              headers: {
+                ...(init?.headers ?? {}),
+                Authorization: `Bearer ${NOTION_TOKEN}`,
+              },
+            })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
+      },
     },
   },
-  execute: async (input, fetch) => {
-    const res = await fetch("https://api.notion.com/v1/search", {
+  run: async (ctx, input) => {
+    const res = await ctx.fetch("https://api.notion.com/v1/search", {
       method: "POST",
       headers: {
         "Notion-Version": "2022-06-28",
