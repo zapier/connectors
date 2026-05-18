@@ -14,12 +14,12 @@ metadata:
 
 Tools for searching a Notion workspace and creating new rows (pages) inside a Notion database, against the [Notion REST API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`).
 
-## When to use this skill
+## When to use this connector
 
 - An agent needs to find existing Notion pages or databases by name / content.
 - An agent needs to add a row to a Notion database the user has already chosen.
 
-For broader Notion operations (page-block manipulation, comment threads, user / workspace admin), follow the same shape — drop new `scripts/<tool>.ts` files in this skill or create adjacent skills.
+For broader Notion operations (page-block manipulation, comment threads, user / workspace admin), follow the same shape — drop new `scripts/<tool>.ts` files in this connector or create adjacent connectors.
 
 ## Scripts
 
@@ -29,7 +29,7 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`default`)          | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.                                                                                              | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
 | [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example — each slot declares `zapier: "notion"` plus a BYO `apiKey` scheme independently. | No                                                                                                                |
 
-Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/zapier-skills/README.md#authoring-shape) from `@zapier/skills` bundles the script's surface into a single `Script` object whose fields consumers reach for by dot-access. (The default export is conventionally named after the script's filename, hence `search` / `createDatabaseItem` / `copyPage`; the snippets below use the generic name `script` for brevity.)
+Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/connectors-sdk/README.md#authoring-shape) from `@zapier/connectors-sdk` bundles the script's surface into a single `Script` object whose fields consumers reach for by dot-access. (The default export is conventionally named after the script's filename, hence `search` / `createDatabaseItem` / `copyPage`; the snippets below use the generic name `script` for brevity.)
 
 - `script` itself is **callable** — `await script(input)` runs the tool against `process.env` (defaulting `callerConfig` to `{ connection: process.env }` for single-conn; per-slot env-prefix partitioning for multi-conn).
 - `script.inputSchema` (Zod) — source of truth for the input contract.

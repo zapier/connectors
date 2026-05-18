@@ -1,6 +1,6 @@
 {
   "skill_name": "notion",
-  "description": "Representative eval cases for the Notion skill — baseline tasks the no-skill condition typically fails on. Run per the agentskills.io eval methodology (https://agentskills.io/skill-creation/evaluating-skills), e.g. via the skill-creator skill (https://github.com/anthropics/skills/tree/main/skills/skill-creator). Each assertion is graded by an LLM judge from the run transcript.",
+  "description": "Representative eval cases for the Notion connector — baseline tasks the without_skill condition typically fails on. Run per the agentskills.io eval methodology (https://agentskills.io/skill-creation/evaluating-skills), e.g. via the skill-creator skill (https://github.com/anthropics/skills/tree/main/skills/skill-creator). Each assertion is graded by an LLM judge from the run transcript.",
   "evals": [
     {
       "id": "search-by-title",
@@ -21,7 +21,7 @@
         "The agent invokes `create_database_item` exactly once after a successful resolution — no speculative retries with the bare name.",
         "The `databaseId` argument is a Notion UUID (hyphenated 8-4-4-4-12 or unhyphenated 32-hex), not a bare name like `Projects`.",
         "The `properties.Title` value is `{ title: [{ text: { content: \"Website redesign\" } }] }` — not a bare string, not `{ rich_text: [...] }`.",
-        "The `properties.Status` value is `{ select: { name: \"In progress\" } }` — not a bare string. (Note: if the target database's Status column is Notion's newer `status` type, the agent should detect the schema and use `{ status: { name: ... } }` instead. The skill should look up the schema before guessing the type.)",
+        "The `properties.Status` value is `{ select: { name: \"In progress\" } }` — not a bare string. (Note: if the target database's Status column is Notion's newer `status` type, the agent should detect the schema and use `{ status: { name: ... } }` instead. The connector should look up the schema before guessing the type.)",
         "If `search` returns zero results for `Projects`, the agent attributes the failure to 'database not shared with the integration' (per `references/notion-api-gotchas.md`), not 'database does not exist'."
       ]
     }
