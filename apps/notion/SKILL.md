@@ -8,6 +8,7 @@ metadata:
     - "^App212303CLIAPI"
     - "^NotionCLIAPI"
     - "^NotionAPI"
+  api-docs: https://developers.notion.com/reference/intro
 ---
 
 # Notion
