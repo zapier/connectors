@@ -57,15 +57,8 @@ describe("search: inputSchema", () => {
 
 describe("search: governance", () => {
   it("flags read-only search and allow-statement URL guard", () => {
-    expect(search.tool.annotations?.readOnlyHint).toBe(true);
-    const statements = (
-      search.tool._meta as {
-        "zapier:statements"?: ReadonlyArray<{
-          effect: string;
-          resources: string[];
-        }>;
-      }
-    )?.["zapier:statements"];
+    expect(search.annotations?.readOnlyHint).toBe(true);
+    const statements = search.statements;
     expect(statements?.[0]?.effect).toBe("allow");
     expect(statements?.[0]?.resources).toContain("http");
   });
