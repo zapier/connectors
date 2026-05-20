@@ -14,7 +14,7 @@ const notionApiKeyScheme = {
       })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
 };
 
-const script = defineTool({
+const definition = defineTool({
   name: "copy_page",
   title: "Copy a Notion page between workspaces",
   description:
@@ -113,6 +113,6 @@ const script = defineTool({
   },
 });
 
-export default script;
+export default definition;
 
-await runCli(import.meta, script);
+await runCli(import.meta, definition);
