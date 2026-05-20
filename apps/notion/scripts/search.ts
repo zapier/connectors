@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { defineTool, runCli, type BuildFetch } from "@zapier/connectors-sdk";
+import {
+  defineTool,
+  handleIfScriptMain,
+  type BuildFetch,
+} from "@zapier/connectors-sdk";
 
 const definition = defineTool({
   name: "search",
@@ -91,4 +95,4 @@ const definition = defineTool({
 
 export default definition;
 
-await runCli(import.meta, definition);
+await handleIfScriptMain(import.meta, definition);
