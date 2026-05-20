@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { defineTool, runCli, type BuildFetch } from "@zapier/connectors-sdk";
 
-const script = defineTool({
+const definition = defineTool({
   name: "search",
   title: "Search Notion",
   description:
@@ -89,6 +89,6 @@ const script = defineTool({
   },
 });
 
-export default script;
+export default definition;
 
-await runCli(import.meta, script);
+await runCli(import.meta, definition);

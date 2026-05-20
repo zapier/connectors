@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { defineTool, runCli, type BuildFetch } from "@zapier/connectors-sdk";
 
-const script = defineTool({
+const definition = defineTool({
   name: "create_database_item",
   title: "Create row in a Notion database",
   description:
@@ -110,6 +110,6 @@ const script = defineTool({
   },
 });
 
-export default script;
+export default definition;
 
-await runCli(import.meta, script);
+await runCli(import.meta, definition);
