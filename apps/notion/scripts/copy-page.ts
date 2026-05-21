@@ -1,9 +1,9 @@
-import { z } from "zod";
 import {
+  type BuildFetch,
   defineTool,
   handleIfScriptMain,
-  type BuildFetch,
 } from "@zapier/connectors-sdk";
+import { z } from "zod";
 
 const notionApiKeyScheme = {
   env: ["NOTION_TOKEN"] as const,

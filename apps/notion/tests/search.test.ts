@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import searchDefinition from "../scripts/search.ts";
 
 const { inputSchema, outputSchema } = searchDefinition;

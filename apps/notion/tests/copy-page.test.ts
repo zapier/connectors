@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import copyPageDefinition from "../scripts/copy-page.ts";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
