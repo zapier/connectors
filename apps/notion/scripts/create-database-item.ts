@@ -1,9 +1,9 @@
-import { z } from "zod";
 import {
+  type BuildFetch,
   defineTool,
   handleIfScriptMain,
-  type BuildFetch,
 } from "@zapier/connectors-sdk";
+import { z } from "zod";
 
 const definition = defineTool({
   name: "create_database_item",

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import createDatabaseItemDefinition from "../scripts/create-database-item.ts";
 
 const { inputSchema, outputSchema, inputDependencies, statements } =
