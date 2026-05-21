@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import createDatabaseItem from "../scripts/create-database-item.ts";
+import createDatabaseItemDefinition from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema } = createDatabaseItem;
-const inputDependencies = createDatabaseItem.inputDependencies!;
+const { inputSchema, outputSchema } = createDatabaseItemDefinition;
+const inputDependencies = createDatabaseItemDefinition.inputDependencies!;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
 
@@ -60,8 +60,10 @@ describe("create-database-item: inputDependencies", () => {
 
 describe("create-database-item: governance", () => {
   it("requires ask-before-write and mirrors inputDependencies on the wire descriptor", () => {
-    expect(createDatabaseItem.statements?.[0]?.effect).toBe("ask");
-    expect(createDatabaseItem.inputDependencies).toBe(inputDependencies);
+    expect(createDatabaseItemDefinition.statements?.[0]?.effect).toBe("ask");
+    expect(createDatabaseItemDefinition.inputDependencies).toBe(
+      inputDependencies,
+    );
   });
 });
 
@@ -84,7 +86,7 @@ describe("create-database-item: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await createDatabaseItem.run(
+    const result = await createDatabaseItemDefinition.run(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: {
@@ -132,7 +134,7 @@ describe("create-database-item: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    await createDatabaseItem.run(
+    await createDatabaseItemDefinition.run(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: { Title: { title: [{ text: { content: "x" } }] } },
@@ -157,7 +159,7 @@ describe("create-database-item: run", () => {
       )) as typeof globalThis.fetch;
 
     await expect(
-      createDatabaseItem.run(
+      createDatabaseItemDefinition.run(
         {
           databaseId: PROJECTS_DB_UUID,
           properties: { Title: { title: [{ text: { content: "x" } }] } },

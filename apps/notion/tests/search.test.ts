@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import search from "../scripts/search.ts";
+import searchDefinition from "../scripts/search.ts";
 
-const { inputSchema, outputSchema } = search;
+const { inputSchema, outputSchema } = searchDefinition;
 
 function jsonResponse(
   body: unknown,
@@ -57,8 +57,8 @@ describe("search: inputSchema", () => {
 
 describe("search: governance", () => {
   it("flags read-only search and allow-statement URL guard", () => {
-    expect(search.annotations?.readOnlyHint).toBe(true);
-    const statements = search.statements;
+    expect(searchDefinition.annotations?.readOnlyHint).toBe(true);
+    const statements = searchDefinition.statements;
     expect(statements?.[0]?.effect).toBe("allow");
     expect(statements?.[0]?.resources).toContain("http");
   });
@@ -79,7 +79,7 @@ describe("search: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await search.run(
+    const result = await searchDefinition.run(
       { query: "Q4 planning" },
       { connection: fakeFetch },
     );
@@ -105,7 +105,7 @@ describe("search: run", () => {
       return jsonResponse({ results: [], has_more: false, next_cursor: null });
     }) as typeof globalThis.fetch;
 
-    await search.run({ query: "x" }, { connection: fakeFetch });
+    await searchDefinition.run({ query: "x" }, { connection: fakeFetch });
 
     const headers = calls[0]?.init?.headers as Record<string, string>;
     expect(headers["Notion-Version"]).toBe("2022-06-28");
@@ -120,7 +120,7 @@ describe("search: run", () => {
       )) as typeof globalThis.fetch;
 
     await expect(
-      search.run({ query: "x" }, { connection: fakeFetch }),
+      searchDefinition.run({ query: "x" }, { connection: fakeFetch }),
     ).rejects.toThrow(/Notion search 400/);
   });
 });

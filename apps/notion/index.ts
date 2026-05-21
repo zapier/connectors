@@ -1,12 +1,13 @@
 import { defineConnector, toFunctions } from "@zapier/connectors-sdk";
-import searchScript from "./scripts/search.ts";
-import createDatabaseItemScript from "./scripts/create-database-item.ts";
-import copyPageScript from "./scripts/copy-page.ts";
+
+import searchDefinition from "./scripts/search.ts";
+import createDatabaseItemDefinition from "./scripts/create-database-item.ts";
+import copyPageDefinition from "./scripts/copy-page.ts";
 
 const connector = defineConnector({
-  search: searchScript,
-  createDatabaseItem: createDatabaseItemScript,
-  copyPage: copyPageScript,
+  search: searchDefinition,
+  createDatabaseItem: createDatabaseItemDefinition,
+  copyPage: copyPageDefinition,
 });
 
 export default connector;
