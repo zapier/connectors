@@ -35,8 +35,9 @@ Each script's body is one `export default defineTool({...})` — the [`defineToo
 - **Run** — `await search.run(input, { connection: ... })` or `await search.run(input, { connections: ... })`. In-code imports must pass explicit `RunOptions` (no `process.env` default inside `defineTool`).
 - **CLI** — run the script file or connector bin; `handleIfScriptMain` / `runDispatchCli` build opts from `process.env` via `buildRunOptionsFromEnv`.
 - `definition.inputSchema` / `definition.outputSchema` (Zod) — source of truth for contracts.
-- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — build the MCP registration surface shape via `notion.toMcpTool(definition)` on the default connector import.
-- `definition.statements` / `definition.inputDependencies` — policy and dependent-fields metadata for `_meta` when composing MCP tools.
+- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — build the MCP registration surface shape via `notion.toMcpServerTool(definition)` (modern `McpServer.registerTool`) or `notion.toMcpTool(definition)` (wire-format `Tool` descriptor for the deprecated `Server` flow) on the default connector import.
+- `definition.statements` — Zapier policy metadata for in-process governance consumers (not published over the wire).
+- `definition.inputDependencies` — dependent-fields metadata published via `_meta["zapier:inputDependencies"]` by both `toMcpTool` and `toMcpServerTool`.
 - `notion.buildRunOptionsFromEnv(definition.connections, env)` — partition env into `{ connection }` / `{ connections }` for long-running consumers.
 - `definition.connections` — resolved slots map (`zapier` slug, `securitySchemes`, `envPrefix` per slot).
 
@@ -72,6 +73,12 @@ NOTION_TOKEN=secret_xxx echo '{"query":"foo"}' | bun scripts/search.ts
 SOURCE_NOTION_ZAPIER_CONNECTION_ID=conn_src \
 TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
 echo '{"sourcePageId":"...","targetParentPageId":"..."}' | bun scripts/copy-page.ts
+
+# Boot the whole connector as a local MCP server over stdio.
+# Same `RunOptions` resolution as the per-script CLI; drop the stanza into
+# Claude Desktop / Cursor / Claude Code / Codex to expose every script as a
+# native MCP tool. See examples/local-mcp-server/ for the client configs.
+NOTION_TOKEN=secret_xxx npx @zapier/notion-connector mcp
 ```
 
 Auth recipe for direct mode: Bearer token in the `Authorization` header. The Notion-Version header is required on every request and pinned in each script (currently `2022-06-28`; bump as needed when API contracts evolve).
