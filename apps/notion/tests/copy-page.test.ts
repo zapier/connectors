@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import copyPage from "../scripts/copy-page.ts";
+import copyPageDefinition from "../scripts/copy-page.ts";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;
@@ -38,7 +38,7 @@ describe("copy-page: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await copyPage.run(
+    const result = await copyPageDefinition.run(
       {
         sourcePageId: "src-page-uuid",
         targetParentPageId: "tgt-parent-uuid",

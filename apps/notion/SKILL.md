@@ -30,14 +30,14 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`default`)          | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.                                                                                              | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
 | [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example — each slot declares `zapier: "notion"` plus a BYO `apiKey` scheme independently. | No                                                                                                                |
 
-Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/connectors-sdk/README.md#authoring-shape) returns a **`ToolDefinition`** object (`kind: "tool"`, schemas, `connections`, …). Consumer invoke is `definition.run(input, opts?)`.
+Each script's body is one `export default defineTool({...})` — the [`defineTool` helper](../../packages/connectors-sdk/README.md#authoring-shape) returns a **`ToolDefinition`** object (`kind: "tool"`, schemas, `connections`, …). Consumer run is `definition.run(input, opts?)`.
 
-- **Run** — `await search.run(input, { connection: ... })` or `await search.run(input, { connections: ... })`. In-code imports must pass explicit `ExecuteOptions` (no `process.env` default inside `defineTool`).
-- **CLI** — run the script file or connector bin; `handleIfScriptMain` / `runDispatchCli` build opts from `process.env` via `buildExecuteOptionsFromEnv`.
+- **Run** — `await search.run(input, { connection: ... })` or `await search.run(input, { connections: ... })`. In-code imports must pass explicit `RunOptions` (no `process.env` default inside `defineTool`).
+- **CLI** — run the script file or connector bin; `handleIfScriptMain` / `runDispatchCli` build opts from `process.env` via `buildRunOptionsFromEnv`.
 - `definition.inputSchema` / `definition.outputSchema` (Zod) — source of truth for contracts.
 - `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — compose MCP wire `Tool` descriptors via `notion.toMcpTool(definition)` on the default connector import.
 - `definition.statements` / `definition.inputDependencies` — policy and dependent-fields metadata for `_meta` when composing MCP tools.
-- `notion.buildExecuteOptionsFromEnv(definition.connections, env)` — partition env into `{ connection }` / `{ connections }` for long-running consumers.
+- `notion.buildRunOptionsFromEnv(definition.connections, env)` — partition env into `{ connection }` / `{ connections }` for long-running consumers.
 - `definition.connections` — resolved slots map (`zapier` slug, `securitySchemes`, `envPrefix` per slot).
 
 ## Auth
