@@ -16,7 +16,14 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "optionalDependencies": {
-    "@zapier/connectors-sdk": "^0.1.0",
+    "@zapier/connectors-sdk": "^0.1.0"
+  },
+  "peerDependencies": {
     "@zapier/zapier-sdk": "^0.48.0"
+  },
+  "peerDependenciesMeta": {
+    "@zapier/zapier-sdk": {
+      "optional": true
+    }
   }
 }
