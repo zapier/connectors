@@ -35,7 +35,7 @@ Each script's body is one `export default defineTool({...})` — the [`defineToo
 - **Run** — `await search.run(input, { connection: ... })` or `await search.run(input, { connections: ... })`. In-code imports must pass explicit `RunOptions` (no `process.env` default inside `defineTool`).
 - **CLI** — run the script file or connector bin; `handleIfScriptMain` / `runDispatchCli` build opts from `process.env` via `buildRunOptionsFromEnv`.
 - `definition.inputSchema` / `definition.outputSchema` (Zod) — source of truth for contracts.
-- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — compose MCP wire `Tool` descriptors via `notion.toMcpTool(definition)` on the default connector import.
+- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — build the MCP registration surface shape via `notion.toMcpTool(definition)` on the default connector import.
 - `definition.statements` / `definition.inputDependencies` — policy and dependent-fields metadata for `_meta` when composing MCP tools.
 - `notion.buildRunOptionsFromEnv(definition.connections, env)` — partition env into `{ connection }` / `{ connections }` for long-running consumers.
 - `definition.connections` — resolved slots map (`zapier` slug, `securitySchemes`, `envPrefix` per slot).

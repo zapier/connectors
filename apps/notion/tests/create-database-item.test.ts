@@ -59,7 +59,7 @@ describe("create-database-item: inputDependencies", () => {
 });
 
 describe("create-database-item: governance", () => {
-  it("requires ask-before-write and mirrors inputDependencies on the wire descriptor", () => {
+  it("requires ask-before-write and mirrors inputDependencies on the MCP surface shape", () => {
     expect(statements?.[0]?.effect).toBe("ask");
     expect(createDatabaseItemDefinition.inputDependencies).toBe(
       inputDependencies,
