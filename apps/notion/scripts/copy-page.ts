@@ -71,7 +71,7 @@ const definition = defineTool({
       securitySchemes: { apiKey: notionApiKeyScheme },
     },
   },
-  run: async (ctx, input) => {
+  run: async (input, ctx) => {
     const readRes = await ctx.connections.source(
       `https://api.notion.com/v1/pages/${input.sourcePageId}`,
       {
