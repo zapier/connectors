@@ -1,12 +1,13 @@
-import { buildExecuteOptionsFromEnv, toMcpTool } from "@zapier/connectors-sdk";
-import search from "./scripts/search.ts";
-import createDatabaseItem from "./scripts/create-database-item.ts";
-import copyPage from "./scripts/copy-page.ts";
+import { defineConnector, toFunctions } from "@zapier/connectors-sdk";
+import searchScript from "./scripts/search.ts";
+import createDatabaseItemScript from "./scripts/create-database-item.ts";
+import copyPageScript from "./scripts/copy-page.ts";
 
-export { search, createDatabaseItem, copyPage };
+const connector = defineConnector({
+  search: searchScript,
+  createDatabaseItem: createDatabaseItemScript,
+  copyPage: copyPageScript,
+});
 
-export default {
-  scripts: { search, createDatabaseItem, copyPage },
-  toMcpTool,
-  buildExecuteOptionsFromEnv,
-};
+export default connector;
+export const { search, createDatabaseItem, copyPage } = toFunctions(connector);
