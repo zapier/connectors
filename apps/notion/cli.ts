@@ -2,4 +2,4 @@
 import { runDispatchCli } from "@zapier/connectors-sdk";
 import bundle from "./index.ts";
 
-await runDispatchCli(import.meta, bundle);
+await runDispatchCli(import.meta, bundle.scripts);
