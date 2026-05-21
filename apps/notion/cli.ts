@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --experimental-strip-types
 import { runDispatchCli } from "@zapier/connectors-sdk";
-import bundle from "./index.ts";
+import connector from "./index.ts";
 
-await runDispatchCli(import.meta, bundle.scripts);
+await runDispatchCli(import.meta, connector.scripts);

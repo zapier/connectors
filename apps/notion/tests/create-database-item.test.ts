@@ -84,7 +84,7 @@ describe("create-database-item: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await createDatabaseItem(
+    const result = await createDatabaseItem.run(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: {
@@ -132,7 +132,7 @@ describe("create-database-item: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    await createDatabaseItem(
+    await createDatabaseItem.run(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: { Title: { title: [{ text: { content: "x" } }] } },
@@ -157,7 +157,7 @@ describe("create-database-item: run", () => {
       )) as typeof globalThis.fetch;
 
     await expect(
-      createDatabaseItem(
+      createDatabaseItem.run(
         {
           databaseId: PROJECTS_DB_UUID,
           properties: { Title: { title: [{ text: { content: "x" } }] } },
