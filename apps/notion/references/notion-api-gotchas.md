@@ -102,7 +102,7 @@ Status codes used: `400` validation, `401` auth, `403` permission, `404` not fou
 
 ## API version pinning
 
-The `Notion-Version` header is required on every request. Each script's `run(ctx, input)` pins `2022-06-28` — the stable version with the longest deprecation window. Newer versions exist (e.g. `2025-09-03` adds the data-source concept) but introduce breaking changes around databases / data sources. Pin per script, bump deliberately.
+The `Notion-Version` header is required on every request. Each script's `run(input, ctx)` pins `2022-06-28` — the stable version with the longest deprecation window. Newer versions exist (e.g. `2025-09-03` adds the data-source concept) but introduce breaking changes around databases / data sources. Pin per script, bump deliberately.
 
 ## Rate limits
 

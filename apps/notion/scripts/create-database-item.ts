@@ -85,7 +85,7 @@ const definition = defineTool({
       },
     },
   },
-  run: async (ctx, input) => {
+  run: async (input, ctx) => {
     const body = {
       parent: { type: "database_id" as const, database_id: input.databaseId },
       properties: input.properties,

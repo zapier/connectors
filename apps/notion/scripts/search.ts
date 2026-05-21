@@ -72,7 +72,7 @@ const definition = defineTool({
       },
     },
   },
-  run: async (ctx, input) => {
+  run: async (input, ctx) => {
     const res = await ctx.fetch("https://api.notion.com/v1/search", {
       method: "POST",
       headers: {
