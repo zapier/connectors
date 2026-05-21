@@ -35,9 +35,9 @@ Each script's body is one `export default defineTool({...})` — the [`defineToo
 - **Run** — `await search(input, { connection: ... })` or `await search(input, { connections: ... })`. In-code imports must pass explicit `ExecuteOptions` (no `process.env` default inside `defineTool`).
 - **CLI** — run the script file or connector bin; `handleIfScriptMain` / `runDispatchCli` build opts from `process.env` via `buildExecuteOptionsFromEnv`.
 - `definition.inputSchema` / `definition.outputSchema` (Zod) — source of truth for contracts.
-- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — compose MCP wire `Tool` descriptors via `toMcpTool` from `@zapier/connectors-sdk` (re-exported on `@zapier/notion-connector`).
+- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — compose MCP wire `Tool` descriptors via `notion.toMcpTool(definition)` on the default connector import.
 - `definition.statements` / `definition.inputDependencies` — policy and dependent-fields metadata for `_meta` when composing MCP tools.
-- `buildExecuteOptionsFromEnv(definition.connections, env)` — partition env into `{ connection }` / `{ connections }` for long-running consumers.
+- `notion.buildExecuteOptionsFromEnv(definition.connections, env)` — partition env into `{ connection }` / `{ connections }` for long-running consumers.
 - `definition.connections` — resolved slots map (`zapier` slug, `securitySchemes`, `envPrefix` per slot).
 
 ## Auth
