@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import createDatabaseItemDefinition from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema } = createDatabaseItemDefinition;
-const inputDependencies = createDatabaseItemDefinition.inputDependencies!;
+const { inputSchema, outputSchema, inputDependencies, statements } =
+  createDatabaseItemDefinition;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
 
@@ -60,7 +60,7 @@ describe("create-database-item: inputDependencies", () => {
 
 describe("create-database-item: governance", () => {
   it("requires ask-before-write and mirrors inputDependencies on the wire descriptor", () => {
-    expect(createDatabaseItemDefinition.statements?.[0]?.effect).toBe("ask");
+    expect(statements?.[0]?.effect).toBe("ask");
     expect(createDatabaseItemDefinition.inputDependencies).toBe(
       inputDependencies,
     );
