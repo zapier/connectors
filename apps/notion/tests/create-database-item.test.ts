@@ -95,7 +95,7 @@ describe("create-database-item: run", () => {
           Status: { select: { name: "In progress" } },
         },
       },
-      { connection: fakeFetch },
+      { fetch: fakeFetch },
     );
 
     expect(calls).toHaveLength(1);
@@ -140,7 +140,7 @@ describe("create-database-item: run", () => {
         databaseId: PROJECTS_DB_UUID,
         properties: { Title: { title: [{ text: { content: "x" } }] } },
       },
-      { connection: fakeFetch },
+      { fetch: fakeFetch },
     );
 
     const headers = calls[0]?.init?.headers as Record<string, string>;
@@ -165,7 +165,7 @@ describe("create-database-item: run", () => {
           databaseId: PROJECTS_DB_UUID,
           properties: { Title: { title: [{ text: { content: "x" } }] } },
         },
-        { connection: fakeFetch },
+        { fetch: fakeFetch },
       ),
     ).rejects.toThrow(/Notion create_database_item 400/);
   });

@@ -1,9 +1,7 @@
-import {
-  type BuildFetch,
-  defineTool,
-  handleIfScriptMain,
-} from "@zapier/connectors-sdk";
+import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
+
+import { connectionResolvers } from "../connections.ts";
 
 const definition = defineTool({
   name: "create_database_item",
@@ -68,23 +66,7 @@ const definition = defineTool({
       fromArgs: { databaseId: "$databaseId" },
     },
   } as const,
-  connection: {
-    zapier: "notion",
-    securitySchemes: {
-      apiKey: {
-        env: ["NOTION_TOKEN"],
-        buildFetch: (({ NOTION_TOKEN }) =>
-          (url, init = {}) =>
-            globalThis.fetch(url, {
-              ...init,
-              headers: {
-                ...(init?.headers ?? {}),
-                Authorization: `Bearer ${NOTION_TOKEN}`,
-              },
-            })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
-      },
-    },
-  },
+  connection: "notion",
   run: async (input, ctx) => {
     const body = {
       parent: { type: "database_id" as const, database_id: input.databaseId },
@@ -116,4 +98,6 @@ const definition = defineTool({
 
 export default definition;
 
-await handleIfScriptMain(import.meta, definition);
+await handleIfScriptMain(import.meta, definition, {
+  connectionResolvers,
+});

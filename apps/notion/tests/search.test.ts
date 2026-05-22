@@ -82,7 +82,7 @@ describe("search: run", () => {
 
     const result = await searchDefinition.run(
       { query: "Q4 planning" },
-      { connection: fakeFetch },
+      { fetch: fakeFetch },
     );
 
     expect(calls).toHaveLength(1);
@@ -106,7 +106,7 @@ describe("search: run", () => {
       return jsonResponse({ results: [], has_more: false, next_cursor: null });
     }) as typeof globalThis.fetch;
 
-    await searchDefinition.run({ query: "x" }, { connection: fakeFetch });
+    await searchDefinition.run({ query: "x" }, { fetch: fakeFetch });
 
     const headers = calls[0]?.init?.headers as Record<string, string>;
     expect(headers["Notion-Version"]).toBe("2022-06-28");
@@ -121,7 +121,7 @@ describe("search: run", () => {
       )) as typeof globalThis.fetch;
 
     await expect(
-      searchDefinition.run({ query: "x" }, { connection: fakeFetch }),
+      searchDefinition.run({ query: "x" }, { fetch: fakeFetch }),
     ).rejects.toThrow(/Notion search 400/);
   });
 });

@@ -1,22 +1,7 @@
-import {
-  type BuildFetch,
-  defineTool,
-  handleIfScriptMain,
-} from "@zapier/connectors-sdk";
+import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
-const notionApiKeyScheme = {
-  env: ["NOTION_TOKEN"] as const,
-  buildFetch: (({ NOTION_TOKEN }) =>
-    (url, init = {}) =>
-      globalThis.fetch(url, {
-        ...init,
-        headers: {
-          ...(init?.headers ?? {}),
-          Authorization: `Bearer ${NOTION_TOKEN}`,
-        },
-      })) satisfies BuildFetch<{ NOTION_TOKEN: string }>,
-};
+import { connectionResolvers } from "../connections.ts";
 
 const definition = defineTool({
   name: "copy_page",
@@ -61,16 +46,7 @@ const definition = defineTool({
       label: "Copy a Notion page across workspaces",
     },
   ],
-  connections: {
-    source: {
-      zapier: "notion",
-      securitySchemes: { apiKey: notionApiKeyScheme },
-    },
-    target: {
-      zapier: "notion",
-      securitySchemes: { apiKey: notionApiKeyScheme },
-    },
-  },
+  connections: { source: "notion", target: "notion" },
   run: async (input, ctx) => {
     const readRes = await ctx.connections.source(
       `https://api.notion.com/v1/pages/${input.sourcePageId}`,
@@ -119,4 +95,6 @@ const definition = defineTool({
 
 export default definition;
 
-await handleIfScriptMain(import.meta, definition);
+await handleIfScriptMain(import.meta, definition, {
+  connectionResolvers,
+});
