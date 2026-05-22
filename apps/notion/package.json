@@ -17,7 +17,7 @@
     "@zapier/connectors-sdk": "*"
   },
   "peerDependencies": {
-    "@zapier/zapier-sdk": "^0.48.0"
+    "@zapier/zapier-sdk": "^0.59.0"
   },
   "peerDependenciesMeta": {
     "@zapier/zapier-sdk": {
