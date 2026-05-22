@@ -20,18 +20,20 @@ const definition = defineTool({
         "Key/value map of property values for the new row. Keys are the database's property names (NOT API field keys — Notion's UI labels). Values follow the Notion property-value shape for the property's type (text → { rich_text: [{ text: { content }}] }, number → { number }, select → { select: { name } }, etc.). The exact property shape depends on the chosen database's schema.",
       ),
   }),
-  outputSchema: z.object({
-    object: z.literal("page"),
-    id: z.string(),
-    created_time: z.string(),
-    last_edited_time: z.string(),
-    parent: z.object({
-      type: z.literal("database_id"),
-      database_id: z.string(),
-    }),
-    properties: z.record(z.string(), z.unknown()),
-    url: z.string(),
-  }),
+  outputSchema: z
+    .object({
+      object: z.literal("page"),
+      id: z.string(),
+      created_time: z.string(),
+      last_edited_time: z.string(),
+      parent: z.object({
+        type: z.literal("database_id"),
+        database_id: z.string(),
+      }),
+      properties: z.record(z.string(), z.unknown()),
+      url: z.string(),
+    })
+    .loose(),
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
