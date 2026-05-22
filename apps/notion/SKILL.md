@@ -1,13 +1,10 @@
 ---
 name: notion
-description: Search Notion workspaces and create rows in Notion databases. Best practices for working with the Notion REST API — block-based content model, typed property schemas, parent shapes, pagination.
+description: Search Notion pages and databases, create rows in Notion databases, and copy pages between Notion workspaces — three tools wrapping the Notion REST API. Use when the user wants to read or write Notion content. If the user mentions Notion or asks to find, add, or duplicate pages or databases, use this connector.
 license: MIT
 metadata:
+  source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
   zapier-app-key: NotionCLIAPI
-  app-patterns:
-    - "^App212303CLIAPI"
-    - "^NotionCLIAPI"
-    - "^NotionAPI"
   api-docs: https://developers.notion.com/reference/intro
 ---
 
@@ -20,7 +17,7 @@ Tools for searching a Notion workspace and creating new rows (pages) inside a No
 - An agent needs to find existing Notion pages or databases by name / content.
 - An agent needs to add a row to a Notion database the user has already chosen.
 
-For broader Notion operations (page-block manipulation, comment threads, user / workspace admin), follow the same shape — drop new `scripts/<tool>.ts` files in this connector or create adjacent connectors.
+For broader Notion operations (page-block manipulation, comment threads, user / workspace admin), use this skill as a **recipe** to generate custom code — see [Use as a recipe](#3-use-as-a-recipe) below. The shipped skill may be installed read-only or in a sandbox where the agent can't add new files to `scripts/`, so don't assume new scripts can be persisted in place; generate code in the agent's own working area and link it back to this skill via the source comment.
 
 ## Scripts
 
@@ -30,74 +27,75 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`connection: "notion"`)        | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.             | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
 | [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target` → `notion`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example. | No                                                                                                                |
 
-Each script's body is one `export default defineTool({...})` referencing the connection key `"notion"`. The connector's `index.ts` attaches the connection's resolvers via [`defineConnector({ scripts, connectionResolvers })`](../../packages/connectors-sdk/README.md#authoring-shape); each script file separately attaches the same resolvers via `handleIfScriptMain(import.meta, definition, { connectionResolvers })` for direct script execution. Consumer run on the wrapped scripts is `definition.run(input, opts: RunOptions)`.
-
-- **Run** — `await search(input, { connection: ... })` (programmatic) or via the connector bin (`npx @zapier/notion-connector run search '{...}'`). Programmatic runs must pass explicit `RunOptions`.
-- **CLI** — credentials are env-only (no CLI flags); `handleIfScriptMain` / `runDispatchCli` build opts from `process.env` via `buildRunOptionsFromEnv`.
-- `definition.inputSchema` / `definition.outputSchema` (Zod) — source of truth for contracts.
-- `definition.name`, `definition.title`, `definition.description`, `definition.annotations` — build the MCP registration surface shape via `notion.toMcpServerTool(definition)` (modern `McpServer.registerTool`) or `notion.toMcpTool(definition)` (wire-format `Tool` descriptor for the deprecated `Server` flow) on the default connector import.
-- `definition.statements` — Zapier policy metadata for in-process governance consumers (not published over the wire).
-- `definition.inputDependencies` — dependent-fields metadata published via `_meta["zapier:inputDependencies"]` by both `toMcpTool` and `toMcpServerTool`.
-- `notion.buildRunOptionsFromEnv(definition, env)` — build `RunOptions` from env for long-running consumers.
-- `definition.connection` / `definition.connections` — connection key string(s) referenced by the script.
+Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract. To introspect the input contract without reading the source, run `--help` on either entrypoint — `bun scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — both render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. `createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
 
 ## Auth
 
-The connection key `"notion"` is registered with two resolvers in [`connections.ts`](connections.ts), tried in order: Zapier-via-Relay first (recommended), then a direct bearer token (fallback for users who don't want a Zapier account). Operators set credentials as **environment variables only** — argv leaks through shell history, `ps`, audit logs, and CI runner echo, so the CLI takes no credential flags.
+The script needs one of two credentials, passed via environment variable (no CLI flags). Prefer the Zapier connection ID; fall back to the direct Notion token if the user doesn't want a Zapier account.
 
-- **`NOTION_ZAPIER_CONNECTION_ID`** _(recommended; resolver name `zapier-connection-id`)_ — a Zapier Notion connection UUID. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; the connection then covers their entire Notion workspace without per-resource sharing. The script only ever sees the UUID; the Notion credential itself stays on Zapier's side, so no third-party secret enters the agent's environment or shell history. Revocation / audit / scoping happens at the Zapier-connection level.
+- **`NOTION_ZAPIER_CONNECTION_ID`** _(recommended)_ — a Zapier Notion connection ID. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; that one connection then covers their entire Notion workspace without per-resource sharing.
 
-  **Finding the UUID.** The Zapier connections UI doesn't currently expose connection UUIDs (planned change). Use the `zapier-sdk` CLI — single command, no ad-hoc scripting:
-  1. Check whether the host already has the CLI: `which zapier-sdk`. If missing, install it once host-wide: `npm i -g @zapier/zapier-sdk-cli`.
-  2. Check whether the CLI is already authenticated: `zapier-sdk get-profile`. If not, authenticate once host-wide (not per-app): `zapier-sdk login`.
-  3. `zapier-sdk list-connections --search notion` — prints `title (UUID)` per matching connection. The `[app]` positional also accepts an exact app key (`NotionCLIAPI`) for a tighter filter, but `--search` is safer when the exact key isn't known. Add `--json` for machine-readable output. If the user has multiple Notion connections (different workspaces), the agent should list the titles and ask which one to use.
-  4. **If the connection is shared with the user** (e.g. an org-wide team connection), the default `list-connections` call hides it. Opt in explicitly with both flags: `zapier-sdk --can-include-shared-connections list-connections --search notion --include-shared`. Don't auto-retry with this on if the first call returns empty — the SDK gates this deliberately; ask the user first.
+  **Finding the connection ID.** The Zapier connections UI doesn't currently expose connection IDs, so use the Zapier SDK CLI:
+  1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
+  2. `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` — prints `title (connection ID)` per matching connection. Use `NotionCLIAPI` exactly (the canonical Zapier app key for Notion). Add `--json` for machine-readable output. If the user has multiple Notion connections (different workspaces), list the titles and ask which one to use.
+  3. **If the connection is shared with the user** (e.g. an org-wide team connection), the default `list-connections` call hides it. Opt in explicitly with both flags: `npx @zapier/zapier-sdk-cli --can-include-shared-connections list-connections NotionCLIAPI --include-shared`. Don't auto-retry with this on if the first call returns empty — ask the user first.
 
-- **`NOTION_TOKEN`** _(fallback; resolver name `token`, default of `defineBearerTokenResolver()`)_ — a Notion integration token from <https://www.notion.so/profile/integrations>. **Prerequisite: only the Notion account the user already has.** The user creates the integration, then shares each page or database with it manually via Notion's UI (Connections menu) before the agent can access that resource. The raw token lives in the environment where the script runs.
+- **`NOTION_TOKEN`** _(fallback)_ — a Notion integration token from <https://www.notion.so/profile/integrations>. **Prerequisite: only the Notion account the user already has.** The user creates the integration, then shares each page or database with it manually via Notion's UI (Connections menu) before the agent can access that resource.
 
-For the multi-connection `copy_page` script, prefix env vars with the slot name: `SOURCE_NOTION_ZAPIER_CONNECTION_ID`, `TARGET_NOTION_TOKEN`, etc. — the wrapper composes `<SLOT>_<CONNECTION_KEY>_<RESOLVER_NAME>` automatically. Run `<bin> <script> --help` (or `<script> --help`) to see the exact env vars the script consumes.
+For the multi-connection `copy_page` script, prefix env vars with the slot name: `SOURCE_NOTION_ZAPIER_CONNECTION_ID`, `TARGET_NOTION_TOKEN`, etc. Run `<script> --help` to see the exact env vars the script consumes.
 
 If the user mentions they don't have a Zapier account, surface signup as a real option alongside the `NOTION_TOKEN` path rather than silently falling back — the ~1-minute signup is comparable to the per-page-sharing dance the `NOTION_TOKEN` path requires for any workspace with more than a handful of pages.
 
 If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPIER_CONNECTION_ID.`
 
-## Running locally
+## Using this skill
+
+Three ways to invoke the tools, in order of preference once the skill is installed.
+
+### 1. Execute scripts directly
+
+When the agent has shell access to the skill's installed directory, run a script file straight from `scripts/`:
 
 ```bash
-# Single-conn — Zapier-via-Relay — Zapier Notion connection UUID (recommended)
-NOTION_ZAPIER_CONNECTION_ID=conn_xxx node --experimental-strip-types scripts/search.ts '{"query":"foo"}'
+# Single-conn — Zapier connection (recommended)
+NOTION_ZAPIER_CONNECTION_ID=conn_xxx bun scripts/search.ts '{"query":"foo"}'
 
-# Single-conn — Direct — Notion integration token (fallback)
-NOTION_TOKEN=secret_xxx node --experimental-strip-types scripts/search.ts '{"query":"foo"}'
+# Single-conn — direct Notion integration token
+NOTION_TOKEN=secret_xxx bun scripts/search.ts '{"query":"foo"}'
 
-# Multi-conn — copy a page between two Zapier-connected workspaces.
-# Per-slot env prefixes route credentials to the right slot (no agent context).
+# Multi-conn — copy a page between two Zapier-connected workspaces
 SOURCE_NOTION_ZAPIER_CONNECTION_ID=conn_src \
 TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
-node --experimental-strip-types scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}'
+bun scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}'
 
-# Per-script `--help` lists the exact required env vars per slot/resolver:
-node --experimental-strip-types scripts/copy-page.ts --help
-
-# Boot the whole connector as a local MCP server over stdio.
-# Same `RunOptions` resolution as the per-script CLI; drop the stanza into
-# Claude Desktop / Cursor / Claude Code / Codex to expose every script as a
-# native MCP tool. See examples/local-mcp-server/ for the client configs.
-NOTION_TOKEN=secret_xxx npx @zapier/notion-connector mcp
+# Per-script `--help` lists the exact env vars per slot / resolver
+bun scripts/copy-page.ts --help
 ```
 
-Auth recipe for direct mode: Bearer token in the `Authorization` header. The Notion-Version header is required on every request and pinned in each script (currently `2022-06-28`; bump as needed when API contracts evolve).
+**Bun is the primary runner** — it executes TypeScript natively and auto-installs `package.json` deps on first run, so a freshly-installed skill works without a separate `npm install` step. **Fallback for environments without bun:** Node + tsx (`npm install && npx tsx scripts/search.ts '{"query":"foo"}'`). Both run the same source unchanged.
+
+### 2. Use the package's CLI
+
+```bash
+NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"foo"}'
+npx @zapier/notion-connector --help                    # all scripts
+npx @zapier/notion-connector run search --help         # per-script env vars
+```
+
+The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. **Caveat:** not every agent harness allows arbitrary `npx` invocations — sandboxed runtimes may block network fetches or process spawns. If `npx` is unavailable, fall back to (1).
+
+### 3. Use as a recipe
+
+When no shipped script matches the use case, or one needs to be tweaked, the agent can read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code.
+
+Each script's body is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"notion"`; the connector's `index.ts` attaches the connection's resolvers via `defineConnector({ scripts, connectionResolvers })`. Imitate that shape: Zod input/output schemas, `(input, ctx) => …` `run` body, app-specific auth via [`connections.ts`](connections.ts). The auth recipe for direct mode is just a Bearer token in the `Authorization` header plus the required `Notion-Version` header (pinned to `2022-06-28` in each script — bump as the API evolves).
+
+If the generated code is persisted (committed, saved to a notebook, dropped into a code-Zap, …), include a comment pointing back to this skill's source so a future agent can re-fetch the canonical recipe when the code needs fixing or re-grounding:
+
+```ts
+// Source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
+```
 
 ## API quirks worth knowing
 
 See [`references/notion-api-gotchas.md`](references/notion-api-gotchas.md) for the durable per-app knowledge agents have surfaced — UUID extraction from URLs, parent-type shapes, rich-text array structure, pagination cursors, database-sharing-with-integration requirement.
-
-## Eval cases
-
-See [`evals/evals.json`](evals/evals.json) — representative tasks + assertions per the [agentskills.io eval methodology](https://agentskills.io/skill-creation/evaluating-skills). Run them with the repo-level harness (see [`EVALUATING.md`](../../EVALUATING.md)):
-
-```bash
-ANTHROPIC_API_KEY=… NOTION_ZAPIER_CONNECTION_ID=… npm run evals -- apps/notion
-```
-
-Notion-specific fixture: a real workspace with a `Q4 planning` page and a `Projects` database (Title + Status-select schema, including an `In progress` option), both reachable through the Zapier connection (or, in direct mode, both shared with the integration that owns `NOTION_TOKEN`).
