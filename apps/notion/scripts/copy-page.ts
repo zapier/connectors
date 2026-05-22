@@ -20,11 +20,13 @@ const definition = defineTool({
         "UUID of the page in the target workspace to create the copy under. Notion requires every page to have either a page or database parent.",
       ),
   }),
-  outputSchema: z.object({
-    object: z.literal("page"),
-    id: z.string(),
-    url: z.string(),
-  }),
+  outputSchema: z
+    .object({
+      object: z.literal("page"),
+      id: z.string(),
+      url: z.string(),
+    })
+    .loose(),
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,

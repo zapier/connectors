@@ -40,6 +40,7 @@ npx skills zapier/connectors --skill notion
 
 Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, Codex, …) to auto-discover the connector's tools over stdio:
 
+<!-- prettier-ignore -->
 ```jsonc
 // claude_desktop_config.json or .cursor/mcp.json
 {
@@ -48,10 +49,10 @@ Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, Cod
       "command": "npx",
       "args": ["@zapier/notion-connector", "mcp"],
       "env": {
-        "NOTION_ZAPIER_CONNECTION_ID": "<connection-id>",
-      },
-    },
-  },
+        "NOTION_ZAPIER_CONNECTION_ID": "<connection-id>"
+      }
+    }
+  }
 }
 ```
 
