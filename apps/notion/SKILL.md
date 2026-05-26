@@ -73,7 +73,7 @@ TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
 ./scripts/copy-page.ts --help
 ```
 
-**Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory** so the connector's deps resolve. Node 22.18+ strips TypeScript natively (the shebang flag is a no-op on that line and an enabler on older 22.6–22.17 installs).
+**Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory** so the connector's deps resolve. Node 22.18+ strips TypeScript natively, so the shebang stays minimal (`#!/usr/bin/env node`) — no extra flag needed, which also keeps it parseable under BusyBox's `env` on Alpine-based agent harnesses.
 
 **Equivalent forms — pin the runtime explicitly when needed:**
 
