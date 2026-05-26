@@ -26,6 +26,18 @@ npx @zapier/notion-connector run search --help   # per-script env vars
 
 Credentials are **environment-variable only** — `npx @zapier/notion-connector` never reads secrets from argv (which would leak through shell history, `ps`, audit logs, and CI runner echoes). Replace `NOTION_TOKEN` with `NOTION_ZAPIER_CONNECTION_ID=<id>` to route through Zapier-via-Relay; see [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
+Once the package is on disk (after `npm install`, `npx skills …` install, or a `git clone`), every script in `scripts/` is also **directly executable** via its shebang — no `npx` round-trip:
+
+```bash
+NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"Q4"}'
+
+# Equivalent forms when you want to pin the runtime
+NOTION_TOKEN=secret_xxx node scripts/search.ts '{"query":"Q4"}'
+NOTION_TOKEN=secret_xxx bun  scripts/search.ts '{"query":"Q4"}'
+```
+
+Requires Node.js 22.18+ or Bun 1.x on `PATH`. See [`SKILL.md`](SKILL.md#1-execute-scripts-directly) for the full per-script invocation block.
+
 ### 2. As an [Agent Skill](https://agentskills.io/)
 
 If your agent supports the [Agent Skills](https://agentskills.io/) standard, install the connector as a skill in one command:

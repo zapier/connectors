@@ -1,3 +1,4 @@
+#!/usr/bin/env -S node --experimental-strip-types
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

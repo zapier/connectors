@@ -2,6 +2,7 @@
 name: notion
 description: Search Notion pages and databases, create rows in Notion databases, and copy pages between Notion workspaces — three tools wrapping the Notion REST API. Use when the user wants to read or write Notion content. If the user mentions Notion or asks to find, add, or duplicate pages or databases, use this connector.
 license: MIT
+compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
   source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
   zapier-app-key: NotionCLIAPI
@@ -27,7 +28,7 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`connection: "notion"`)        | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.             | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
 | [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target` → `notion`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example. | No                                                                                                                |
 
-Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract. To introspect the input contract without reading the source, run `--help` on either entrypoint — `bun scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — both render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. `createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
+Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract. To introspect the input contract without reading the source, run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — both render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. `createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
 
 ## Auth
 
@@ -54,25 +55,37 @@ Three ways to invoke the tools, in order of preference once the skill is install
 
 ### 1. Execute scripts directly
 
-When the agent has shell access to the skill's installed directory, run a script file straight from `scripts/`:
+When the agent has shell access to the skill's installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang, so it's invoked like any other executable:
 
 ```bash
 # Single-conn — Zapier connection (recommended)
-NOTION_ZAPIER_CONNECTION_ID=conn_xxx bun scripts/search.ts '{"query":"foo"}'
+NOTION_ZAPIER_CONNECTION_ID=conn_xxx ./scripts/search.ts '{"query":"foo"}'
 
 # Single-conn — direct Notion integration token
-NOTION_TOKEN=secret_xxx bun scripts/search.ts '{"query":"foo"}'
+NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"foo"}'
 
 # Multi-conn — copy a page between two Zapier-connected workspaces
 SOURCE_NOTION_ZAPIER_CONNECTION_ID=conn_src \
 TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
-bun scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}'
+./scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}'
 
 # Per-script `--help` lists the exact env vars per slot / resolver
-bun scripts/copy-page.ts --help
+./scripts/copy-page.ts --help
 ```
 
-**Bun is the primary runner** — it executes TypeScript natively and auto-installs `package.json` deps on first run, so a freshly-installed skill works without a separate `npm install` step. **Fallback for environments without bun:** Node + tsx (`npm install && npx tsx scripts/search.ts '{"query":"foo"}'`). Both run the same source unchanged.
+**Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory** so the connector's deps resolve. Node 22.18+ strips TypeScript natively (the shebang flag is a no-op on that line and an enabler on older 22.6–22.17 installs).
+
+**Equivalent forms — pin the runtime explicitly when needed:**
+
+```bash
+# Node — explicit interpreter (ignores the shebang)
+NOTION_ZAPIER_CONNECTION_ID=conn_xxx node scripts/search.ts '{"query":"foo"}'
+
+# Bun — Bun ignores the Node-targeted shebang and runs the same source
+NOTION_ZAPIER_CONNECTION_ID=conn_xxx bun  scripts/search.ts '{"query":"foo"}'
+```
+
+All three forms run the same script body unchanged — only the I/O wrapper differs.
 
 ### 2. Use the package's CLI
 
