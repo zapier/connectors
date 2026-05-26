@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
