@@ -27,13 +27,11 @@ const definition = defineTool({
     page_size: z.number().int().min(1).max(100).optional(),
     start_cursor: z.string().optional(),
   }),
-  outputSchema: z
-    .object({
-      results: z.array(z.unknown()),
-      next_cursor: z.string().nullable().optional(),
-      has_more: z.boolean().optional(),
-    })
-    .loose(),
+  outputSchema: z.object({
+    results: z.array(z.unknown()),
+    next_cursor: z.string().nullable().optional(),
+    has_more: z.boolean().optional(),
+  }),
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,
