@@ -1,0 +1,29 @@
+{
+  "skill_name": "notion",
+  "description": "Representative eval cases for the Notion connector — baseline tasks the without_skill condition typically fails on. Run per the agentskills.io eval methodology (https://agentskills.io/skill-creation/evaluating-skills), e.g. via the skill-creator skill (https://github.com/anthropics/skills/tree/main/skills/skill-creator). Each assertion is graded by an LLM judge from the run transcript.",
+  "evals": [
+    {
+      "id": "search-by-title",
+      "prompt": "Find the Notion page called 'Q4 planning' in my workspace.",
+      "expected_output": "The agent calls the `search` tool with `query: \"Q4 planning\"` and returns the matching page (title, URL, and Notion page UUID). Requires a workspace containing a page titled 'Q4 planning' shared with the integration.",
+      "assertions": [
+        "The agent calls the `search` tool exactly once — no hallucinated `list_pages`, `notion_search`, or `pages.list`, and no redundant retries.",
+        "The `query` argument is the verbatim string `Q4 planning` — the agent does not preemptively narrow with quotes, exact-match filters, or other operators.",
+        "The agent's reply surfaces the matched page's Notion UUID (not just the title), since downstream tools need it."
+      ]
+    },
+    {
+      "id": "create-row-with-unknown-database-schema",
+      "prompt": "Add a row to my 'Projects' database with status 'In progress' and title 'Website redesign'.",
+      "expected_output": "The agent first calls `search` to resolve the 'Projects' database UUID, then calls `create_database_item` with that UUID and `properties` shaped according to Notion's typed schema. A new row appears in the Projects database with title 'Website redesign' and status 'In progress'. Requires a workspace containing a database named 'Projects' with at least a Title property and a Status select property that includes an 'In progress' option, shared with the integration.",
+      "assertions": [
+        "The agent calls `search` at least once before any `create_database_item` call — it does not hardcode or guess the database UUID.",
+        "The agent calls `create_database_item` exactly once after a successful resolution — no speculative retries with the bare name.",
+        "The `databaseId` argument is a Notion UUID (hyphenated 8-4-4-4-12 or unhyphenated 32-hex), not a bare name like `Projects`.",
+        "The `properties.Title` value is `{ title: [{ text: { content: \"Website redesign\" } }] }` — not a bare string, not `{ rich_text: [...] }`.",
+        "The `properties.Status` value is `{ select: { name: \"In progress\" } }` — not a bare string. (Note: if the target database's Status column is Notion's newer `status` type, the agent should detect the schema and use `{ status: { name: ... } }` instead. The connector should look up the schema before guessing the type.)",
+        "If `search` returns zero results for `Projects`, the agent attributes the failure to 'database not shared with the integration' (per `references/notion-api-gotchas.md`), not 'database does not exist'."
+      ]
+    }
+  ]
+}
