@@ -1,7 +1,7 @@
 {
   "name": "@zapier/notion-connector",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0-experimental.0",
   "description": "Agent-callable tools for Notion — search and database-item creation against the Notion REST API.",
   "license": "MIT",
   "type": "module",
