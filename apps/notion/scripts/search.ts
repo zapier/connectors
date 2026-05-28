@@ -38,22 +38,6 @@ const definition = defineTool({
     idempotentHint: true,
     openWorldHint: true,
   },
-  statements: [
-    {
-      effect: "allow",
-      permissions: ["can_execute"],
-      resources: ["http"],
-      conditions: [
-        { path: ["method"], operator: "equals", value: "POST" },
-        {
-          path: ["url"],
-          operator: "matches_url",
-          value: "https://api.notion.com/v1/search",
-        },
-      ],
-      label: "Search the connected Notion workspace",
-    },
-  ],
   connection: "notion",
   run: async (input, ctx) => {
     const res = await ctx.fetch("https://api.notion.com/v1/search", {

@@ -39,22 +39,6 @@ const definition = defineTool({
     idempotentHint: false,
     openWorldHint: true,
   },
-  statements: [
-    {
-      effect: "ask",
-      permissions: ["can_execute"],
-      resources: ["http"],
-      conditions: [
-        { path: ["method"], operator: "equals", value: "POST" },
-        {
-          path: ["url"],
-          operator: "matches_url",
-          value: "https://api.notion.com/v1/pages",
-        },
-      ],
-      label: "Create a new row in a Notion database",
-    },
-  ],
   inputDependencies: {
     databaseId: {
       kind: "options",
