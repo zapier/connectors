@@ -1,5 +1,8 @@
 # @zapier/notion-connector
 
+> [!NOTE]
+> **For human readers only — agents should skip this note.** This package is experimental and published for internal testing; APIs may change between minor versions without notice.
+
 Search Notion workspaces, create rows in Notion databases, and copy pages between workspaces — three agent-callable tools wrapping the [Notion REST API](https://developers.notion.com/reference/intro). Auth is delegated to a Zapier connection (recommended; no third-party secret enters the agent's environment) or to a Notion integration token (fallback).
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.

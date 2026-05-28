@@ -1,9 +1,8 @@
 {
   "name": "@zapier/notion-connector",
-  "private": true,
   "version": "0.1.0-experimental.0",
   "description": "Agent-callable tools for Notion — search and database-item creation against the Notion REST API.",
-  "license": "MIT",
+  "license": "Elastic-2.0",
   "type": "module",
   "exports": {
     ".": "./index.ts"
@@ -11,6 +10,14 @@
   "bin": {
     "@zapier/notion-connector": "./cli.ts"
   },
+  "files": [
+    "*.ts",
+    "scripts/",
+    "references/",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -23,5 +30,13 @@
     "@zapier/zapier-sdk": {
       "optional": true
     }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/notion"
   }
 }
