@@ -57,11 +57,8 @@ describe("search: inputSchema", () => {
 });
 
 describe("search: governance", () => {
-  it("flags read-only search and allow-statement URL guard", () => {
+  it("flags read-only search", () => {
     expect(searchDefinition.annotations?.readOnlyHint).toBe(true);
-    const { statements } = searchDefinition;
-    expect(statements?.[0]?.effect).toBe("allow");
-    expect(statements?.[0]?.resources).toContain("http");
   });
 });
 

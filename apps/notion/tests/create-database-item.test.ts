@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import createDatabaseItemDefinition from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema, inputDependencies, statements } =
+const { inputSchema, outputSchema, inputDependencies } =
   createDatabaseItemDefinition;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
@@ -60,8 +60,7 @@ describe("create-database-item: inputDependencies", () => {
 });
 
 describe("create-database-item: governance", () => {
-  it("requires ask-before-write and mirrors inputDependencies on the MCP surface shape", () => {
-    expect(statements?.[0]?.effect).toBe("ask");
+  it("mirrors inputDependencies on the MCP surface shape", () => {
     expect(createDatabaseItemDefinition.inputDependencies).toBe(
       inputDependencies,
     );

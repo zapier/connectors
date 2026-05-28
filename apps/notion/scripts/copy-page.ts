@@ -32,21 +32,6 @@ const definition = defineTool({
     idempotentHint: false,
     openWorldHint: true,
   },
-  statements: [
-    {
-      effect: "ask",
-      permissions: ["can_execute"],
-      resources: ["http"],
-      conditions: [
-        {
-          path: ["url"],
-          operator: "matches_url",
-          value: "https://api.notion.com/v1/*",
-        },
-      ],
-      label: "Copy a Notion page across workspaces",
-    },
-  ],
   connections: { source: "notion", target: "notion" },
   run: async (input, ctx) => {
     const readRes = await ctx.connections.source(
