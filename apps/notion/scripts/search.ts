@@ -68,11 +68,7 @@ const definition = defineTool({
       const errBody = await res.text();
       throw new Error(`Notion search ${res.status}: ${errBody}`);
     }
-    return res.json() as Promise<{
-      results: unknown[];
-      next_cursor?: string | null;
-      has_more?: boolean;
-    }>;
+    return res.json();
   },
 });
 
