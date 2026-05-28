@@ -85,15 +85,7 @@ const definition = defineTool({
       const errBody = await res.text();
       throw new Error(`Notion create_database_item ${res.status}: ${errBody}`);
     }
-    return res.json() as Promise<{
-      object: "page";
-      id: string;
-      created_time: string;
-      last_edited_time: string;
-      parent: { type: "database_id"; database_id: string };
-      properties: Record<string, unknown>;
-      url: string;
-    }>;
+    return res.json();
   },
 });
 

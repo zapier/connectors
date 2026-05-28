@@ -86,11 +86,7 @@ const definition = defineTool({
         `Notion copy_page (target) ${createRes.status}: ${errBody}`,
       );
     }
-    return createRes.json() as Promise<{
-      object: "page";
-      id: string;
-      url: string;
-    }>;
+    return createRes.json();
   },
 });
 
