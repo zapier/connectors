@@ -53,19 +53,23 @@ If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPI
 
 ### 0. Pre-flight — check how to run here first
 
-Before invoking anything, run the bundled pre-flight check to find out whether this harness can execute the scripts locally and which auth path its network allows:
+Run the bundled pre-flight check **once** at the start of a session to learn how to execute the scripts in this harness, then run scripts directly — don't re-run it before every call:
 
 ```bash
 ./preflight.sh https://api.notion.com
 ```
 
-It is **re-runnable**: act on its verdict, then run it again until it reports a terminal verdict. Read **`PREFLIGHT_STATUS`** first — it's the single verdict token (`READY` / `NEEDS_ACTION` / `ESCALATE` / `DEFER` / `USAGE`). The other `PREFLIGHT_*` lines are token-first too (e.g. `PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked`); `PREFLIGHT_RECOMMENDATION` is the human next step. By exit code:
+Passing the API host lets it measure the direct (`NOTION_TOKEN`) path; `api.zapier.com` is always probed too as the with-Zapier path and an egress canary. It is **re-runnable**: act on the `PREFLIGHT_RECOMMENDATION` and re-run until it reports a terminal verdict. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION` / `ESCALATE` / `DEFER` / `USAGE`). The other `PREFLIGHT_*` lines are token-first too (e.g. `PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked`); `PREFLIGHT_RECOMMENDATION` is the human next step.
+
+**When to re-run** — otherwise reuse the prior result, which is already in your context: (a) you changed the environment (installed a runtime or dependencies), (b) a script fails with a network / module / runtime error (re-run to diagnose and recover), or (c) you're in a fresh session with no remembered result. A failing script is itself the signal to re-check; don't gate every call on the pre-flight.
+
+By exit code:
 
 - **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Use whichever auth path is marked `ok`: `PREFLIGHT_LOCAL_WITH_ZAPIER` (use `NOTION_ZAPIER_CONNECTION_ID`) or `PREFLIGHT_LOCAL_WITHOUT_ZAPIER` (use `NOTION_TOKEN`). If one is `blocked`, just use the other — local execution works, so there's no need for the remote MCP. **Before using the with-Zapier path, check `PREFLIGHT_WITH_ZAPIER_SDK`:** if it's `missing`, the optional peer `@zapier/zapier-sdk` isn't installed (plain `npm install` skips optional peers) — run `npm install @zapier/zapier-sdk` first, or just use the `NOTION_TOKEN` path, which needs no extra install.
 - **Exit `3` (`NEEDS_ACTION`)** — perform the single action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then re-run `./preflight.sh https://api.notion.com`.
-- **Exit `4` (`ESCALATE`)** — a path is marked `proxied`: the runtime's own `fetch` is blocked here, but the host is reachable outside this sandbox's default egress (the connector calls APIs via Node/Bun `fetch`, which ignores proxy env vars). If your harness can run with elevated/outside-the-sandbox network access — e.g. ask the user to approve egress, or re-run the script outside the sandbox — do that and execute normally. If it can't, treat it like `DEFER` and use the remote MCP config the script prints.
-- **Exit `1` (`DEFER`)** — this sandbox can't reach `api.zapier.com` or `api.notion.com` at all (no domain allow-listing, and not even via a proxy). Don't execute the scripts here; recommend the user configure Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. The script prints a ready-to-paste config.
-- **Exit `2` (`USAGE`)** — pass `https://api.notion.com` as the first argument.
+- **Exit `4` (`ESCALATE`)** — no confirmed local path. Either a path is `proxied` (the runtime's own `fetch` is blocked here, but the host is reachable outside this sandbox's default egress — the connector calls APIs via Node/Bun `fetch`, which ignores proxy env vars), or the API host couldn't be measured and the canary shows restricted egress. If your harness can run with elevated/outside-the-sandbox network — e.g. ask the user to approve egress, or re-run outside the sandbox — do that and execute normally; otherwise treat it like `DEFER` and use the remote MCP the script names.
+- **Exit `1` (`DEFER`)** — both measured hosts are blocked (not even via a proxy). Don't execute here; recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side.
+- **Exit `2` (`USAGE`)** — the optional host argument wasn't a URL; pass `https://api.notion.com` (or omit it).
 
 The three invocation paths below all assume the pre-flight reported `READY` (or `ESCALATE` with the network escalation applied).
 

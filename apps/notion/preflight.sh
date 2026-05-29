@@ -26,16 +26,30 @@
 #   requires curl/wget/node/bun/npm — a missing tool degrades to the next probe.
 #
 # USAGE
-#   ./preflight.sh <api-host>
-#     <api-host>  the connector's upstream API base (e.g. https://api.example.com)
-#                 (the SKILL.md "Step 0" section names the exact host to pass).
+#   ./preflight.sh [api-host]
+#     [api-host]  OPTIONAL. The connector's upstream API base
+#                 (e.g. https://api.example.com). When given, its reachability
+#                 is measured directly (precise without-Zapier verdict). When
+#                 omitted — connectors that span multiple apps or take the host
+#                 from input can't name one fixed host — the without-Zapier path
+#                 is inferred from the api.zapier.com canary instead of measured.
+#
+# WHY api.zapier.com is ALWAYS probed
+#   It is the host the with-Zapier path needs, AND a canary for "is egress
+#   restricted here at all". The inference is one-way: if even api.zapier.com is
+#   proxied/blocked, egress is restricted, so the API host is probably blocked
+#   too → lean to the remote MCP. But a reachable canary does NOT prove an
+#   arbitrary API host is reachable (a sandbox may allow-list zapier.com only),
+#   so we never turn a canary `ok` into a measured `without-Zapier: ok` — when
+#   the host wasn't probed we say `untested` and tell the agent to try it and
+#   fall back to the MCP only if the call actually fails.
 #
 # OUTPUT (machine-parseable lines an agent can grep). Every value starts with a
 # STABLE TOKEN (parse it with `KEY: (\w+)`); any human gloss follows in parens.
 #   PREFLIGHT_STATUS: READY|NEEDS_ACTION|ESCALATE|DEFER|USAGE  (always — the verdict)
 #   PREFLIGHT_RUNNER: node|bun                                (READY/ESCALATE)
 #   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked           (READY/ESCALATE/DEFER)
-#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked        (READY/ESCALATE/DEFER)
+#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked|untested (READY/ESCALATE/DEFER)
 #   PREFLIGHT_WITH_ZAPIER_SDK: installed|missing              (when with-Zapier reachable)
 #   PREFLIGHT_RECOMMENDATION: <one-line human next step>      (always; names the
 #                              remote MCP URL on DEFER/ESCALATE)
@@ -43,16 +57,18 @@
 # Read PREFLIGHT_STATUS first — it's the single verdict. A `proxied` path means
 # the runtime's own fetch can't reach the host, but an external tool (curl/wget,
 # which honour HTTP(S)_PROXY) can — reachable outside this sandbox's default
-# egress, just not by the scripts.
+# egress, just not by the scripts. `untested` means no API host was passed, so
+# that path's reachability is unknown (try it; fall back to the MCP on failure).
 #
 # EXIT CODES
 #   0  READY         at least one local auth path is viable; run the scripts
-#   1  DEFER         no local path possible at all; use the remote MCP
-#   2  USAGE         missing <api-host> argument
+#   1  DEFER         both measured hosts are blocked; use the remote MCP
+#   2  USAGE         the optional api-host argument is not a valid URL
 #   3  NEEDS_ACTION  perform the printed action (install/deps), then re-run
-#   4  ESCALATE      reachable only outside the sandbox's default egress — run
-#                    with elevated/outside-sandbox network if the harness allows,
-#                    otherwise use the remote MCP
+#   4  ESCALATE      no confirmed local path — reachable only outside the
+#                    sandbox's default egress, or the API host couldn't be
+#                    probed. Run with elevated/outside-sandbox network or try
+#                    the scripts; otherwise use the remote MCP
 
 set -u
 
@@ -188,23 +204,51 @@ fmt_path() {
     ok) echo "ok" ;;
     proxied) echo "proxied (reachable outside this sandbox's egress, not by the runtime's fetch)" ;;
     blocked) echo "blocked (unreachable from this sandbox)" ;;
+    untested) echo "untested (no API host passed — reachability unknown; try it, fall back to the MCP on failure)" ;;
     *) echo "unknown (no tool available to test reachability)" ;;
   esac
 }
 
 # ---- 0) Input --------------------------------------------------------------
-if [ -z "$HOST" ]; then
-  echo "PREFLIGHT_STATUS: USAGE"
-  echo "PREFLIGHT_RECOMMENDATION: pass the connector's API host as the first argument — \`./preflight.sh <api-host>\` (see SKILL.md Step 0)."
-  exit "$EXIT_USAGE"
+# The api-host argument is OPTIONAL (see header). If present it must be a URL;
+# garbage is a usage error rather than a host that silently fails every probe.
+RERUN="./preflight.sh"
+if [ -n "$HOST" ]; then
+  case "$HOST" in
+    http://* | https://*) RERUN="./preflight.sh ${HOST}" ;;
+    *)
+      echo "PREFLIGHT_STATUS: USAGE"
+      echo "PREFLIGHT_RECOMMENDATION: the optional API-host argument must be a full URL (e.g. https://api.example.com). Omit it for the canary-only check, or pass a valid host (see SKILL.md Step 0)."
+      exit "$EXIT_USAGE"
+      ;;
+  esac
 fi
 
 # ---- 1) Network first ------------------------------------------------------
-# Cheapest, most decisive signal: if neither auth path's host is reachable, no
-# amount of local install will help — recommend the remote MCP immediately.
-with_zapier=$(probe "$ZAPIER_HOST")   # gates the with-Zapier path (*_ZAPIER_CONNECTION_ID)
-without_zapier=$(probe "$HOST")       # gates the without-Zapier path (*_TOKEN)
+# Always probe the api.zapier.com canary (with-Zapier path + egress signal).
+# Probe the API host too IFF one was passed (precise without-Zapier verdict);
+# otherwise the without-Zapier path is `untested` and inferred from the canary.
+# When both probes run, do them in parallel (canary backgrounded) to halve the
+# worst-case wait — a blocked host burns a full PROBE_TIMEOUT.
+if [ -n "$HOST" ]; then
+  WZ_TMP="${TMPDIR:-/tmp}/preflight.$$"
+  probe "$ZAPIER_HOST" >"$WZ_TMP" &
+  wz_pid=$!
+  without_zapier=$(probe "$HOST")
+  wait "$wz_pid" 2>/dev/null || true
+  # Read with the shell builtin (no external `cat`, which a minimal sandbox may
+  # lack); default to `unknown` if the background probe wrote nothing.
+  with_zapier=unknown
+  [ -s "$WZ_TMP" ] && IFS= read -r with_zapier <"$WZ_TMP"
+  rm -f "$WZ_TMP" 2>/dev/null || true
+else
+  with_zapier=$(probe "$ZAPIER_HOST")
+  without_zapier=untested
+fi
 
+# Defer only when we MEASURED both hosts blocked. With no API host passed the
+# without-Zapier path is untested, so we never claim local execution is
+# impossible — at worst we ESCALATE and let the agent try.
 if [ "$with_zapier" = blocked ] && [ "$without_zapier" = blocked ]; then
   echo "PREFLIGHT_STATUS: DEFER"
   echo "PREFLIGHT_LOCAL_WITH_ZAPIER: $(fmt_path "$with_zapier")"
@@ -221,7 +265,7 @@ elif has bun; then
   runner=bun
 else
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
-  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then re-run \`./preflight.sh ${HOST}\`."
+  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then re-run \`${RERUN}\`."
   exit "$EXIT_NEEDS_ACTION"
 fi
 
@@ -232,24 +276,23 @@ fi
 if [ "$runner" = node ] && [ ! -d "$SCRIPT_DIR/node_modules" ]; then
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
   if has npm; then
-    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
+    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install\` in ${SCRIPT_DIR}, then re-run \`${RERUN}\`."
   else
     # node >= 22.18 ships npm, so a missing npm means it was removed from the
     # Node install. Restore it and install deps in one step (no extra re-run).
-    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
+    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install\` in ${SCRIPT_DIR}, then re-run \`${RERUN}\`."
   fi
   exit "$EXIT_NEEDS_ACTION"
 fi
 
 # ---- 4) Ready or escalate --------------------------------------------------
-# Runtime + deps are in place and we did NOT defer (so the hosts aren't both
-# blocked). Two cases remain:
-#   * at least one path is `ok`           → READY: run the scripts directly.
-#   * no path is `ok`, but one is proxied → ESCALATE: the runtime's fetch is
-#     blocked here, yet the host is reachable outside the sandbox's default
-#     egress. If the harness can run with elevated/outside-sandbox network
-#     (e.g. ask the user to approve egress), proceed that way; otherwise this is
-#     effectively a defer — use the remote MCP.
+# Runtime + deps are in place and we did NOT defer. Cases:
+#   * any path is `ok`  → READY: run the scripts directly.
+#   * otherwise         → ESCALATE: no confirmed local path. Either a path is
+#     `proxied` (reachable outside the sandbox's egress, just not by the
+#     runtime's fetch) or the API host was `untested` and the canary shows
+#     restricted egress. Run with elevated/outside-sandbox network or just try
+#     the scripts; otherwise fall back to the remote MCP.
 if [ "$with_zapier" = ok ] || [ "$without_zapier" = ok ]; then
   verdict=READY
 else
@@ -280,9 +323,21 @@ if [ "$with_zapier" != blocked ] && [ "$with_zapier" != unknown ]; then
 fi
 
 if [ "$verdict" = READY ]; then
-  echo "PREFLIGHT_RECOMMENDATION: run scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`, picking an auth path marked \`ok\` above — with-Zapier (set *_ZAPIER_CONNECTION_ID) or without-Zapier (set *_TOKEN). Before the with-Zapier path, check PREFLIGHT_WITH_ZAPIER_SDK."
+  if [ "$without_zapier" = untested ]; then
+    untested_note=" No API host was passed, so the without-Zapier path (*_TOKEN) is untested — egress is open, so try it; if a call fails with a network error its host is blocked here and you should use the remote MCP at ${REMOTE_MCP}."
+  else
+    untested_note=""
+  fi
+  echo "PREFLIGHT_RECOMMENDATION: run scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`, picking an auth path marked \`ok\` above — with-Zapier (set *_ZAPIER_CONNECTION_ID) or without-Zapier (set *_TOKEN).${untested_note} Before the with-Zapier path, check PREFLIGHT_WITH_ZAPIER_SDK."
   exit "$EXIT_READY"
 fi
 
-echo "PREFLIGHT_RECOMMENDATION: ${runner}'s fetch is blocked in this sandbox, but the host is reachable outside it. If your harness can run with elevated/outside-the-sandbox network (e.g. ask the user to approve egress), run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. Otherwise tell the user to set up a Zapier MCP server at ${REMOTE_MCP}."
+# ESCALATE. Two shapes: a `proxied` path (reachable outside the sandbox's egress
+# → elevate or MCP) vs. a blocked canary with an untested host (egress looks
+# restricted, but the API host wasn't probed → try once, else MCP).
+if [ "$with_zapier" = proxied ] || [ "$without_zapier" = proxied ]; then
+  echo "PREFLIGHT_RECOMMENDATION: a path is reachable only outside this sandbox's default egress (see the \`proxied\` line) — the runtime's own fetch is blocked. If your harness can run with elevated/outside-the-sandbox network (e.g. ask the user to approve egress), run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. Otherwise tell the user to set up a Zapier MCP server at ${REMOTE_MCP}."
+else
+  echo "PREFLIGHT_RECOMMENDATION: the runtime can't reach ${ZAPIER_HOST} from this sandbox, so egress is restricted; the API host wasn't probed and may be blocked too. If you have credentials, try \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\` once — if it fails with a network error, tell the user to set up a Zapier MCP server at ${REMOTE_MCP}."
+fi
 exit "$EXIT_ESCALATE"
