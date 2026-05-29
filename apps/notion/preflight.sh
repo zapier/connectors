@@ -190,11 +190,9 @@ fmt_path() {
 
 print_remote_mcp() {
   echo "PREFLIGHT_REMOTE_MCP: ${REMOTE_MCP}"
-  echo "  Zapier's remote MCP server runs the API call server-side, so this"
-  echo "  sandbox's network restrictions do not apply. To use it, the user should:"
-  echo "    1. Open ${REMOTE_MCP}, create/select an MCP server, and copy its URL."
-  echo "    2. Add it to the MCP client config, for example:"
-  echo "         { \"mcpServers\": { \"zapier\": { \"url\": \"<your ${REMOTE_MCP} server URL>\" } } }"
+  echo "  Runs the API call server-side, so this sandbox's network limits don't"
+  echo "  apply. Tell the user to set up a Zapier MCP server at ${REMOTE_MCP} and"
+  echo "  follow the instructions there to add it."
 }
 
 # ---- 0) Input --------------------------------------------------------------
