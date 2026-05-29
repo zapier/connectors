@@ -5,70 +5,40 @@
 # Every apps/<app>/preflight.sh is a byte-identical copy synced by
 # `pnpm run ensure-connector-assets`. Edit the canonical copy, never the copies.
 #
-# WHAT THIS IS FOR
-#   This script runs inside whatever agent harness installed the connector
-#   (Cursor, Claude Code, Codex, Gemini CLI, Goose, ...) — frequently a minimal,
-#   network-restricted container. It tells the agent, in one of three verdicts,
-#   how to run this connector's scripts here:
+# Runs inside whatever agent harness installed the connector (Cursor, Claude
+# Code, Codex, Gemini CLI, Goose, ...) — often a minimal, network-restricted
+# container — and tells the agent how to run the scripts here, via a re-runnable
+# readiness loop (see EXIT CODES).
 #
-#     * READY        — a runtime + deps + network are in place; run the scripts.
-#     * NEEDS_ACTION — one bootstrap step is missing (e.g. `npm install`); do it
-#                      and re-run this script. The check is re-runnable: loop
-#                      until READY or DEFER.
-#     * DEFER        — the sandbox can't reach the hosts these scripts need, so
-#                      recommend the user use Zapier's remote MCP server instead
-#                      (it executes the API call server-side, bypassing this
-#                      sandbox's network entirely).
+# THE AGENT CONTRACT IS THE STDOUT, NOT THIS HEADER. Agents don't read this file;
+# they run it and parse the `PREFLIGHT_*` lines — each value starts with a stable
+# token (parse as `KEY: (\w+)`), with an optional human gloss in parens, and
+# `PREFLIGHT_RECOMMENDATION` is the one-line next step. SKILL.md "Step 0" is the
+# agent-facing spec; this header is for maintainers of the canonical script.
 #
 # WHY POSIX sh (not bash)
-#   Minimal sandboxes often ship only BusyBox `sh` with no bash. This script is
-#   written to run unchanged under BusyBox sh, dash, and bash, and never hard-
-#   requires curl/wget/node/bun/npm — a missing tool degrades to the next probe.
+#   Minimal sandboxes often ship only BusyBox `sh` with no bash. This script runs
+#   unchanged under BusyBox sh, dash, and bash, and never hard-requires
+#   curl/wget/node/bun/npm — a missing tool degrades to the next probe.
 #
-# USAGE
-#   ./preflight.sh [api-host]
-#     [api-host]  OPTIONAL. The connector's upstream API base
-#                 (e.g. https://api.example.com). When given, its reachability
-#                 is measured directly (precise without-Zapier verdict). When
-#                 omitted — connectors that span multiple apps or take the host
-#                 from input can't name one fixed host — the without-Zapier path
-#                 is inferred from the api.zapier.com canary instead of measured.
+# WHY api.zapier.com is ALWAYS probed (and the api-host arg is optional)
+#   It is the host the with-Zapier path needs AND a canary for "is egress
+#   restricted here at all". Pass an api-host to measure the without-Zapier path
+#   directly; omit it (connectors spanning multiple apps / input-configurable
+#   hosts can't name one fixed host) and that path is reported `untested`. The
+#   inference is ONE-WAY: a proxied/blocked canary means egress is restricted
+#   (lean to the remote MCP), but a reachable canary does NOT prove an arbitrary
+#   API host is reachable (a sandbox may allow-list zapier.com only) — so we
+#   never turn a canary `ok` into a measured `without-Zapier: ok`.
 #
-# WHY api.zapier.com is ALWAYS probed
-#   It is the host the with-Zapier path needs, AND a canary for "is egress
-#   restricted here at all". The inference is one-way: if even api.zapier.com is
-#   proxied/blocked, egress is restricted, so the API host is probably blocked
-#   too → lean to the remote MCP. But a reachable canary does NOT prove an
-#   arbitrary API host is reachable (a sandbox may allow-list zapier.com only),
-#   so we never turn a canary `ok` into a measured `without-Zapier: ok` — when
-#   the host wasn't probed we say `untested` and tell the agent to try it and
-#   fall back to the MCP only if the call actually fails.
-#
-# OUTPUT (machine-parseable lines an agent can grep). Every value starts with a
-# STABLE TOKEN (parse it with `KEY: (\w+)`); any human gloss follows in parens.
-#   PREFLIGHT_STATUS: READY|NEEDS_ACTION|ESCALATE|DEFER|USAGE  (always — the verdict)
-#   PREFLIGHT_RUNNER: node|bun                                (READY/ESCALATE)
-#   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked           (READY/ESCALATE/DEFER)
-#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked|untested (READY/ESCALATE/DEFER)
-#   PREFLIGHT_WITH_ZAPIER_SDK: installed|missing              (when with-Zapier reachable)
-#   PREFLIGHT_RECOMMENDATION: <one-line human next step>      (always; names the
-#                              remote MCP URL on DEFER/ESCALATE)
-#
-# Read PREFLIGHT_STATUS first — it's the single verdict. A `proxied` path means
-# the runtime's own fetch can't reach the host, but an external tool (curl/wget,
-# which honour HTTP(S)_PROXY) can — reachable outside this sandbox's default
-# egress, just not by the scripts. `untested` means no API host was passed, so
-# that path's reachability is unknown (try it; fall back to the MCP on failure).
-#
-# EXIT CODES
-#   0  READY         at least one local auth path is viable; run the scripts
-#   1  DEFER         both measured hosts are blocked; use the remote MCP
+# EXIT CODES (the verdict; also emitted on PREFLIGHT_STATUS)
+#   0  READY         a local auth path is viable; run the scripts
+#   1  DEFER         both measured hosts blocked; use the remote MCP
 #   2  USAGE         the optional api-host argument is not a valid URL
 #   3  NEEDS_ACTION  perform the printed action (install/deps), then re-run
 #   4  ESCALATE      no confirmed local path — reachable only outside the
-#                    sandbox's default egress, or the API host couldn't be
-#                    probed. Run with elevated/outside-sandbox network or try
-#                    the scripts; otherwise use the remote MCP
+#                    sandbox's egress, or the api-host was untested; run with
+#                    elevated network / try the scripts, else use the remote MCP
 
 set -u
 
