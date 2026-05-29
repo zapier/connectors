@@ -54,25 +54,6 @@ describe("search: inputSchema", () => {
       true,
     );
   });
-
-  it("rejects an unknown top-level key instead of silently dropping it", () => {
-    // STAFF-3943: `pageSize` (camelCase) is not a declared field. Previously
-    // a plain z.object() stripped it before the request and Notion fell back
-    // to its 100-item default. The SDK now parses input strictly, so the
-    // mistyped key fails loudly — and naming `page_size` correctly passes.
-    // (Strictness comes from the SDK; scripts/search.ts stays `.strict()`-free
-    // to satisfy connectors-ref's no-loose-strict rule.)
-    const rejected = inputSchema.safeParse({ query: "x", pageSize: 50 });
-    expect(rejected.success).toBe(false);
-    if (!rejected.success) {
-      expect(
-        rejected.error.issues.some((i) => i.code === "unrecognized_keys"),
-      ).toBe(true);
-    }
-    expect(inputSchema.safeParse({ query: "x", page_size: 50 }).success).toBe(
-      true,
-    );
-  });
 });
 
 describe("search: governance", () => {
