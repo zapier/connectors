@@ -59,14 +59,15 @@ Before invoking anything, run the bundled pre-flight check to find out whether t
 ./preflight.sh https://api.notion.com
 ```
 
-It is **re-runnable**: act on its verdict, then run it again until it reports `READY` or `DEFER`. Read the machine-parseable lines it prints:
+It is **re-runnable**: act on its verdict, then run it again until it reports `READY`, `ESCALATE`, or `DEFER`. Read the machine-parseable lines it prints:
 
 - **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Use whichever auth path is marked `ok`: `PREFLIGHT_LOCAL_WITH_ZAPIER` (use `NOTION_ZAPIER_CONNECTION_ID`) or `PREFLIGHT_LOCAL_WITHOUT_ZAPIER` (use `NOTION_TOKEN`). If one is `blocked`, just use the other — local execution works, so there's no need for the remote MCP.
 - **Exit `3` (`NEEDS_ACTION`)** — perform the single action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then re-run `./preflight.sh https://api.notion.com`.
-- **Exit `1` (`DEFER`)** — this sandbox can't reach `api.zapier.com` or `api.notion.com` (no domain allow-listing). Don't execute the scripts here; recommend the user configure Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. The script prints a ready-to-paste config.
+- **Exit `4` (`ESCALATE`)** — a path is marked `proxied`: the runtime's own `fetch` is blocked here, but the host is reachable outside this sandbox's default egress (the connector calls APIs via Node/Bun `fetch`, which ignores proxy env vars). If your harness can run with elevated/outside-the-sandbox network access — e.g. ask the user to approve egress, or re-run the script outside the sandbox — do that and execute normally. If it can't, treat it like `DEFER` and use the remote MCP config the script prints.
+- **Exit `1` (`DEFER`)** — this sandbox can't reach `api.zapier.com` or `api.notion.com` at all (no domain allow-listing, and not even via a proxy). Don't execute the scripts here; recommend the user configure Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. The script prints a ready-to-paste config.
 - **Exit `2` (`USAGE`)** — pass `https://api.notion.com` as the first argument.
 
-The three invocation paths below all assume the pre-flight reported `READY`.
+The three invocation paths below all assume the pre-flight reported `READY` (or `ESCALATE` with the network escalation applied).
 
 ### 1. Execute scripts directly
 

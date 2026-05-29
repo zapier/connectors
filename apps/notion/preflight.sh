@@ -31,16 +31,23 @@
 #                 (the SKILL.md "Step 0" section names the exact host to pass).
 #
 # OUTPUT (machine-parseable lines an agent can grep)
-#   PREFLIGHT_RUNNER: node|bun                      (READY only)
-#   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|blocked|unknown
-#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|blocked|unknown
+#   PREFLIGHT_RUNNER: node|bun                                (READY/ESCALATE)
+#   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked|unknown
+#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked|unknown
 #   PREFLIGHT_RECOMMENDATION: <one-line next step>
 #
+#   A `proxied` path means the runtime's own fetch can't reach the host, but an
+#   external tool (curl/wget, which honour HTTP(S)_PROXY) can — i.e. the host is
+#   reachable outside this sandbox's default egress, just not by the scripts.
+#
 # EXIT CODES
-#   0  READY         at least one local auth path is viable
-#   1  DEFER         no local path possible; use the remote MCP
+#   0  READY         at least one local auth path is viable; run the scripts
+#   1  DEFER         no local path possible at all; use the remote MCP
 #   2  USAGE         missing <api-host> argument
-#   3  NEEDS_ACTION  perform the printed action, then re-run
+#   3  NEEDS_ACTION  perform the printed action (install/deps), then re-run
+#   4  ESCALATE      reachable only outside the sandbox's default egress — run
+#                    with elevated/outside-sandbox network if the harness allows,
+#                    otherwise use the remote MCP
 
 set -u
 
@@ -55,6 +62,7 @@ EXIT_READY=0
 EXIT_DEFER=1
 EXIT_USAGE=2
 EXIT_NEEDS_ACTION=3
+EXIT_ESCALATE=4
 
 # Directory this script lives in — deps + scripts are resolved relative to it,
 # not the caller's cwd, so `./preflight.sh` works from anywhere.
@@ -96,54 +104,22 @@ runtime_probe() {
   ' "$2" "$PROBE_TIMEOUT" >/dev/null 2>&1
 }
 
-# Echoes: ok | blocked | unknown
-#   ok      reachable (got a response / completed a TLS handshake)
-#   blocked transport-level failure — the sandbox won't allow-list this host
-#   unknown no probe tool available at all (decided later by the runtime check)
-#
-# Order: node/bun FIRST, then curl -> wget -> bash /dev/tcp. The runtime goes
-# first on purpose. Connector scripts make their API calls through Node/Bun's
-# global fetch (undici), which — unlike curl/wget — does NOT honour HTTP(S)_PROXY
-# env vars by default. A sandbox that allow-lists egress through a proxy lets
-# curl succeed while the real `fetch` is firewalled, so a curl-first probe would
-# report a false `ok` (exactly the "probe says reachable, script then fails on
-# fetch" trap). Probing with the same runtime the workload uses predicts the
-# actual fetch outcome. The curl/wget/dev-tcp fallbacks exist only for the
-# pre-runtime state (no node/bun yet); there the worst case is an over-optimistic
-# `ok` that costs one extra readiness-loop iteration — never a wrong terminal
-# verdict, since without a runtime the script can't reach READY anyway.
-probe() {
+# Reachability via external tools (curl -> wget -> bash /dev/tcp). These honour
+# HTTP(S)_PROXY env vars, so they can reach hosts the runtime's proxy-blind fetch
+# cannot. Returns via exit status (echoes nothing):
+#   0  reachable     1  blocked     2  no external probe tool available
+ext_reach() {
   url="$1"
-  if node_ge_2218 || has node; then
-    if runtime_probe node "$url"; then echo ok; else echo blocked; fi
-    return
-  fi
-  if has bun; then
-    if runtime_probe bun "$url"; then echo ok; else echo blocked; fi
-    return
-  fi
   if has curl; then
-    if curl -s -o /dev/null --max-time "$PROBE_TIMEOUT" "$url" >/dev/null 2>&1; then
-      echo ok
-    else
-      echo blocked
-    fi
+    curl -s -o /dev/null --max-time "$PROBE_TIMEOUT" "$url" >/dev/null 2>&1
     return
   fi
   if has wget; then
     wget -q -T "$PROBE_TIMEOUT" -O /dev/null "$url" >/dev/null 2>&1
-    rc=$?
-    # 0 ok; 5 TLS, 6 auth, 8 server-error-response all mean a connection was
-    # made (host reachable). Everything else (4 network failure, timeouts) is
-    # blocked. BusyBox wget collapses many of these to 1; in that case a real
-    # runtime probe above would already have been preferred.
-    case "$rc" in
-      0 | 5 | 6 | 8) echo ok ;;
-      *) echo blocked ;;
-    esac
-    return
+    # 0 ok; 5 TLS, 6 auth, 8 server-error-response all mean a connection was made
+    # (host reachable). BusyBox wget collapses many codes to 1 → treated blocked.
+    case "$?" in 0 | 5 | 6 | 8) return 0 ;; *) return 1 ;; esac
   fi
-  # Last resort: raw TCP connect via bash's /dev/tcp (no-op under dash/BusyBox).
   if [ -n "${BASH_VERSION:-}" ]; then
     hostport=${url#*://}
     hostport=${hostport%%/*}
@@ -153,25 +129,60 @@ probe() {
       *) port=443 ;;
     esac
     case "$hostport" in *:*) port=${hostport##*:}; hostport=${hostport%%:*} ;; esac
-    if (exec 3<>"/dev/tcp/$hostport/$port") 2>/dev/null; then
-      echo ok
-    else
-      echo blocked
-    fi
-    return
+    (exec 3<>"/dev/tcp/$hostport/$port") 2>/dev/null && return 0
+    return 1
   fi
-  echo unknown
+  return 2
 }
 
-# Format a probe result for the READY output. The `unknown` arm is a defensive
-# fallback: `unknown` means no probe tool exists, but node/bun ARE probe tools,
-# so an `unknown` result implies no runtime — which exits NEEDS_ACTION at step 2
-# before this output is ever reached. We still never equate it with `blocked`:
-# "no way to test" is not "unreachable", and the runtime install it asks for
-# also restores a working probe for the re-run.
+# Echoes: ok | proxied | blocked | unknown
+#   ok       the runtime's own fetch reached the host — scripts will work
+#   proxied  fetch blocked, but an external tool reached it → host is reachable
+#            outside this sandbox's default egress, just not by the scripts
+#   blocked  nothing could reach it — truly walled off
+#   unknown  no probe tool available at all (no runtime yet, no curl/wget)
+#
+# Runtime (node/bun) is probed FIRST on purpose. Connector scripts make their API
+# calls through Node/Bun's global fetch (undici), which — unlike curl/wget — does
+# NOT honour HTTP(S)_PROXY by default. A sandbox that allow-lists egress through a
+# proxy lets curl succeed while the real fetch is firewalled, so a curl-first
+# probe reports a false `ok` (the "probe says reachable, script then dies on
+# fetch" trap). We probe with the workload's runtime, then — only if it fails —
+# consult the proxy-aware external tools to tell `proxied` apart from `blocked`.
+probe() {
+  url="$1"
+  if node_ge_2218 || has node; then
+    runtime_probe node "$url" && { echo ok; return; }
+    ext_reach "$url" && { echo proxied; return; }
+    echo blocked
+    return
+  fi
+  if has bun; then
+    runtime_probe bun "$url" && { echo ok; return; }
+    ext_reach "$url" && { echo proxied; return; }
+    echo blocked
+    return
+  fi
+  # No JS runtime yet — only external tools to go on (pre-runtime, optimistic:
+  # whatever they say is the best signal available until a runtime is installed).
+  ext_reach "$url"
+  case "$?" in
+    0) echo ok ;;
+    2) echo unknown ;;
+    *) echo blocked ;;
+  esac
+}
+
+# Format a probe result for the READY/ESCALATE output. The `unknown` arm is a
+# defensive fallback: `unknown` means no probe tool exists, but node/bun ARE
+# probe tools, so an `unknown` result implies no runtime — which exits
+# NEEDS_ACTION at step 2 before this output is ever reached. We never equate it
+# with `blocked`: "no way to test" is not "unreachable", and the runtime install
+# it asks for also restores a working probe for the re-run.
 fmt_path() {
   case "$1" in
     ok) echo "ok" ;;
+    proxied) echo "reachable outside the sandbox only → the runtime's fetch is blocked here, but curl/proxy reached it" ;;
     blocked) echo "blocked → this sandbox can't reach the host this auth mode needs" ;;
     *) echo "unknown → no tool available to test reachability; will be confirmed when a script actually runs" ;;
   esac
@@ -233,12 +244,24 @@ if [ "$runner" = node ] && [ ! -d "$SCRIPT_DIR/node_modules" ]; then
   exit "$EXIT_NEEDS_ACTION"
 fi
 
-# ---- 4) Ready --------------------------------------------------------------
-# At least one auth path is reachable, so local execution works — no remote-MCP
-# recommendation here (that's only for the all-blocked DEFER case). A path shown
-# `blocked` just means: use the other one.
+# ---- 4) Ready or escalate --------------------------------------------------
+# Runtime + deps are in place and we did NOT defer (so the hosts aren't both
+# blocked). Two cases remain:
+#   * at least one path is `ok`           → READY: run the scripts directly.
+#   * no path is `ok`, but one is proxied → ESCALATE: the runtime's fetch is
+#     blocked here, yet the host is reachable outside the sandbox's default
+#     egress. If the harness can run with elevated/outside-sandbox network
+#     (e.g. ask the user to approve egress), proceed that way; otherwise this is
+#     effectively a defer — use the remote MCP.
 echo "PREFLIGHT_RUNNER: ${runner}"
 echo "PREFLIGHT_LOCAL_WITH_ZAPIER: $(fmt_path "$with_zapier")"
 echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: $(fmt_path "$without_zapier")"
-echo "PREFLIGHT_RECOMMENDATION: ready — execute scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\` using an auth path marked ok above (prefer the with-Zapier path, *_ZAPIER_CONNECTION_ID; otherwise the without-Zapier path, *_TOKEN)."
-exit "$EXIT_READY"
+
+if [ "$with_zapier" = ok ] || [ "$without_zapier" = ok ]; then
+  echo "PREFLIGHT_RECOMMENDATION: ready — execute scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\` using an auth path marked ok above."
+  exit "$EXIT_READY"
+fi
+
+echo "PREFLIGHT_RECOMMENDATION: escalate — ${runner}'s network (fetch) is blocked here, but the host is reachable outside this sandbox's default egress. If your harness can run the script with elevated/outside-the-sandbox network access (e.g. ask the user to approve it), proceed: \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. If it cannot, defer to the remote MCP below."
+print_remote_mcp
+exit "$EXIT_ESCALATE"
