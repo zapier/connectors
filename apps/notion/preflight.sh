@@ -30,15 +30,20 @@
 #     <api-host>  the connector's upstream API base (e.g. https://api.example.com)
 #                 (the SKILL.md "Step 0" section names the exact host to pass).
 #
-# OUTPUT (machine-parseable lines an agent can grep)
+# OUTPUT (machine-parseable lines an agent can grep). Every value starts with a
+# STABLE TOKEN (parse it with `KEY: (\w+)`); any human gloss follows in parens.
+#   PREFLIGHT_STATUS: READY|NEEDS_ACTION|ESCALATE|DEFER|USAGE  (always — the verdict)
 #   PREFLIGHT_RUNNER: node|bun                                (READY/ESCALATE)
-#   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked|unknown
-#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked|unknown
-#   PREFLIGHT_RECOMMENDATION: <one-line next step>
+#   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked           (READY/ESCALATE/DEFER)
+#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked        (READY/ESCALATE/DEFER)
+#   PREFLIGHT_WITH_ZAPIER_SDK: installed|missing              (when with-Zapier reachable)
+#   PREFLIGHT_REMOTE_MCP: <url>                               (DEFER/ESCALATE)
+#   PREFLIGHT_RECOMMENDATION: <one-line human next step>      (always)
 #
-#   A `proxied` path means the runtime's own fetch can't reach the host, but an
-#   external tool (curl/wget, which honour HTTP(S)_PROXY) can — i.e. the host is
-#   reachable outside this sandbox's default egress, just not by the scripts.
+# Read PREFLIGHT_STATUS first — it's the single verdict. A `proxied` path means
+# the runtime's own fetch can't reach the host, but an external tool (curl/wget,
+# which honour HTTP(S)_PROXY) can — reachable outside this sandbox's default
+# egress, just not by the scripts.
 #
 # EXIT CODES
 #   0  READY         at least one local auth path is viable; run the scripts
@@ -173,32 +178,29 @@ probe() {
   esac
 }
 
-# Format a probe result for the READY/ESCALATE output. The `unknown` arm is a
-# defensive fallback: `unknown` means no probe tool exists, but node/bun ARE
-# probe tools, so an `unknown` result implies no runtime — which exits
-# NEEDS_ACTION at step 2 before this output is ever reached. We never equate it
-# with `blocked`: "no way to test" is not "unreachable", and the runtime install
-# it asks for also restores a working probe for the re-run.
+# Format a probe result as `<token> (<short human gloss>)`. The token is always
+# the first word so an agent can parse it with `: (\w+)`; the parenthetical is
+# for humans. `unknown` is a defensive fallback (no probe tool → implies no
+# runtime, which exits NEEDS_ACTION at step 2 before this is reached) and is
+# never equated with `blocked`.
 fmt_path() {
   case "$1" in
     ok) echo "ok" ;;
-    proxied) echo "reachable outside the sandbox only → the runtime's fetch is blocked here, but curl/proxy reached it" ;;
-    blocked) echo "blocked → this sandbox can't reach the host this auth mode needs" ;;
-    *) echo "unknown → no tool available to test reachability; will be confirmed when a script actually runs" ;;
+    proxied) echo "proxied (reachable outside this sandbox's egress, not by the runtime's fetch)" ;;
+    blocked) echo "blocked (unreachable from this sandbox)" ;;
+    *) echo "unknown (no tool available to test reachability)" ;;
   esac
 }
 
+# Single machine-parseable line; the human explanation lives in the recommendation.
 print_remote_mcp() {
   echo "PREFLIGHT_REMOTE_MCP: ${REMOTE_MCP}"
-  echo "  Runs the API call server-side, so this sandbox's network limits don't"
-  echo "  apply. Tell the user to set up a Zapier MCP server at ${REMOTE_MCP} and"
-  echo "  follow the instructions there to add it."
 }
 
 # ---- 0) Input --------------------------------------------------------------
 if [ -z "$HOST" ]; then
-  echo "usage: ./preflight.sh <api-host>   # the connector's API base — see SKILL.md Step 0"
-  echo "PREFLIGHT_RECOMMENDATION: usage — pass the connector's API host as the first argument (see SKILL.md Step 0)."
+  echo "PREFLIGHT_STATUS: USAGE"
+  echo "PREFLIGHT_RECOMMENDATION: pass the connector's API host as the first argument — \`./preflight.sh <api-host>\` (see SKILL.md Step 0)."
   exit "$EXIT_USAGE"
 fi
 
@@ -209,9 +211,10 @@ with_zapier=$(probe "$ZAPIER_HOST")   # gates the with-Zapier path (*_ZAPIER_CON
 without_zapier=$(probe "$HOST")       # gates the without-Zapier path (*_TOKEN)
 
 if [ "$with_zapier" = blocked ] && [ "$without_zapier" = blocked ]; then
-  echo "PREFLIGHT_LOCAL_WITH_ZAPIER: blocked"
-  echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: blocked"
-  echo "PREFLIGHT_RECOMMENDATION: defer — this sandbox cannot reach ${ZAPIER_HOST} or ${HOST} (no domain allow-listing); recommend the user use the remote MCP."
+  echo "PREFLIGHT_STATUS: DEFER"
+  echo "PREFLIGHT_LOCAL_WITH_ZAPIER: $(fmt_path "$with_zapier")"
+  echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: $(fmt_path "$without_zapier")"
+  echo "PREFLIGHT_RECOMMENDATION: this sandbox can't reach ${ZAPIER_HOST} or ${HOST}, even via a proxy — local execution is impossible. Tell the user to set up a Zapier MCP server at ${REMOTE_MCP} and follow its instructions; it runs the API call server-side."
   print_remote_mcp
   exit "$EXIT_DEFER"
 fi
@@ -223,7 +226,8 @@ if node_ge_2218; then
 elif has bun; then
   runner=bun
 else
-  echo "PREFLIGHT_RECOMMENDATION: not-ready — no Node 22.18+ or Bun found. Install Node 22.18+ (ships npm) or Bun, then re-run \`./preflight.sh ${HOST}\`."
+  echo "PREFLIGHT_STATUS: NEEDS_ACTION"
+  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then re-run \`./preflight.sh ${HOST}\`."
   exit "$EXIT_NEEDS_ACTION"
 fi
 
@@ -232,12 +236,13 @@ fi
 # deps on the fly when node_modules is absent (default --install=auto), so a
 # `bun <script>` run is self-sufficient — no separate `bun install` step.
 if [ "$runner" = node ] && [ ! -d "$SCRIPT_DIR/node_modules" ]; then
+  echo "PREFLIGHT_STATUS: NEEDS_ACTION"
   if has npm; then
-    echo "PREFLIGHT_RECOMMENDATION: not-ready — dependencies are not installed. Run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
+    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
   else
     # node >= 22.18 ships npm, so a missing npm means it was removed from the
     # Node install. Restore it and install deps in one step (no extra re-run).
-    echo "PREFLIGHT_RECOMMENDATION: not-ready — npm is missing (it ships with Node 22.18+). Reinstall/repair Node 22.18+, then run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
+    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
   fi
   exit "$EXIT_NEEDS_ACTION"
 fi
@@ -251,15 +256,40 @@ fi
 #     egress. If the harness can run with elevated/outside-sandbox network
 #     (e.g. ask the user to approve egress), proceed that way; otherwise this is
 #     effectively a defer — use the remote MCP.
+if [ "$with_zapier" = ok ] || [ "$without_zapier" = ok ]; then
+  verdict=READY
+else
+  verdict=ESCALATE
+fi
+echo "PREFLIGHT_STATUS: ${verdict}"
 echo "PREFLIGHT_RUNNER: ${runner}"
 echo "PREFLIGHT_LOCAL_WITH_ZAPIER: $(fmt_path "$with_zapier")"
 echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: $(fmt_path "$without_zapier")"
 
-if [ "$with_zapier" = ok ] || [ "$without_zapier" = ok ]; then
-  echo "PREFLIGHT_RECOMMENDATION: ready — execute scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\` using an auth path marked ok above."
+# The with-Zapier path (*_ZAPIER_CONNECTION_ID) pulls in the OPTIONAL peer
+# @zapier/zapier-sdk through a LAZY `import()`. It must already be on disk:
+#   * `npm install` does NOT pull optional peers, so it's never there by default.
+#   * Bun's auto-install is not a reliable substitute: it only fetches missing
+#     imports when there's no node_modules dir, and because the import is lazy it
+#     would fetch mid-run from the npm registry — a host this sandbox may block
+#     even when the API host is reachable. So we require the peer present, not
+#     fetched on the fly.
+# Only report when the with-Zapier host is reachable (ok/proxied) — nothing to
+# install for if it's walled off.
+if [ "$with_zapier" != blocked ] && [ "$with_zapier" != unknown ]; then
+  if [ -d "$SCRIPT_DIR/node_modules/@zapier/zapier-sdk" ]; then
+    echo "PREFLIGHT_WITH_ZAPIER_SDK: installed"
+  else
+    if [ "$runner" = bun ]; then add_sdk="bun add @zapier/zapier-sdk"; else add_sdk="npm install @zapier/zapier-sdk"; fi
+    echo "PREFLIGHT_WITH_ZAPIER_SDK: missing — the with-Zapier path needs the optional peer; before using *_ZAPIER_CONNECTION_ID run \`${add_sdk}\` in ${SCRIPT_DIR} (match the version range in package.json). The without-Zapier path (*_TOKEN) needs no extra install."
+  fi
+fi
+
+if [ "$verdict" = READY ]; then
+  echo "PREFLIGHT_RECOMMENDATION: run scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`, picking an auth path marked \`ok\` above — with-Zapier (set *_ZAPIER_CONNECTION_ID) or without-Zapier (set *_TOKEN). Before the with-Zapier path, check PREFLIGHT_WITH_ZAPIER_SDK."
   exit "$EXIT_READY"
 fi
 
-echo "PREFLIGHT_RECOMMENDATION: escalate — ${runner}'s network (fetch) is blocked here, but the host is reachable outside this sandbox's default egress. If your harness can run the script with elevated/outside-the-sandbox network access (e.g. ask the user to approve it), proceed: \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. If it cannot, defer to the remote MCP below."
+echo "PREFLIGHT_RECOMMENDATION: ${runner}'s fetch is blocked in this sandbox, but the host is reachable outside it. If your harness can run with elevated/outside-the-sandbox network (e.g. ask the user to approve egress), run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. Otherwise tell the user to set up a Zapier MCP server at ${REMOTE_MCP}."
 print_remote_mcp
 exit "$EXIT_ESCALATE"
