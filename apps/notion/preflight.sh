@@ -1,0 +1,236 @@
+#!/usr/bin/env sh
+# Connector pre-flight readiness check.
+#
+# Canonical source: connector-assets/preflight.sh in the Zapier connectors repo.
+# Every apps/<app>/preflight.sh is a byte-identical copy synced by
+# `pnpm run ensure-connector-assets`. Edit the canonical copy, never the copies.
+#
+# WHAT THIS IS FOR
+#   This script runs inside whatever agent harness installed the connector
+#   (Cursor, Claude Code, Codex, Gemini CLI, Goose, ...) — frequently a minimal,
+#   network-restricted container. It tells the agent, in one of three verdicts,
+#   how to run this connector's scripts here:
+#
+#     * READY        — a runtime + deps + network are in place; run the scripts.
+#     * NEEDS_ACTION — one bootstrap step is missing (e.g. `npm install`); do it
+#                      and re-run this script. The check is re-runnable: loop
+#                      until READY or DEFER.
+#     * DEFER        — the sandbox can't reach the hosts these scripts need, so
+#                      recommend the user use Zapier's remote MCP server instead
+#                      (it executes the API call server-side, bypassing this
+#                      sandbox's network entirely).
+#
+# WHY POSIX sh (not bash)
+#   Minimal sandboxes often ship only BusyBox `sh` with no bash. This script is
+#   written to run unchanged under BusyBox sh, dash, and bash, and never hard-
+#   requires curl/wget/node/bun/npm — a missing tool degrades to the next probe.
+#
+# USAGE
+#   ./preflight.sh <api-host>
+#     <api-host>  the connector's upstream API base (e.g. https://api.example.com)
+#                 (the SKILL.md "Step 0" section names the exact host to pass).
+#
+# OUTPUT (machine-parseable lines an agent can grep)
+#   PREFLIGHT_RUNNER: node|bun                      (READY only)
+#   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|blocked|unknown
+#   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|blocked|unknown
+#   PREFLIGHT_RECOMMENDATION: <one-line next step>
+#
+# EXIT CODES
+#   0  READY         at least one local auth path is viable
+#   1  DEFER         no local path possible; use the remote MCP
+#   2  USAGE         missing <api-host> argument
+#   3  NEEDS_ACTION  perform the printed action, then re-run
+
+set -u
+
+HOST="${1:-}"
+
+# Fixed Zapier endpoints + per-probe network timeout (seconds).
+ZAPIER_HOST="https://api.zapier.com"
+REMOTE_MCP="https://mcp.zapier.com"
+PROBE_TIMEOUT=5
+
+EXIT_READY=0
+EXIT_DEFER=1
+EXIT_USAGE=2
+EXIT_NEEDS_ACTION=3
+
+# Directory this script lives in — deps + scripts are resolved relative to it,
+# not the caller's cwd, so `./preflight.sh` works from anywhere.
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+has() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Node >= 22.18 is the connector baseline (native .ts stripping). Anything older
+# is treated as "no Node" so we fall back to Bun.
+node_ge_2218() {
+  has node || return 1
+  v=$(node -v 2>/dev/null) || return 1
+  v=${v#v}
+  major=${v%%.*}
+  rest=${v#*.}
+  minor=${rest%%.*}
+  case "$major" in '' | *[!0-9]*) return 1 ;; esac
+  case "$minor" in '' | *[!0-9]*) minor=0 ;; esac
+  [ "$major" -gt 22 ] && return 0
+  [ "$major" -eq 22 ] && [ "$minor" -ge 18 ] && return 0
+  return 1
+}
+
+# A runtime-based reachability check using global fetch. Mirrors curl semantics:
+# ANY HTTP response (even 4xx/5xx) means the host is reachable; only a transport
+# error (DNS / connect refused / timeout) means blocked.
+runtime_probe() {
+  # $1 = node|bun, $2 = url
+  "$1" -e '
+    const url = process.argv[1];
+    const ms = (Number(process.argv[2]) || 5) * 1000;
+    const ac = new AbortController();
+    const t = setTimeout(() => ac.abort(), ms);
+    fetch(url, { method: "HEAD", signal: ac.signal })
+      .then(() => { clearTimeout(t); process.exit(0); })
+      .catch(() => { clearTimeout(t); process.exit(1); });
+  ' "$2" "$PROBE_TIMEOUT" >/dev/null 2>&1
+}
+
+# Echoes: ok | blocked | unknown
+#   ok      reachable (got a response / completed a TLS handshake)
+#   blocked transport-level failure — the sandbox won't allow-list this host
+#   unknown no probe tool available at all (decided later by the runtime check)
+#
+# Order: curl (clean, status-agnostic) -> node/bun (clean) -> wget (BusyBox
+# wget's exit codes are lossy, so it's tried only after a real runtime) ->
+# bash /dev/tcp (bash-only). Status-agnostic methods come first deliberately.
+probe() {
+  url="$1"
+  if has curl; then
+    if curl -s -o /dev/null --max-time "$PROBE_TIMEOUT" "$url" >/dev/null 2>&1; then
+      echo ok
+    else
+      echo blocked
+    fi
+    return
+  fi
+  if node_ge_2218 || has node; then
+    if runtime_probe node "$url"; then echo ok; else echo blocked; fi
+    return
+  fi
+  if has bun; then
+    if runtime_probe bun "$url"; then echo ok; else echo blocked; fi
+    return
+  fi
+  if has wget; then
+    wget -q -T "$PROBE_TIMEOUT" -O /dev/null "$url" >/dev/null 2>&1
+    rc=$?
+    # 0 ok; 5 TLS, 6 auth, 8 server-error-response all mean a connection was
+    # made (host reachable). Everything else (4 network failure, timeouts) is
+    # blocked. BusyBox wget collapses many of these to 1; in that case a real
+    # runtime probe above would already have been preferred.
+    case "$rc" in
+      0 | 5 | 6 | 8) echo ok ;;
+      *) echo blocked ;;
+    esac
+    return
+  fi
+  # Last resort: raw TCP connect via bash's /dev/tcp (no-op under dash/BusyBox).
+  if [ -n "${BASH_VERSION:-}" ]; then
+    hostport=${url#*://}
+    hostport=${hostport%%/*}
+    case "$url" in
+      https://*) port=443 ;;
+      http://*) port=80 ;;
+      *) port=443 ;;
+    esac
+    case "$hostport" in *:*) port=${hostport##*:}; hostport=${hostport%%:*} ;; esac
+    if (exec 3<>"/dev/tcp/$hostport/$port") 2>/dev/null; then
+      echo ok
+    else
+      echo blocked
+    fi
+    return
+  fi
+  echo unknown
+}
+
+# Format a probe result for the READY output. The `unknown` arm is a defensive
+# fallback: `unknown` means no probe tool exists, but node/bun ARE probe tools,
+# so an `unknown` result implies no runtime — which exits NEEDS_ACTION at step 2
+# before this output is ever reached. We still never equate it with `blocked`:
+# "no way to test" is not "unreachable", and the runtime install it asks for
+# also restores a working probe for the re-run.
+fmt_path() {
+  case "$1" in
+    ok) echo "ok" ;;
+    blocked) echo "blocked → this sandbox can't reach the host this auth mode needs" ;;
+    *) echo "unknown → no tool available to test reachability; will be confirmed when a script actually runs" ;;
+  esac
+}
+
+print_remote_mcp() {
+  echo "PREFLIGHT_REMOTE_MCP: ${REMOTE_MCP}"
+  echo "  Zapier's remote MCP server runs the API call server-side, so this"
+  echo "  sandbox's network restrictions do not apply. To use it, the user should:"
+  echo "    1. Open ${REMOTE_MCP}, create/select an MCP server, and copy its URL."
+  echo "    2. Add it to the MCP client config, for example:"
+  echo "         { \"mcpServers\": { \"zapier\": { \"url\": \"<your ${REMOTE_MCP} server URL>\" } } }"
+}
+
+# ---- 0) Input --------------------------------------------------------------
+if [ -z "$HOST" ]; then
+  echo "usage: ./preflight.sh <api-host>   # the connector's API base — see SKILL.md Step 0"
+  echo "PREFLIGHT_RECOMMENDATION: usage — pass the connector's API host as the first argument (see SKILL.md Step 0)."
+  exit "$EXIT_USAGE"
+fi
+
+# ---- 1) Network first ------------------------------------------------------
+# Cheapest, most decisive signal: if neither auth path's host is reachable, no
+# amount of local install will help — recommend the remote MCP immediately.
+with_zapier=$(probe "$ZAPIER_HOST")   # gates the with-Zapier path (*_ZAPIER_CONNECTION_ID)
+without_zapier=$(probe "$HOST")       # gates the without-Zapier path (*_TOKEN)
+
+if [ "$with_zapier" = blocked ] && [ "$without_zapier" = blocked ]; then
+  echo "PREFLIGHT_LOCAL_WITH_ZAPIER: blocked"
+  echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: blocked"
+  echo "PREFLIGHT_RECOMMENDATION: defer — this sandbox cannot reach ${ZAPIER_HOST} or ${HOST} (no domain allow-listing); recommend the user use the remote MCP."
+  print_remote_mcp
+  exit "$EXIT_DEFER"
+fi
+
+# ---- 2) Runtime to execute the .ts scripts ---------------------------------
+# Prefer Node >= 22.18 (documented baseline, native TS strip); fall back to Bun.
+if node_ge_2218; then
+  runner=node
+elif has bun; then
+  runner=bun
+else
+  echo "PREFLIGHT_RECOMMENDATION: not-ready — no Node 22.18+ or Bun found. Install Node 22.18+ (ships npm) or Bun, then re-run \`./preflight.sh ${HOST}\`."
+  exit "$EXIT_NEEDS_ACTION"
+fi
+
+# ---- 3) Dependencies -------------------------------------------------------
+# Only Node needs node_modules pre-populated. Bun auto-installs the declared
+# deps on the fly when node_modules is absent (default --install=auto), so a
+# `bun <script>` run is self-sufficient — no separate `bun install` step.
+if [ "$runner" = node ] && [ ! -d "$SCRIPT_DIR/node_modules" ]; then
+  if has npm; then
+    echo "PREFLIGHT_RECOMMENDATION: not-ready — dependencies are not installed. Run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
+  else
+    # node >= 22.18 ships npm, so a missing npm means it was removed from the
+    # Node install. Restore it and install deps in one step (no extra re-run).
+    echo "PREFLIGHT_RECOMMENDATION: not-ready — npm is missing (it ships with Node 22.18+). Reinstall/repair Node 22.18+, then run \`npm install\` in ${SCRIPT_DIR}, then re-run \`./preflight.sh ${HOST}\`."
+  fi
+  exit "$EXIT_NEEDS_ACTION"
+fi
+
+# ---- 4) Ready --------------------------------------------------------------
+# At least one auth path is reachable, so local execution works — no remote-MCP
+# recommendation here (that's only for the all-blocked DEFER case). A path shown
+# `blocked` just means: use the other one.
+echo "PREFLIGHT_RUNNER: ${runner}"
+echo "PREFLIGHT_LOCAL_WITH_ZAPIER: $(fmt_path "$with_zapier")"
+echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: $(fmt_path "$without_zapier")"
+echo "PREFLIGHT_RECOMMENDATION: ready — execute scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\` using an auth path marked ok above (prefer the with-Zapier path, *_ZAPIER_CONNECTION_ID; otherwise the without-Zapier path, *_TOKEN)."
+exit "$EXIT_READY"

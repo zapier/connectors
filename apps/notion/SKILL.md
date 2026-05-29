@@ -51,7 +51,22 @@ If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPI
 
 ## Using this skill
 
-Three ways to invoke the tools, in order of preference once the skill is installed.
+### 0. Pre-flight — check how to run here first
+
+Before invoking anything, run the bundled pre-flight check to find out whether this harness can execute the scripts locally and which auth path its network allows:
+
+```bash
+./preflight.sh https://api.notion.com
+```
+
+It is **re-runnable**: act on its verdict, then run it again until it reports `READY` or `DEFER`. Read the machine-parseable lines it prints:
+
+- **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Use whichever auth path is marked `ok`: `PREFLIGHT_LOCAL_WITH_ZAPIER` (use `NOTION_ZAPIER_CONNECTION_ID`) or `PREFLIGHT_LOCAL_WITHOUT_ZAPIER` (use `NOTION_TOKEN`). If one is `blocked`, just use the other — local execution works, so there's no need for the remote MCP.
+- **Exit `3` (`NEEDS_ACTION`)** — perform the single action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then re-run `./preflight.sh https://api.notion.com`.
+- **Exit `1` (`DEFER`)** — this sandbox can't reach `api.zapier.com` or `api.notion.com` (no domain allow-listing). Don't execute the scripts here; recommend the user configure Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. The script prints a ready-to-paste config.
+- **Exit `2` (`USAGE`)** — pass `https://api.notion.com` as the first argument.
+
+The three invocation paths below all assume the pre-flight reported `READY`.
 
 ### 1. Execute scripts directly
 
