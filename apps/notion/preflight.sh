@@ -37,8 +37,8 @@
 #   PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked           (READY/ESCALATE/DEFER)
 #   PREFLIGHT_LOCAL_WITHOUT_ZAPIER: ok|proxied|blocked        (READY/ESCALATE/DEFER)
 #   PREFLIGHT_WITH_ZAPIER_SDK: installed|missing              (when with-Zapier reachable)
-#   PREFLIGHT_REMOTE_MCP: <url>                               (DEFER/ESCALATE)
-#   PREFLIGHT_RECOMMENDATION: <one-line human next step>      (always)
+#   PREFLIGHT_RECOMMENDATION: <one-line human next step>      (always; names the
+#                              remote MCP URL on DEFER/ESCALATE)
 #
 # Read PREFLIGHT_STATUS first — it's the single verdict. A `proxied` path means
 # the runtime's own fetch can't reach the host, but an external tool (curl/wget,
@@ -192,11 +192,6 @@ fmt_path() {
   esac
 }
 
-# Single machine-parseable line; the human explanation lives in the recommendation.
-print_remote_mcp() {
-  echo "PREFLIGHT_REMOTE_MCP: ${REMOTE_MCP}"
-}
-
 # ---- 0) Input --------------------------------------------------------------
 if [ -z "$HOST" ]; then
   echo "PREFLIGHT_STATUS: USAGE"
@@ -215,7 +210,6 @@ if [ "$with_zapier" = blocked ] && [ "$without_zapier" = blocked ]; then
   echo "PREFLIGHT_LOCAL_WITH_ZAPIER: $(fmt_path "$with_zapier")"
   echo "PREFLIGHT_LOCAL_WITHOUT_ZAPIER: $(fmt_path "$without_zapier")"
   echo "PREFLIGHT_RECOMMENDATION: this sandbox can't reach ${ZAPIER_HOST} or ${HOST}, even via a proxy — local execution is impossible. Tell the user to set up a Zapier MCP server at ${REMOTE_MCP} and follow its instructions; it runs the API call server-side."
-  print_remote_mcp
   exit "$EXIT_DEFER"
 fi
 
@@ -291,5 +285,4 @@ if [ "$verdict" = READY ]; then
 fi
 
 echo "PREFLIGHT_RECOMMENDATION: ${runner}'s fetch is blocked in this sandbox, but the host is reachable outside it. If your harness can run with elevated/outside-the-sandbox network (e.g. ask the user to approve egress), run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. Otherwise tell the user to set up a Zapier MCP server at ${REMOTE_MCP}."
-print_remote_mcp
 exit "$EXIT_ESCALATE"
