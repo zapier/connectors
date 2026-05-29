@@ -101,25 +101,33 @@ runtime_probe() {
 #   blocked transport-level failure — the sandbox won't allow-list this host
 #   unknown no probe tool available at all (decided later by the runtime check)
 #
-# Order: curl (clean, status-agnostic) -> node/bun (clean) -> wget (BusyBox
-# wget's exit codes are lossy, so it's tried only after a real runtime) ->
-# bash /dev/tcp (bash-only). Status-agnostic methods come first deliberately.
+# Order: node/bun FIRST, then curl -> wget -> bash /dev/tcp. The runtime goes
+# first on purpose. Connector scripts make their API calls through Node/Bun's
+# global fetch (undici), which — unlike curl/wget — does NOT honour HTTP(S)_PROXY
+# env vars by default. A sandbox that allow-lists egress through a proxy lets
+# curl succeed while the real `fetch` is firewalled, so a curl-first probe would
+# report a false `ok` (exactly the "probe says reachable, script then fails on
+# fetch" trap). Probing with the same runtime the workload uses predicts the
+# actual fetch outcome. The curl/wget/dev-tcp fallbacks exist only for the
+# pre-runtime state (no node/bun yet); there the worst case is an over-optimistic
+# `ok` that costs one extra readiness-loop iteration — never a wrong terminal
+# verdict, since without a runtime the script can't reach READY anyway.
 probe() {
   url="$1"
-  if has curl; then
-    if curl -s -o /dev/null --max-time "$PROBE_TIMEOUT" "$url" >/dev/null 2>&1; then
-      echo ok
-    else
-      echo blocked
-    fi
-    return
-  fi
   if node_ge_2218 || has node; then
     if runtime_probe node "$url"; then echo ok; else echo blocked; fi
     return
   fi
   if has bun; then
     if runtime_probe bun "$url"; then echo ok; else echo blocked; fi
+    return
+  fi
+  if has curl; then
+    if curl -s -o /dev/null --max-time "$PROBE_TIMEOUT" "$url" >/dev/null 2>&1; then
+      echo ok
+    else
+      echo blocked
+    fi
     return
   fi
   if has wget; then
