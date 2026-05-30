@@ -9,7 +9,7 @@ const definition = defineTool({
   title: "Copy a Notion page between workspaces",
   description:
     "Copy a Notion page (top-level properties only — block children are not recursed) from the `source` workspace to the `target` workspace under a chosen parent page. Returns the new page's id and url.",
-  inputSchema: z.object({
+  inputSchema: z.strictObject({
     sourcePageId: z
       .string()
       .describe(
