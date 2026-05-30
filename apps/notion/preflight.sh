@@ -135,7 +135,6 @@ fi
 # So probe writability first and recommend accordingly.
 if [ "$ready" != true ]; then
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
-  echo "PREFLIGHT_VERSION: 1"
   [ "$runner" = bun ] && install_cmd="bun install" || install_cmd="npm install"
   if ! dir_writable; then
     echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed and ${SCRIPT_DIR} is read-only in the current sandbox (a test write there failed) — \`${install_cmd}\` can't place node_modules here. Run the install with the sandbox disabled, or grant the agent write access to ${SCRIPT_DIR} (a cache flag won't help — node_modules must land in this directory); then run a script with \`--help\` first to learn its arguments and environment variables."
