@@ -70,7 +70,7 @@ elif has bun; then
   runner=bun
 else
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
-  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then run a script (re-run \`${RERUN}\` only if you want to reconfirm)."
+  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then run a script with \`--help\` first to learn its arguments and environment variables (re-run \`${RERUN}\` only if you want to reconfirm)."
   exit "$EXIT_NEEDS_ACTION"
 fi
 
@@ -81,11 +81,11 @@ fi
 if [ "$runner" = node ] && [ ! -d "$SCRIPT_DIR/node_modules" ]; then
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
   if has npm; then
-    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install\` in ${SCRIPT_DIR}, then run a script (re-run \`${RERUN}\` only if you want to reconfirm)."
+    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install\` in ${SCRIPT_DIR}, then run a script with \`--help\` first to learn its arguments and environment variables (re-run \`${RERUN}\` only if you want to reconfirm)."
   else
     # node >= 22.18 ships npm, so a missing npm means it was removed from the
     # Node install. Restore it and install deps in one step.
-    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install\` in ${SCRIPT_DIR}, then run a script (re-run \`${RERUN}\` only if you want to reconfirm)."
+    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install\` in ${SCRIPT_DIR}, then run a script with \`--help\` first to learn its arguments and environment variables (re-run \`${RERUN}\` only if you want to reconfirm)."
   fi
   exit "$EXIT_NEEDS_ACTION"
 fi
