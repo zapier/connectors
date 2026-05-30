@@ -9,14 +9,14 @@ const definition = defineTool({
   title: "Search Notion",
   description:
     "Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).",
-  inputSchema: z.object({
+  inputSchema: z.strictObject({
     query: z
       .string()
       .describe(
         "The text query to search for in the user's Notion workspace. Searches both page titles and database titles.",
       ),
     filter: z
-      .object({
+      .strictObject({
         property: z.literal("object"),
         value: z.enum(["page", "database"]),
       })
