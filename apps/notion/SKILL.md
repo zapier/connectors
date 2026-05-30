@@ -28,7 +28,11 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`connection: "notion"`)        | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.             | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
 | [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target` → `notion`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example. | No                                                                                                                |
 
-Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract. To introspect the input contract without reading the source, run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — both render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. `createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
+Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
+
+**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — or read the script's `inputSchema` in the source directly. Both `--help` forms render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip — inspect the schema first, then construct the input to match it exactly.
+
+`createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
 
 ## Auth
 
@@ -56,22 +60,17 @@ If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPI
 Run the bundled pre-flight check **once** at the start of a session to learn how to execute the scripts in this harness, then run scripts directly — don't re-run it before every call:
 
 ```bash
-./preflight.sh https://api.notion.com
+./preflight.sh
 ```
 
-Passing the API host lets it measure the direct (`NOTION_TOKEN`) path; `api.zapier.com` is always probed too as the with-Zapier path and an egress canary. It is **re-runnable**: act on the `PREFLIGHT_RECOMMENDATION` and re-run until it reports a terminal verdict. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION` / `ESCALATE` / `DEFER` / `USAGE`). The other `PREFLIGHT_*` lines are token-first too (e.g. `PREFLIGHT_LOCAL_WITH_ZAPIER: ok|proxied|blocked`); `PREFLIGHT_RECOMMENDATION` is the human next step.
-
-**When to re-run** — otherwise reuse the prior result, which is already in your context: (a) you changed the environment (installed a runtime or dependencies), (b) a script fails with a network / module / runtime error (re-run to diagnose and recover), or (c) you're in a fresh session with no remembered result. A failing script is itself the signal to re-check; don't gate every call on the pre-flight.
+It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the next step. Reuse the result for the rest of the session.
 
 By exit code:
 
-- **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Use whichever auth path is marked `ok`: `PREFLIGHT_LOCAL_WITH_ZAPIER` (use `NOTION_ZAPIER_CONNECTION_ID`) or `PREFLIGHT_LOCAL_WITHOUT_ZAPIER` (use `NOTION_TOKEN`). If one is `blocked`, just use the other — local execution works, so there's no need for the remote MCP. **Before using the with-Zapier path, check `PREFLIGHT_WITH_ZAPIER_SDK`:** if it's `missing`, the optional peer `@zapier/zapier-sdk` isn't installed (plain `npm install` skips optional peers) — run `npm install @zapier/zapier-sdk` first, or just use the `NOTION_TOKEN` path, which needs no extra install.
-- **Exit `3` (`NEEDS_ACTION`)** — perform the single action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then re-run `./preflight.sh https://api.notion.com`.
-- **Exit `4` (`ESCALATE`)** — no confirmed local path. Either a path is `proxied` (the runtime's own `fetch` is blocked here, but the host is reachable outside this sandbox's default egress — the connector calls APIs via Node/Bun `fetch`, which ignores proxy env vars), or the API host couldn't be measured and the canary shows restricted egress. If your harness can run with elevated/outside-the-sandbox network — e.g. ask the user to approve egress, or re-run outside the sandbox — do that and execute normally; otherwise treat it like `DEFER` and use the remote MCP the script names.
-- **Exit `1` (`DEFER`)** — both measured hosts are blocked (not even via a proxy). Don't execute here; recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side.
-- **Exit `2` (`USAGE`)** — the optional host argument wasn't a URL; pass `https://api.notion.com` (or omit it).
+- **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Always run a script with `--help` first to learn its arguments and required env vars; pick an auth path and set its env var (`NOTION_ZAPIER_CONNECTION_ID` or `NOTION_TOKEN`); see [Auth](#auth). If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. (The with-Zapier path also needs the optional peer `@zapier/zapier-sdk`; if it's missing the script says so — run `npm install @zapier/zapier-sdk`, or use the `NOTION_TOKEN` path, which needs no extra install.)
+- **Exit `1` (`NEEDS_ACTION`)** — perform the single self-verifying action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then go straight to running a script. Re-running `./preflight.sh` to reconfirm is optional, not required.
 
-The three invocation paths below all assume the pre-flight reported `READY` (or `ESCALATE` with the network escalation applied).
+The three invocation paths below all assume the pre-flight reported `READY`.
 
 ### 1. Execute scripts directly
 
