@@ -41,6 +41,8 @@ The script needs one of two credentials, passed via environment variable (no CLI
 - **`NOTION_ZAPIER_CONNECTION_ID`** _(recommended)_ — a Zapier Notion connection ID. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; that one connection then covers their entire Notion workspace without per-resource sharing.
 
   **Finding the connection ID.** The Zapier connections UI doesn't currently expose connection IDs, so use the Zapier SDK CLI:
+
+  **Sandbox heads-up:** `npx` fetches the CLI from the npm registry on first use, writing to the npm cache — so under the same sandbox condition the pre-flight flags for the dependency install (a blocked home dir or read-only workspace), these calls fail with `EPERM`. Run them with the sandbox disabled (or however your harness permits the npm cache write), just like the install step. Use `bunx` instead of `npx` when `PREFLIGHT_RUNNER` is `bun`.
   1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
   2. `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` — prints `title (connection ID)` per matching connection. Use `NotionCLIAPI` exactly (the canonical Zapier app key for Notion). Add `--json` for machine-readable output. If the user has multiple Notion connections (different workspaces), list the titles and ask which one to use.
   3. **If the connection is shared with the user** (e.g. an org-wide team connection), the default `list-connections` call hides it. Opt in explicitly with both flags: `npx @zapier/zapier-sdk-cli --can-include-shared-connections list-connections NotionCLIAPI --include-shared`. Don't auto-retry with this on if the first call returns empty — ask the user first.
@@ -69,6 +71,8 @@ By exit code:
 
 - **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Always run a script with `--help` first to learn its arguments and required env vars; pick an auth path and set its env var (`NOTION_ZAPIER_CONNECTION_ID` or `NOTION_TOKEN`); see [Auth](#auth). If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. (The with-Zapier path also needs the optional peer `@zapier/zapier-sdk`; if it's missing the script says so — run `npm install @zapier/zapier-sdk`, or use the `NOTION_TOKEN` path, which needs no extra install.)
 - **Exit `1` (`NEEDS_ACTION`)** — perform the single self-verifying action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then go straight to running a script. Re-running `./preflight.sh` to reconfirm is optional, not required.
+
+**Match the package runner to `PREFLIGHT_RUNNER`.** Wherever this skill shows `npx` — the package CLI ([path 2](#2-use-the-packages-cli)) and the Zapier SDK CLI ([Auth](#auth)) — substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`. A `bun` verdict means the harness is Bun-first (often with no usable npm), and `bunx` resolves/auto-installs the package from Bun's own cache, the same way the script runner does.
 
 The three invocation paths below all assume the pre-flight reported `READY`.
 
@@ -114,7 +118,7 @@ npx @zapier/notion-connector --help                    # all scripts
 npx @zapier/notion-connector run search --help         # per-script env vars
 ```
 
-The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. **Caveat:** not every agent harness allows arbitrary `npx` invocations — sandboxed runtimes may block network fetches or process spawns. If `npx` is unavailable, fall back to (1).
+The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. When `PREFLIGHT_RUNNER` is `bun`, use `bunx @zapier/notion-connector …` instead of `npx`. **Caveat:** not every agent harness allows arbitrary `npx`/`bunx` invocations — sandboxed runtimes may block network fetches or process spawns. If neither is available, fall back to (1).
 
 ### 3. Use as a recipe
 
