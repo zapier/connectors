@@ -28,7 +28,11 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 | [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`connection: "notion"`)        | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.             | **Yes** — `properties` depends on `databaseId`. See `createDatabaseItem.inputDependencies` on the default export. |
 | [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target` → `notion`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example. | No                                                                                                                |
 
-Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract. To introspect the input contract without reading the source, run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — both render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. `createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
+Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
+
+**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — or read the script's `inputSchema` in the source directly. Both `--help` forms render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip — inspect the schema first, then construct the input to match it exactly.
+
+`createDatabaseItem` additionally ships an `inputDependencies` declaration: the `properties` field's allowed keys + types depend on the resolved `databaseId`, so the agent should resolve the `databaseId` first, then read the database's schema via the Notion API to know which property keys are valid (this dynamic shape isn't expressible in static JSON Schema, hence the separate declaration).
 
 ## Auth
 
@@ -37,6 +41,8 @@ The script needs one of two credentials, passed via environment variable (no CLI
 - **`NOTION_ZAPIER_CONNECTION_ID`** _(recommended)_ — a Zapier Notion connection ID. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; that one connection then covers their entire Notion workspace without per-resource sharing.
 
   **Finding the connection ID.** The Zapier connections UI doesn't currently expose connection IDs, so use the Zapier SDK CLI:
+
+  **Sandbox heads-up:** `npx` fetches the CLI from the npm registry on first use, writing to the npm cache — so under the same sandbox condition the pre-flight flags for the dependency install (a blocked home dir or read-only workspace), these calls fail with `EPERM`. Run them with the sandbox disabled (or however your harness permits the npm cache write), just like the install step. Use `bunx` instead of `npx` when `PREFLIGHT_RUNNER` is `bun`.
   1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
   2. `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` — prints `title (connection ID)` per matching connection. Use `NotionCLIAPI` exactly (the canonical Zapier app key for Notion). Add `--json` for machine-readable output. If the user has multiple Notion connections (different workspaces), list the titles and ask which one to use.
   3. **If the connection is shared with the user** (e.g. an org-wide team connection), the default `list-connections` call hides it. Opt in explicitly with both flags: `npx @zapier/zapier-sdk-cli --can-include-shared-connections list-connections NotionCLIAPI --include-shared`. Don't auto-retry with this on if the first call returns empty — ask the user first.
@@ -51,7 +57,24 @@ If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPI
 
 ## Using this skill
 
-Three ways to invoke the tools, in order of preference once the skill is installed.
+### 0. Pre-flight — check how to run here first
+
+Run the bundled pre-flight check **once** at the start of a session to learn how to execute the scripts in this harness, then run scripts directly — don't re-run it before every call:
+
+```bash
+./preflight.sh
+```
+
+It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the next step. Reuse the result for the rest of the session.
+
+By exit code:
+
+- **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Always run a script with `--help` first to learn its arguments and required env vars; pick an auth path and set its env var (`NOTION_ZAPIER_CONNECTION_ID` or `NOTION_TOKEN`); see [Auth](#auth). If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. (The with-Zapier path also needs the optional peer `@zapier/zapier-sdk`; if it's missing the script says so — run `npm install @zapier/zapier-sdk`, or use the `NOTION_TOKEN` path, which needs no extra install.)
+- **Exit `1` (`NEEDS_ACTION`)** — perform the single self-verifying action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then go straight to running a script. Re-running `./preflight.sh` to reconfirm is optional, not required.
+
+**Match the package runner to `PREFLIGHT_RUNNER`.** Wherever this skill shows `npx` — the package CLI ([path 2](#2-use-the-packages-cli)) and the Zapier SDK CLI ([Auth](#auth)) — substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`. A `bun` verdict means the harness is Bun-first (often with no usable npm), and `bunx` resolves/auto-installs the package from Bun's own cache, the same way the script runner does.
+
+The three invocation paths below all assume the pre-flight reported `READY`.
 
 ### 1. Execute scripts directly
 
@@ -95,7 +118,7 @@ npx @zapier/notion-connector --help                    # all scripts
 npx @zapier/notion-connector run search --help         # per-script env vars
 ```
 
-The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. **Caveat:** not every agent harness allows arbitrary `npx` invocations — sandboxed runtimes may block network fetches or process spawns. If `npx` is unavailable, fall back to (1).
+The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. When `PREFLIGHT_RUNNER` is `bun`, use `bunx @zapier/notion-connector …` instead of `npx`. **Caveat:** not every agent harness allows arbitrary `npx`/`bunx` invocations — sandboxed runtimes may block network fetches or process spawns. If neither is available, fall back to (1).
 
 ### 3. Use as a recipe
 
