@@ -57,22 +57,22 @@ If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPI
 
 ## Using this skill
 
-### 0. Pre-flight — check how to run here first
+### 0. Pre-flight and auth
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to execute the scripts in this harness, then run scripts directly — don't re-run it before every call:
+Run the bundled pre-flight check **once** at the start of a session, then run scripts directly — don't re-run it before every call:
 
 ```bash
 ./preflight.sh
 ```
 
-It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the next step. Reuse the result for the rest of the session.
+It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the exact next step to run.
 
 By exit code:
 
-- **Exit `0` (`READY`)** — execute the scripts using the runtime named in `PREFLIGHT_RUNNER` (`node` or `bun`). Always run a script with `--help` first to learn its arguments and required env vars; pick an auth path and set its env var (`NOTION_ZAPIER_CONNECTION_ID` or `NOTION_TOKEN`); see [Auth](#auth). If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`), which runs the API call server-side. (The with-Zapier path also needs the optional peer `@zapier/zapier-sdk`; if it's missing the script says so — run `npm install @zapier/zapier-sdk`, or use the `NOTION_TOKEN` path, which needs no extra install.)
-- **Exit `1` (`NEEDS_ACTION`)** — perform the single self-verifying action it prints (e.g. `npm install` in this directory, or install Node 22.18+/Bun), then go straight to running a script. Re-running `./preflight.sh` to reconfirm is optional, not required.
+- **Exit `0` (`READY`)** — follow `PREFLIGHT_RECOMMENDATION`: it gives the exact `--help` command to run on the script you intend to use (e.g. `` `node /path/scripts/search.ts --help` ``). The `--help` output marks the recommended auth option `[READY — use this]`, annotates each env var as `[set]` or `[not set]`, and lists any optional packages still needed (e.g. `@zapier/zapier-sdk  [not installed — run \`npm install @zapier/zapier-sdk\` first]`). If no option is ready it tells you exactly what to provide — see [Auth](#auth) for how to obtain each credential type. If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`).
+- **Exit `1` (`NEEDS_ACTION`)** — follow `PREFLIGHT_RECOMMENDATION`: it spells out the single self-verifying install step (e.g. `npm install`) and the exact `--help` command to run afterward. Re-running `./preflight.sh` to reconfirm is optional.
 
-**Match the package runner to `PREFLIGHT_RUNNER`.** Wherever this skill shows `npx` — the package CLI ([path 2](#2-use-the-packages-cli)) and the Zapier SDK CLI ([Auth](#auth)) — substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`. A `bun` verdict means the harness is Bun-first (often with no usable npm), and `bunx` resolves/auto-installs the package from Bun's own cache, the same way the script runner does.
+**Match the package runner to `PREFLIGHT_RUNNER`.** Wherever this skill shows `npx` — the package CLI ([path 2](#2-use-the-packages-cli)) and the Zapier SDK CLI ([Auth](#auth)) — substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`.
 
 The three invocation paths below all assume the pre-flight reported `READY`.
 
