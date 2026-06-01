@@ -113,11 +113,11 @@ const results = await notion.scripts.search.run({ query: "Q4 planning" }, opts);
 
 ## Tools
 
-| Tool name              | Default export       | What it does                                                                                                                                                  |
-| ---------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search`               | `search`             | Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).                           |
-| `create_database_item` | `createDatabaseItem` | Add a row (page) to a Notion database. `properties` keys + types depend on the database schema; use `createDatabaseItem.inputDependencies` to discover them.  |
-| `copy_page`            | `copyPage`           | Copy a Notion page from one workspace to another. Multi-connection — set credentials per slot with `SOURCE_*` and `TARGET_*` env-var prefixes (see `--help`). |
+| Tool name              | Default export       | What it does                                                                                                                                                                                          |
+| ---------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search`               | `search`             | Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).                                                                   |
+| `create_database_item` | `createDatabaseItem` | Add a row (page) to a Notion database. `properties` keys + types depend on the database schema; use the Notion API to discover the database's property names and types before constructing the input. |
+| `copy_page`            | `copyPage`           | Copy a Notion page from one workspace to another. Multi-connection — set credentials per slot with `SOURCE_*` and `TARGET_*` env-var prefixes (see `--help`).                                         |
 
 Each tool's `inputSchema` / `outputSchema` is the source of truth for its contract. The bundled CLI's `--help` and the MCP `tools/list` response both surface them.
 

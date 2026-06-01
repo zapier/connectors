@@ -39,18 +39,6 @@ const definition = defineTool({
     idempotentHint: false,
     openWorldHint: true,
   },
-  inputDependencies: {
-    databaseId: {
-      kind: "options",
-      fromTool: "list-databases",
-      fromArgs: {},
-    },
-    properties: {
-      kind: "schema",
-      fromTool: "get-database-schema",
-      fromArgs: { databaseId: "$databaseId" },
-    },
-  } as const,
   connection: "notion",
   run: async (input, ctx) => {
     const body = {

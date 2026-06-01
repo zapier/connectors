@@ -37,7 +37,7 @@ Every page and database has a parent. The shape varies by parent type:
 
 ## Property values by type
 
-The `properties` object in `create_database_item` (and in update calls) uses Notion's property-value shapes. The accepted shape per type is fixed; the property _names_ depend on the database's schema (see `inputDependencies`).
+The `properties` object in `create_database_item` (and in update calls) uses Notion's property-value shapes. The accepted shape per type is fixed; the property _names_ depend on the database's schema (fetch the database object via the Notion API to discover them).
 
 | Property type | Value shape                                              |
 | ------------- | -------------------------------------------------------- |

@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import createDatabaseItemDefinition from "../scripts/create-database-item.ts";
 
-const { inputSchema, outputSchema, inputDependencies } =
-  createDatabaseItemDefinition;
+const { inputSchema, outputSchema } = createDatabaseItemDefinition;
 
 const PROJECTS_DB_UUID = "12345678-1234-1234-1234-123456789abc";
 
@@ -41,29 +40,6 @@ describe("create-database-item: inputSchema", () => {
     expect(
       inputSchema.safeParse({ databaseId: PROJECTS_DB_UUID }).success,
     ).toBe(false);
-  });
-});
-
-describe("create-database-item: inputDependencies", () => {
-  it("declares `databaseId` as an options chain off list-databases", () => {
-    expect(inputDependencies.databaseId.kind).toBe("options");
-    expect(inputDependencies.databaseId.fromTool).toBe("list-databases");
-  });
-
-  it("declares `properties` as a schema chain off get-database-schema, parameterised by databaseId", () => {
-    expect(inputDependencies.properties.kind).toBe("schema");
-    expect(inputDependencies.properties.fromTool).toBe("get-database-schema");
-    expect(inputDependencies.properties.fromArgs.databaseId).toBe(
-      "$databaseId",
-    );
-  });
-});
-
-describe("create-database-item: governance", () => {
-  it("mirrors inputDependencies on the MCP surface shape", () => {
-    expect(createDatabaseItemDefinition.inputDependencies).toBe(
-      inputDependencies,
-    );
   });
 });
 
