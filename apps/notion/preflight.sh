@@ -118,7 +118,7 @@ elif has bun; then
   ready=false
 else
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
-  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then run a script with \`--help\` first to learn its arguments and environment variables."
+  echo "PREFLIGHT_RECOMMENDATION: no Node 22.18+ or Bun found — install Node 22.18+ (ships npm) or Bun, then run \`<runner> ${SCRIPT_DIR}/scripts/<name>.ts --help\` to discover arguments and credentials."
   exit "$EXIT_NEEDS_ACTION"
 fi
 
@@ -137,15 +137,15 @@ if [ "$ready" != true ]; then
   echo "PREFLIGHT_STATUS: NEEDS_ACTION"
   [ "$runner" = bun ] && install_cmd="bun install" || install_cmd="npm install"
   if ! dir_writable; then
-    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed and ${SCRIPT_DIR} is read-only in the current sandbox (a test write there failed) — \`${install_cmd}\` can't place node_modules here. Run the install with the sandbox disabled, or grant the agent write access to ${SCRIPT_DIR} (a cache flag won't help — node_modules must land in this directory); then run a script with \`--help\` first to learn its arguments and environment variables."
+    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed and ${SCRIPT_DIR} is read-only in the current sandbox (a test write there failed) — \`${install_cmd}\` can't place node_modules here. Run the install with the sandbox disabled, or grant the agent write access to ${SCRIPT_DIR} (a cache flag won't help — node_modules must land in this directory); then run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts --help\` to discover arguments and credentials."
   elif [ "$runner" = bun ]; then
-    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`BUN_INSTALL_CACHE_DIR=\"${SCRIPT_DIR}/.bun-cache\" bun install\` in ${SCRIPT_DIR} (the workspace-local cache survives a sandbox that blocks ~/.bun; plain \`bun install\` works otherwise), then run a script with \`--help\` first to learn its arguments and environment variables."
+    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`BUN_INSTALL_CACHE_DIR=\"${SCRIPT_DIR}/.bun-cache\" bun install\` in ${SCRIPT_DIR} (the workspace-local cache survives a sandbox that blocks ~/.bun; plain \`bun install\` works otherwise), then run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts --help\` to discover arguments and credentials."
   elif has npm; then
-    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install --cache \"${SCRIPT_DIR}/.npm-cache\"\` in ${SCRIPT_DIR} (the workspace-local --cache survives a sandbox that blocks ~/.npm; plain \`npm install\` works otherwise), then run a script with \`--help\` first to learn its arguments and environment variables."
+    echo "PREFLIGHT_RECOMMENDATION: dependencies are not installed — run \`npm install --cache \"${SCRIPT_DIR}/.npm-cache\"\` in ${SCRIPT_DIR} (the workspace-local --cache survives a sandbox that blocks ~/.npm; plain \`npm install\` works otherwise), then run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts --help\` to discover arguments and credentials."
   else
     # node >= 22.18 ships npm, so a missing npm means it was removed from the
     # Node install. Restore it, then install with a workspace-local cache.
-    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install --cache \"${SCRIPT_DIR}/.npm-cache\"\` in ${SCRIPT_DIR}, then run a script with \`--help\` first to learn its arguments and environment variables."
+    echo "PREFLIGHT_RECOMMENDATION: npm is missing (it ships with Node 22.18+) — reinstall/repair Node 22.18+, run \`npm install --cache \"${SCRIPT_DIR}/.npm-cache\"\` in ${SCRIPT_DIR}, then run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts --help\` to discover arguments and credentials."
   fi
   exit "$EXIT_NEEDS_ACTION"
 fi
@@ -154,5 +154,5 @@ fi
 # Runtime + deps are in place — the scripts run.
 echo "PREFLIGHT_STATUS: READY"
 echo "PREFLIGHT_RUNNER: ${runner}"
-echo "PREFLIGHT_RECOMMENDATION: run scripts with \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts\`. Always run a script with \`--help\` first to learn the arguments and environment variables it requires."
+echo "PREFLIGHT_RECOMMENDATION: run \`${runner} ${SCRIPT_DIR}/scripts/<name>.ts --help\` to discover arguments and credentials, then run the script with the required env vars set."
 exit "$EXIT_READY"
