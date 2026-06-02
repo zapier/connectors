@@ -1,7 +1,7 @@
 ---
 name: notion
 description: Search Notion pages and databases, create rows in Notion databases, and copy pages between Notion workspaces — three tools wrapping the Notion REST API. Use when the user wants to read or write Notion content. If the user mentions Notion or asks to find, add, or duplicate pages or databases, use this connector.
-license: MIT
+license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
   source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
