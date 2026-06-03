@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import copyPageDefinition from "../scripts/copy-page.ts";
+import copyPageDefinition from "../scripts/copyPage.ts";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;

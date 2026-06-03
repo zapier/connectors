@@ -5,7 +5,7 @@ import { z } from "zod";
 import { connectionResolvers } from "../connections.ts";
 
 const definition = defineTool({
-  name: "create_database_item",
+  name: "createDatabaseItem",
   title: "Create row in a Notion database",
   description:
     "Add a new row (page) to a Notion database. The `properties` field's accepted shape depends on the chosen database's schema. The database must be shared with the integration before it appears in lookups; see `references/notion-api-gotchas.md`.",
