@@ -1,5 +1,16 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.3
+
+### Patch Changes
+
+- 0e3316d: Rename script files and tool names to camelCase to comply with the new connector naming convention enforced by `@zapier/connectors-sdk` and `@zapier/connectors-ref`.
+  - `scripts/copy-page.ts` → `scripts/copyPage.ts`, `name: "copy_page"` → `"copyPage"`
+  - `scripts/create-database-item.ts` → `scripts/createDatabaseItem.ts`, `name: "create_database_item"` → `"createDatabaseItem"`
+
+- Updated dependencies [342f3d8]
+  - @zapier/connectors-sdk@0.1.0-experimental.9
+
 ## 0.1.0-experimental.2
 
 ### Patch Changes
