@@ -1,5 +1,11 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.4
+
+### Patch Changes
+
+- d5b6ee9: Bump `@zapier/connectors-sdk` dependency to `0.1.0-experimental.10`.
+
 ## 0.1.0-experimental.3
 
 ### Patch Changes
