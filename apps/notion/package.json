@@ -5,12 +5,17 @@
   "license": "Elastic-2.0",
   "type": "module",
   "exports": {
-    ".": "./index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
   },
   "bin": {
-    "@zapier/notion-connector": "./cli.ts"
+    "@zapier/notion-connector": "./cli.js"
   },
   "files": [
+    "dist/",
+    "cli.js",
     "*.ts",
     "scripts/",
     "references/",
@@ -19,6 +24,10 @@
     "README.md",
     "LICENSE"
   ],
+  "scripts": {
+    "build": "tsup",
+    "prepare": "node cli.js build || bun cli.js build || true"
+  },
   "dependencies": {
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0",
