@@ -1,5 +1,15 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.5
+
+### Patch Changes
+
+- af02524: Ship compiled JS for the npm install route; add `prepare` build for git-clone library imports.
+
+  `@zapier/notion-connector`: adds a tsup build that emits `dist/index.js` and `dist/cli.js`. The `exports` field now points at the compiled library (`dist/index.js`), fixing `ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING` on all Node versions when the connector is imported as a node module. A plain-JS proxy (`cli.js`) is the new `bin` entry — it runs `dist/cli.js` when present (npm install, any Node) or falls through to source `cli.ts` (git-clone route, Node 22.18+/Bun, no build required). A `prepare` lifecycle hook (`node cli.js build`) auto-builds `dist/` on git-clone installs so that `import { search } from "@zapier/notion-connector"` works even when the package was installed from a git/file source. The `build` subcommand is handled directly in `cli.js` (no TS loading needed) and exits 0 on failure so installs never break in restricted environments.
+
+  `@zapier/connectors-ref`: updates the connector contract to require `exports` → `{ import: "./dist/index.js", types: "./index.ts" }` and `bin` → `./cli.js`. Rejects raw `.ts` entry points. Adds `dist/` and `cli.js` to required `files`.
+
 ## 0.1.0-experimental.4
 
 ### Patch Changes
