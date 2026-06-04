@@ -42,8 +42,16 @@ if (process.argv[2] === "build") {
   process.exit(0);
 }
 
-if (existsSync(join(dir, "dist", "cli.js"))) {
-  await import("./dist/cli.js");
-} else {
-  await import("./cli.ts");
-}
+// Spawn the target as a subprocess so it runs as the entry point.
+// Dynamic import() would set import.meta.main = false, causing
+// runDispatchCli to return early without executing anything.
+const target = existsSync(join(dir, "dist", "cli.js"))
+  ? join(dir, "dist", "cli.js")
+  : join(dir, "cli.ts");
+
+const { status } = spawnSync(
+  process.execPath,
+  [target, ...process.argv.slice(2)],
+  { stdio: "inherit" },
+);
+process.exit(status ?? 1);
