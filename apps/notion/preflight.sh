@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 # Connector pre-flight readiness check.
 #
-# Canonical source: connector-assets/preflight.sh in the Zapier connectors repo.
-# Every apps/<app>/preflight.sh is a byte-identical copy synced by
-# `pnpm run ensure-connector-assets`. Edit the canonical copy, never the copies.
+# Canonical source: the assets/ directory of @zapier/connectors-dev.
+# Connector copies are synced by `connectors-dev ensure-assets`. Edit the
+# canonical copy, never the per-connector copies.
 #
 # Runs inside whatever agent harness installed the connector (Cursor, Claude
 # Code, Codex, Gemini CLI, Goose, ...) — often a minimal container — and answers

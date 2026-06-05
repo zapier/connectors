@@ -4,9 +4,9 @@
  * Compiles index.ts (library entry, with declarations) and cli.ts (CLI, bundled
  * for use by the cli.js proxy on the npm install route).
  *
- * This file is byte-identical across all connectors and is managed by
- * connector-assets/. Do not edit per-connector copies directly; edit the
- * canonical source in connector-assets/ and run `pnpm run ensure-connector-assets`.
+ * This file is byte-identical across all connectors. Edit the canonical source
+ * in the assets/ directory of @zapier/connectors-dev and run
+ * `connectors-dev ensure-assets` to sync all copies.
  */
 import { defineConfig } from "tsup";
 

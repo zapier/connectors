@@ -7,12 +7,12 @@ import searchDefinition from "./scripts/search.ts";
 
 const connector = defineConnector({
   scripts: {
-    search: searchDefinition,
-    createDatabaseItem: createDatabaseItemDefinition,
     copyPage: copyPageDefinition,
+    createDatabaseItem: createDatabaseItemDefinition,
+    search: searchDefinition,
   },
   connectionResolvers,
 });
 
 export default connector;
-export const { search, createDatabaseItem, copyPage } = toFunctions(connector);
+export const { copyPage, createDatabaseItem, search } = toFunctions(connector);
