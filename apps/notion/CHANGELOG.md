@@ -1,5 +1,19 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.6
+
+### Patch Changes
+
+- a463948: Fix connector CLI dispatch regression on Node 22.18+
+
+  Add an esbuild plugin to the `cli.ts` tsup entry that externalises
+  `./index.ts → ./index.js`, preventing scripts from being inlined into
+  `dist/cli.js`. Without this, every script's top-level
+  `await handleIfScriptMain(import.meta, …)` fired when the dispatch CLI
+  started (because `import.meta.main` is `true` for the bundle entry in
+  Node 22.18+), causing all scripts to execute instead of routing via
+  `runDispatchCli`.
+
 ## 0.1.0-experimental.5
 
 ### Patch Changes
