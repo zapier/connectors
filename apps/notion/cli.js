@@ -30,8 +30,23 @@ const dir = dirname(fileURLToPath(import.meta.url));
 
 if (process.argv[2] === "build") {
   if (!existsSync(join(dir, "dist", "cli.js"))) {
-    for (const cmd of ["npx", "bunx"]) {
-      const { status } = spawnSync(cmd, ["tsup"], {
+    // Try the locally-installed tsup binary first so module resolution for
+    // typescript (a required tsup peer) works from the connector's own
+    // node_modules. Fall back to npx/bunx for environments without a local
+    // install (e.g. fresh git-clone before npm install).
+    const localTsup = join(dir, "node_modules", ".bin", "tsup");
+    const candidates = existsSync(localTsup)
+      ? [
+          [process.execPath, [localTsup]],
+          ["npx", ["tsup"]],
+          ["bunx", ["tsup"]],
+        ]
+      : [
+          ["npx", ["tsup"]],
+          ["bunx", ["tsup"]],
+        ];
+    for (const [cmd, args] of candidates) {
+      const { status } = spawnSync(cmd, args, {
         stdio: "inherit",
         shell: true,
         cwd: dir,
