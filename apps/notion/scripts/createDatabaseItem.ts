@@ -16,7 +16,7 @@ const definition = defineTool({
         'The UUID of the Notion database to add the row to. Use the `search` tool with `filter.value: "database"` to find a database by name, or call `list-databases` if your harness has it.',
       ),
     properties: z
-      .record(z.string(), z.unknown())
+      .record(z.string(), z.json())
       .describe(
         "Key/value map of property values for the new row. Keys are the database's property names (NOT API field keys — Notion's UI labels). Values follow the Notion property-value shape for the property's type (text → { rich_text: [{ text: { content }}] }, number → { number }, select → { select: { name } }, etc.). The exact property shape depends on the chosen database's schema.",
       ),
@@ -30,7 +30,7 @@ const definition = defineTool({
       type: z.literal("database_id"),
       database_id: z.string(),
     }),
-    properties: z.record(z.string(), z.unknown()),
+    properties: z.record(z.string(), z.json()),
     url: z.string(),
   }),
   annotations: {
