@@ -1,6 +1,6 @@
 {
   "name": "@zapier/notion-connector",
-  "version": "0.1.0-experimental.7",
+  "version": "0.1.0-experimental.8",
   "description": "Agent-callable tools for Notion — search and database-item creation against the Notion REST API.",
   "license": "Elastic-2.0",
   "type": "module",

@@ -1,5 +1,11 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.8
+
+### Patch Changes
+
+- 3757d42: Ban bare `z.unknown()` in connector schemas (STAFF-4101). `connectors-ref` now rejects a bare `z.unknown()` on either input or output — including in value position (`z.array(z.unknown())`, `z.record(_, z.unknown())`) — the same way it rejects untyped `.loose()` passthrough, because it compiles to an empty `{}` JSON Schema that tells an agent nothing. Use `z.json()` for genuinely arbitrary JSON. Updates the Notion `search` (real result shape + `properties`) / `createDatabaseItem` and Slack `blocks` schemas to comply.
+
 ## 0.1.0-experimental.7
 
 ### Patch Changes
