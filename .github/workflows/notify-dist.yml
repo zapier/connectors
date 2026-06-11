@@ -1,0 +1,27 @@
+# Notifies the connectors-dist pipeline (GitLab) to regenerate + redeploy the
+# skills download API whenever connector content changes here.
+#
+# Runs on every push to main of this repo (zapier/connectors): synced from
+# GitLab today, direct commits after the GitLab→GitHub cutover — either way the
+# notifier fires identically. It POSTs to a GitLab pipeline trigger; the deploy
+# job in connectors-dist clones this repo at SOURCE_SHA and ships to Vercel.
+#
+# Requires repo secret DIST_TRIGGER_TOKEN (a connectors-dist pipeline trigger
+# token). The token only triggers a pipeline — narrowest possible scope.
+name: Notify connectors-dist deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger connectors-dist deploy
+        run: |
+          curl --fail --silent --show-error -X POST \
+            -F token="${{ secrets.DIST_TRIGGER_TOKEN }}" \
+            -F ref=main \
+            -F "variables[SOURCE_SHA]=${{ github.sha }}" \
+            "https://gitlab.com/api/v4/projects/82859852/trigger/pipeline"
