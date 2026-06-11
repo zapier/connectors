@@ -1,5 +1,13 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.9
+
+### Patch Changes
+
+- 75e6a4e: Publish connectors with restricted npm access instead of public.
+
+  Per legal review (STAFF-4104), connectors must not be world-public on npm. The connector `package.json` fundamentals (`applyPackageFundamentals` in `@zapier/connectors-dev`) now require and write `publishConfig.access: "restricted"`, so `pnpm run check` keeps every connector restricted. `@zapier/slack-connector` and `@zapier/notion-connector` are updated to match.
+
 ## 0.1.0-experimental.8
 
 ### Patch Changes
