@@ -32,6 +32,18 @@ Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the s
 
 **Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — or read the script's `inputSchema` in the source directly. Both `--help` forms render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip — inspect the schema first, then construct the input to match it exactly.
 
+## Output format
+
+Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
+
+- **`data`** — the script's result (the shape declared by its `outputSchema`).
+- **`meta.outputValidation`** — what validation did to the output:
+  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
+
+**Reading dropped fields / `skipOutputValidation`.** To receive the raw, unvalidated output, set the single token `skipOutputValidation` — CLI: append `--skipOutputValidation`; MCP: set `skipOutputValidation: true` in the call request's `_meta`; SDK: pass `{ skipOutputValidation: true }` in the run options. Input validation is never skipped.
+
 ## Auth
 
 The script needs one of two credentials, passed via environment variable (no CLI flags). Prefer the Zapier connection ID; fall back to the direct Notion token if the user doesn't want a Zapier account.

@@ -62,7 +62,7 @@ describe("create-database-item: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await createDatabaseItemDefinition.run(
+    const { data: result } = await createDatabaseItemDefinition.run(
       {
         databaseId: PROJECTS_DB_UUID,
         properties: {

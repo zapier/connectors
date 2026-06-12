@@ -77,7 +77,7 @@ describe("search: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await searchDefinition.run(
+    const { data: result } = await searchDefinition.run(
       { query: "Q4 planning" },
       { fetch: fakeFetch },
     );

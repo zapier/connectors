@@ -39,7 +39,7 @@ describe("copy-page: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await copyPageDefinition.run(
+    const { data: result } = await copyPageDefinition.run(
       {
         sourcePageId: "src-page-uuid",
         targetParentPageId: "tgt-parent-uuid",
