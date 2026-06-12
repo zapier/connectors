@@ -1,0 +1,68 @@
+{
+  "name": "@zapier/dropbox-connector",
+  "private": true,
+  "description": "Agent-callable Dropbox tools — upload, organize, find, and share files and folders. Use when the user wants to manage Dropbox content (save, move, search, share, list, or read files), including requests that don't name Dropbox explicitly, e.g. \"save this report to my cloud storage\" or \"share that folder with Sam\".",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/dropbox-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "preflight.sh",
+    "SKILL.md",
+    "README.md",
+    "LICENSE",
+    "references/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepare": "node cli.js build || bun cli.js build || true"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.1.0-experimental.14",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk": "^0.59.0"
+  },
+  "peerDependenciesMeta": {
+    "@zapier/zapier-sdk": {
+      "optional": true
+    }
+  },
+  "keywords": [
+    "dropbox",
+    "files",
+    "file-storage",
+    "cloud-storage",
+    "file-sharing",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/dropbox"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
