@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
+import {
+  defineTool,
+  handleIfScriptMain,
+  throwForStatus,
+} from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
@@ -53,10 +57,7 @@ const definition = defineTool({
       },
       body: JSON.stringify(body),
     });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Notion create_database_item ${res.status}: ${errBody}`);
-    }
+    await throwForStatus(res);
     return res.json();
   },
 });

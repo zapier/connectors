@@ -142,6 +142,6 @@ describe("create-database-item: run", () => {
         },
         { fetch: fakeFetch },
       ),
-    ).rejects.toThrow(/Notion create_database_item 400/);
+    ).rejects.toThrow(/HTTP 400/);
   });
 });

@@ -1,3 +1,7 @@
+import {
+  type ConnectorHttpError,
+  isConnectorHttpError,
+} from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
 import searchDefinition from "../scripts/search.ts";
@@ -110,15 +114,22 @@ describe("search: run", () => {
     expect(headers["Content-Type"]).toBe("application/json");
   });
 
-  it("throws a tagged error including the response status on non-OK", async () => {
+  it("throws a ConnectorHttpError carrying the status and parsed body on non-OK", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(
         { object: "error", code: "validation_error", message: "bad query" },
         { status: 400 },
       )) as typeof globalThis.fetch;
 
-    await expect(
-      searchDefinition.run({ query: "x" }, { fetch: fakeFetch }),
-    ).rejects.toThrow(/Notion search 400/);
+    const err = await searchDefinition
+      .run({ query: "x" }, { fetch: fakeFetch })
+      .catch((e: unknown) => e);
+    expect(isConnectorHttpError(err)).toBe(true);
+    const httpErr = err as ConnectorHttpError;
+    expect(httpErr.message).toMatch(/HTTP 400/);
+    expect(httpErr.response.status).toBe(400);
+    // The Notion error code isn't promoted to a top-level field, but the full
+    // body is captured transparently for the agent/CLI to inspect.
+    expect(httpErr.response.body).toMatchObject({ code: "validation_error" });
   });
 });

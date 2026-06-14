@@ -1,5 +1,9 @@
 #!/usr/bin/env node
-import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
+import {
+  defineTool,
+  handleIfScriptMain,
+  throwForStatus,
+} from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
@@ -41,12 +45,7 @@ const definition = defineTool({
         headers: { "Notion-Version": "2022-06-28" },
       },
     );
-    if (!readRes.ok) {
-      const errBody = await readRes.text();
-      throw new Error(
-        `Notion copy_page (source) ${readRes.status}: ${errBody}`,
-      );
-    }
+    await throwForStatus(readRes, "Failed to read the source page");
     const sourcePage = (await readRes.json()) as {
       properties: Record<string, unknown>;
     };
@@ -65,12 +64,10 @@ const definition = defineTool({
         }),
       },
     );
-    if (!createRes.ok) {
-      const errBody = await createRes.text();
-      throw new Error(
-        `Notion copy_page (target) ${createRes.status}: ${errBody}`,
-      );
-    }
+    await throwForStatus(
+      createRes,
+      "Failed to create the page in the target workspace",
+    );
     return createRes.json();
   },
 });
