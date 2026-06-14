@@ -45,7 +45,7 @@ const definition = defineTool({
         headers: { "Notion-Version": "2022-06-28" },
       },
     );
-    await throwForStatus(readRes);
+    await throwForStatus(readRes, "Failed to read the source page");
     const sourcePage = (await readRes.json()) as {
       properties: Record<string, unknown>;
     };
@@ -64,7 +64,10 @@ const definition = defineTool({
         }),
       },
     );
-    await throwForStatus(createRes);
+    await throwForStatus(
+      createRes,
+      "Failed to create the page in the target workspace",
+    );
     return createRes.json();
   },
 });
