@@ -1,5 +1,24 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.11
+
+### Patch Changes
+
+- 64dfa81: Add a standardized `ConnectorHttpError` plus a `throwForStatus` helper for transparent API error reporting.
+
+  Connectors no longer hand-roll lossy `throw new Error("X 400: " + body)` blocks. `@zapier/connectors-sdk` now exports:
+  - **`ConnectorHttpError`** — an `Error` that carries the `response` it failed on (status, statusText, headers, parsed body). Nothing is promoted off the response: the machine error code, `Retry-After`, etc. all stay in `response.body` / `response.headers` for callers to read. Its `toString()` renders a readable multi-line summary (message, the connector frame it was thrown from, the HTTP `status` on its own line — always, so a custom message never has to restate it — the response headers verbatim, and a pretty-printed body), which the connector CLI prints instead of a raw stack trace.
+  - **`throwForStatus(res, message?)`** — a delegator: on a non-2xx `Response` it reads the body and throws a `ConnectorHttpError`; on 2xx it returns the `Response` untouched. Named after the `zapier-platform` CLI idiom, but a standalone helper that does not augment `Response`. The optional `message` names the call site (e.g. `"Failed to read the source page"`) for scripts that make several requests; it never needs to include the status, which `toString()` always renders.
+  - **`ConnectorHttpError.fromResponseBody(res, body, { message? })`** — the control path for connectors whose failure arrives in a 200 body (e.g. Slack's `{ ok: false }`, where the body is read before the error is known), or that want to shape the response themselves.
+  - **`isConnectorHttpError(value)`** — a `Symbol.for`-branded recognizer that works across bundles (each `apps/*` connector bundles the SDK standalone, so `instanceof` is unreliable).
+
+  Both execution surfaces render it brand-aware: the CLI prints `toString()`, and the local MCP server returns an `isError` tool result carrying the failure in two `content` blocks — the readable `toString()` and the captured `response` (status/headers/body) as JSON — so an agent gets the full, machine-readable error context instead of just `err.message`. The response rides in `content`, **not** `structuredContent`: an MCP client validates any `structuredContent` against the script's _success_ `outputSchema` even on `isError` results, so an error payload there is rejected with a `-32602` before it ever reaches the agent.
+
+  The Notion and Slack connectors are refactored onto the new API: Notion uses `throwForStatus` (with call-site messages where one script makes several requests, e.g. `copyPage`'s read vs. write), while Slack builds errors via `fromResponseBody` with its human-readable messages (the Slack error code and `missing_scope` context remain in the message and the captured body; the status is no longer worked into the message since `toString()` renders it).
+
+- Updated dependencies [64dfa81]
+  - @zapier/connectors-sdk@0.1.0-experimental.15
+
 ## 0.1.0-experimental.10
 
 ### Patch Changes
