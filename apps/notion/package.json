@@ -34,7 +34,7 @@
     "@zapier/connectors-sdk": "^0.1.0-experimental.16"
   },
   "peerDependencies": {
-    "@zapier/zapier-sdk": "^0.59.0"
+    "@zapier/zapier-sdk": ">=0.59.0 <1.0.0"
   },
   "publishConfig": {
     "access": "restricted"
