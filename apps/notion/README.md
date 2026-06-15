@@ -60,7 +60,7 @@ const results = await search(
 );
 ```
 
-Or import the connector default for the structured shape (`scripts`, `toMcpServerTool`, `buildRunOptionsFromEnv`, …):
+Or import the connector default for the structured shape (`scripts`, `connectionResolvers`, `buildRunOptionsFromEnv`):
 
 ```ts
 import notion from "@zapier/notion-connector";

@@ -66,4 +66,30 @@ describe("copy-page: run", () => {
 
     expect(result.id).toBe("new-page-id");
   });
+
+  it("labels a source-read failure distinctly from a target-write failure", async () => {
+    const okSource: typeof globalThis.fetch = (async (): Promise<Response> =>
+      jsonResponse({
+        properties: { Name: { title: [{ text: { content: "Doc A" } }] } },
+      })) as typeof globalThis.fetch;
+    const failing = (status: number): typeof globalThis.fetch =>
+      (async (): Promise<Response> =>
+        jsonResponse({ code: "x" }, { status })) as typeof globalThis.fetch;
+
+    // Read fails → the read-context message.
+    await expect(
+      copyPageDefinition.run(
+        { sourcePageId: "s", targetParentPageId: "t" },
+        { connections: { source: failing(404), target: okSource } },
+      ),
+    ).rejects.toThrow("Failed to read the source page");
+
+    // Read succeeds, write fails → the write-context message.
+    await expect(
+      copyPageDefinition.run(
+        { sourcePageId: "s", targetParentPageId: "t" },
+        { connections: { source: okSource, target: failing(403) } },
+      ),
+    ).rejects.toThrow("Failed to create the page in the target workspace");
+  });
 });
