@@ -36,11 +36,6 @@
   "peerDependencies": {
     "@zapier/zapier-sdk": "^0.59.0"
   },
-  "peerDependenciesMeta": {
-    "@zapier/zapier-sdk": {
-      "optional": true
-    }
-  },
   "publishConfig": {
     "access": "restricted"
   },
