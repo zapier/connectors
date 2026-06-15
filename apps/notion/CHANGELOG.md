@@ -1,5 +1,18 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.12
+
+### Patch Changes
+
+- 8dc0213: Remove the four tool-surface helpers from the connector public surface.
+
+  `toMcpTool`, `toMcpServerTool`, `toChatCompletionTool`, and `toResponsesTool` are no longer attached to the `defineConnector` return value (`ConnectorDefinition`), and the `toChatCompletionTool` / `toResponsesTool` / `toMcpTool` surface modules have been removed. They backed the "bring-your-own MCP server" and "OpenAI function tool" integrations, which are not part of the supported interface set (CLI, local MCP server, and the SDK import). Narrowing the surface keeps the interface story simple while these paths are reconsidered; they can be reintroduced later.
+
+  The supported way to expose scripts as MCP tools remains the bundled local MCP server (`npx @zapier/<x>-connector mcp` / `serveMcpStdio`), which continues to register each script internally. `connector.buildRunOptionsFromEnv`, `connector.scripts`, and `connector.connectionResolvers` are unchanged.
+
+- Updated dependencies [8dc0213]
+  - @zapier/connectors-sdk@0.1.0-experimental.16
+
 ## 0.1.0-experimental.11
 
 ### Patch Changes
