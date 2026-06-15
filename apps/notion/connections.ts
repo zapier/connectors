@@ -1,8 +1,8 @@
 import {
-  defineBearerTokenResolver,
+  defineEnvTokenResolver,
   zapierConnectionResolver,
 } from "@zapier/connectors-sdk";
 
 export const connectionResolvers = {
-  notion: [zapierConnectionResolver, defineBearerTokenResolver()],
+  notion: [zapierConnectionResolver, defineEnvTokenResolver()],
 } as const;
