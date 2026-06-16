@@ -1,6 +1,538 @@
 {
   "skill_name": "notion",
   "version": "a29aa5a",
-  "description": "TODO: representative eval cases for the notion connector.",
-  "evals": []
+  "description": "Intent-anchored eval scenarios for the Notion connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Notion is sharing-gated: the integration sees nothing until a human shares a page, so an operator root fixture is shared once and everything else is seeded under it. arrange-act scenarios self-provision a child resource under the shared root (cold-start coverage probes); discover-act scenarios operate on the pre-seeded world via in-envelope read/find primitives (all arms compete); act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "notion_eval_root",
+      "description": "A Notion page shared with the eval integration. The operator creates it in the Notion UI and shares it with the integration with full (edit) access — the integration sees nothing in the workspace until this happens, so every other scenario builds under this page.",
+      "env": "EVAL_NOTION_ROOT_PAGE",
+      "default": "Eval Root",
+      "expects": "A Notion page named 'Eval Root' shared with the eval integration with full (edit) access, so the integration can read it and create child pages and databases under it.",
+      "provision": "operator"
+    },
+    {
+      "name": "notion_tasks_db",
+      "description": "A Notion database of tasks, seeded under the shared root page, that the find / query / update scenarios read and edit. The integration creates it under the shared root once visibility is bootstrapped.",
+      "env": "EVAL_NOTION_TASKS_DB",
+      "default": "Eval Tasks",
+      "expects": "A Notion database named 'Eval Tasks' living under the 'Eval Root' page and visible to the eval integration. Its single data source has a title property 'Name', a 'Status' select property offering at least the options 'To do', 'In progress', and 'Done', and a 'Due' date property.",
+      "provision": "seed",
+      "root": "notion_eval_root"
+    }
+  ],
+  "evals": [
+    {
+      "id": "find-page-by-name",
+      "kind": "discover-act",
+      "description": "Resolve a page from its title — the id-resolution entry point all write scenarios depend on.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Find the Notion page named {{notion_eval_root}} and report its id.",
+          "assertions": {
+            "outcome": [
+              "The {{notion_eval_root}} page is located and its id (a Notion UUID) is reported."
+            ],
+            "mechanism": [
+              "Resolves the page by searching for its title rather than guessing or hard-coding an id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-page-as-markdown",
+      "kind": "discover-act",
+      "description": "Find a page by name, then read its body content back as readable text.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Find the page named {{notion_eval_root}}.",
+          "assertions": {
+            "outcome": [
+              "The {{notion_eval_root}} page is located and its id is reported."
+            ],
+            "mechanism": ["Resolves the page by title; does not invent an id."]
+          }
+        },
+        {
+          "intent": "Read the body content of that page and summarize what it contains.",
+          "assertions": {
+            "outcome": [
+              "The page's body content is retrieved and the reply summarizes it from the actual content rather than fabricating a summary."
+            ],
+            "mechanism": [
+              "Reads the body of the page just resolved in this session; does not request a different page."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-task-in-database",
+      "kind": "discover-act",
+      "description": "Add a row to an existing database — exercises the 2025-09-03 rule that page creation targets a data_source_id, not the database id.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "Add a task named 'Ship eval harness {{run_id}}' to the {{notion_tasks_db}} database, with its Status set to 'To do'.",
+          "assertions": {
+            "outcome": [
+              "A row named 'Ship eval harness {{run_id}}' now exists in the {{notion_tasks_db}} database with its Status set to 'To do', and its page id is reported."
+            ],
+            "mechanism": [
+              "Creates the row under the database's data source id (resolved from the database, e.g. via a get-database / get-data-source lookup), not under the bare database id.",
+              "Writes the title and the 'Status' select using Notion's typed property-value shapes, not bare strings at the page root."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "query-tasks-by-status",
+      "kind": "discover-act",
+      "description": "Filter database rows by a typed property — exercises data-source targeting and the typed filter shape.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "List the tasks in the {{notion_tasks_db}} database whose Status is 'In progress'.",
+          "assertions": {
+            "outcome": [
+              "The tasks in {{notion_tasks_db}} with Status 'In progress' are returned (an empty result is acceptable if none match), without an error."
+            ],
+            "mechanism": [
+              "Queries the database's data source (resolves its data source id) rather than treating the database id as directly queryable.",
+              "Expresses the Status condition as a typed select filter on the 'Status' property, not as a free-text search."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-task-status",
+      "kind": "arrange-act",
+      "description": "Create a row then transition its Status — tests typed select writes on update.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "Add a task named 'Triage backlog {{run_id}}' to the {{notion_tasks_db}} database with Status 'To do'.",
+          "assertions": {
+            "outcome": [
+              "A row named 'Triage backlog {{run_id}}' now exists in {{notion_tasks_db}} with Status 'To do', and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the row under the database's data source id, using typed property values."
+            ]
+          }
+        },
+        {
+          "intent": "Change that task's Status to 'Done'.",
+          "assertions": {
+            "outcome": [
+              "The 'Triage backlog {{run_id}}' task now has Status 'Done'."
+            ],
+            "mechanism": [
+              "Updates the row just created in this session, setting Status with a typed select value rather than a plain string."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-subpage-with-content",
+      "kind": "arrange-act",
+      "description": "Cold-start: create a sub-page with structured block content under the shared root.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Meeting notes {{run_id}}' under the {{notion_eval_root}} page, with a heading 'Agenda' followed by two bullet points: 'Review metrics' and 'Plan next sprint'.",
+          "assertions": {
+            "outcome": [
+              "A sub-page titled 'Meeting notes {{run_id}}' now exists under {{notion_eval_root}}, containing an 'Agenda' heading and two bullet points 'Review metrics' and 'Plan next sprint', and its id is reported."
+            ],
+            "mechanism": [
+              "Sets the new page's parent to the page id of {{notion_eval_root}}.",
+              "Supplies the body as typed block objects (each block keyed by its type, e.g. heading / bulleted_list_item)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "append-content-to-page",
+      "kind": "arrange-act",
+      "description": "Create a page then append additional block content to it.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Release log {{run_id}}' under {{notion_eval_root}}.",
+          "assertions": {
+            "outcome": [
+              "A sub-page titled 'Release log {{run_id}}' now exists under {{notion_eval_root}} and its id is reported."
+            ],
+            "mechanism": [
+              "Parents the page under {{notion_eval_root}}'s page id."
+            ]
+          }
+        },
+        {
+          "intent": "Append a paragraph reading 'Deployed build {{run_id}} to production.' to that page.",
+          "assertions": {
+            "outcome": [
+              "The 'Release log {{run_id}}' page now ends with a paragraph reading 'Deployed build {{run_id}} to production.'"
+            ],
+            "mechanism": [
+              "Appends a typed paragraph block to the page just created in this session; does not overwrite existing content or target a different page."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-block-text",
+      "kind": "arrange-act",
+      "description": "Create content, locate a block, and edit its text in place — tests that an update keeps the block's existing type.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Draft {{run_id}}' under {{notion_eval_root}} with a single paragraph reading 'Initial draft.'",
+          "assertions": {
+            "outcome": [
+              "A sub-page 'Draft {{run_id}}' with a paragraph 'Initial draft.' now exists under {{notion_eval_root}} and its id is reported."
+            ],
+            "mechanism": [
+              "Parents under {{notion_eval_root}} and supplies the paragraph as a typed block."
+            ]
+          }
+        },
+        {
+          "intent": "Find the paragraph block in that page and change its text to 'Revised draft.'",
+          "assertions": {
+            "outcome": [
+              "The paragraph in the 'Draft {{run_id}}' page now reads 'Revised draft.'"
+            ],
+            "mechanism": [
+              "Lists the page's child blocks to obtain the block id rather than inventing one.",
+              "Updates the block using its existing paragraph type (does not attempt to change the block's type)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-block",
+      "kind": "arrange-act",
+      "description": "Create content with multiple blocks then remove one — exercises block deletion (trash).",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Checklist {{run_id}}' under {{notion_eval_root}} with two to-do items: 'Keep this' and 'Remove this'.",
+          "assertions": {
+            "outcome": [
+              "A sub-page 'Checklist {{run_id}}' with to-do items 'Keep this' and 'Remove this' now exists under {{notion_eval_root}}."
+            ],
+            "mechanism": [
+              "Supplies the two items as typed to_do block objects."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Remove this' item from that page.",
+          "assertions": {
+            "outcome": [
+              "The 'Checklist {{run_id}}' page no longer shows a 'Remove this' item, while 'Keep this' remains."
+            ],
+            "mechanism": [
+              "Resolves the 'Remove this' block's id from the page's children and deletes that specific block, not an unrelated one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-database-with-schema",
+      "kind": "arrange-act",
+      "description": "Cold-start: create a database with a typed property schema under the shared root.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a database titled 'Projects {{run_id}}' under {{notion_eval_root}}, with a title property 'Name', a select property 'Stage' offering 'Backlog', 'Active', and 'Shipped', and a date property 'Target'.",
+          "assertions": {
+            "outcome": [
+              "A database titled 'Projects {{run_id}}' now exists under {{notion_eval_root}} whose schema has a 'Name' title, a 'Stage' select with options 'Backlog', 'Active', 'Shipped', and a 'Target' date property, and its id is reported."
+            ],
+            "mechanism": [
+              "Parents the database under {{notion_eval_root}}'s page id.",
+              "Declares each property with its typed schema definition and includes exactly one title property."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-data-source-to-database",
+      "kind": "arrange-act",
+      "description": "Create a database then add a second data source to the same container.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a database titled 'Workspace {{run_id}}' under {{notion_eval_root}} with a 'Name' title property.",
+          "assertions": {
+            "outcome": [
+              "A database 'Workspace {{run_id}}' with a 'Name' title property now exists under {{notion_eval_root}} and its id is reported."
+            ],
+            "mechanism": [
+              "Parents under {{notion_eval_root}} with a single title property."
+            ]
+          }
+        },
+        {
+          "intent": "Add a second data source named 'Notes' with a 'Title' text property to that database.",
+          "assertions": {
+            "outcome": [
+              "The 'Workspace {{run_id}}' database now contains an additional data source named 'Notes'."
+            ],
+            "mechanism": [
+              "Creates the new data source under the database just created in this session, referencing its id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-database-schema",
+      "kind": "arrange-act",
+      "description": "Create a database then evolve its schema by adding a property — tests schema updates preserve existing columns.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a database titled 'Bugs {{run_id}}' under {{notion_eval_root}} with a 'Name' title property.",
+          "assertions": {
+            "outcome": [
+              "A database 'Bugs {{run_id}}' with a 'Name' title now exists under {{notion_eval_root}} and its data source id is reported."
+            ],
+            "mechanism": ["Parents under {{notion_eval_root}}."]
+          }
+        },
+        {
+          "intent": "Add a 'Priority' select property with options 'Low', 'Medium', and 'High' to that database's schema.",
+          "assertions": {
+            "outcome": [
+              "The 'Bugs {{run_id}}' schema now includes a 'Priority' select property with options 'Low', 'Medium', 'High', and the 'Name' title property is still present."
+            ],
+            "mechanism": [
+              "Updates the data source created in this session, adding the property keyed by name without dropping existing properties."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "comment-on-page",
+      "kind": "arrange-act",
+      "description": "Create a page, post a comment, and list the page's comments back.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Discussion {{run_id}}' under {{notion_eval_root}}.",
+          "assertions": {
+            "outcome": [
+              "A sub-page 'Discussion {{run_id}}' now exists under {{notion_eval_root}} and its id is reported."
+            ],
+            "mechanism": ["Parents under {{notion_eval_root}}."]
+          }
+        },
+        {
+          "intent": "Post a comment on that page reading 'Please review by Friday {{run_id}}.'",
+          "assertions": {
+            "outcome": [
+              "A comment reading 'Please review by Friday {{run_id}}.' is now attached to the 'Discussion {{run_id}}' page."
+            ],
+            "mechanism": [
+              "Targets the page just created in this session as the comment's parent."
+            ]
+          }
+        },
+        {
+          "intent": "List the comments on that page.",
+          "assertions": {
+            "outcome": [
+              "The comments on the 'Discussion {{run_id}}' page are returned, including the 'Please review by Friday {{run_id}}.' comment."
+            ],
+            "mechanism": [
+              "Lists comments for the page just used in this session; does not fabricate comment content."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "identify-current-integration",
+      "kind": "act-only",
+      "description": "Read-only identity probe: report which integration / bot the connection authenticates as.",
+      "steps": [
+        {
+          "intent": "Which Notion integration am I connected as?",
+          "assertions": {
+            "outcome": [
+              "The reply identifies the connected integration / bot user (e.g. its name or id) from the workspace rather than guessing."
+            ],
+            "mechanism": [
+              "Retrieves the bot/integration identity for the current token instead of inventing a name."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-workspace-users",
+      "kind": "act-only",
+      "description": "Read-only: list the people and bots in the workspace.",
+      "steps": [
+        {
+          "intent": "List the people in this Notion workspace.",
+          "assertions": {
+            "outcome": [
+              "A list of the workspace's users (members and/or bots) is returned, with names or ids, rather than a fabricated list."
+            ],
+            "mechanism": [
+              "Retrieves users via the workspace user listing; relies on the default page size rather than requesting an unbounded list."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-page-to-data-source",
+      "kind": "arrange-act",
+      "description": "Create a standalone sub-page then move it to become a row in a database — exercises re-parenting to a data_source_id.",
+      "requires": ["notion_eval_root", "notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Adopt eval harness {{run_id}}' under {{notion_eval_root}}.",
+          "assertions": {
+            "outcome": [
+              "A sub-page 'Adopt eval harness {{run_id}}' now exists under {{notion_eval_root}} and its id is reported."
+            ],
+            "mechanism": ["Parents under {{notion_eval_root}}'s page id."]
+          }
+        },
+        {
+          "intent": "Move that page so it becomes a row in the {{notion_tasks_db}} database.",
+          "assertions": {
+            "outcome": [
+              "The 'Adopt eval harness {{run_id}}' page is now a row in the {{notion_tasks_db}} database."
+            ],
+            "mechanism": [
+              "Re-parents the page created in this session to the database's data source id (resolved from the database), not to the bare database id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "archive-page",
+      "kind": "arrange-act",
+      "description": "Create a page then move it to the trash — exercises the in_trash archive semantics.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Scratch {{run_id}}' under {{notion_eval_root}}.",
+          "assertions": {
+            "outcome": [
+              "A sub-page 'Scratch {{run_id}}' now exists under {{notion_eval_root}} and its id is reported."
+            ],
+            "mechanism": ["Parents under {{notion_eval_root}}."]
+          }
+        },
+        {
+          "intent": "Archive that page (move it to the trash).",
+          "assertions": {
+            "outcome": [
+              "The 'Scratch {{run_id}}' page is now in the trash (archived)."
+            ],
+            "mechanism": [
+              "Archives the page created in this session by setting its trash state, not by attempting a hard delete."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload-and-attach-file",
+      "kind": "arrange-act",
+      "description": "Upload a file from a public URL and attach it to a page — exercises the multi-step file_upload flow.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Create a sub-page titled 'Report {{run_id}}' under {{notion_eval_root}}, then upload the file at https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf and attach it to that page.",
+          "assertions": {
+            "outcome": [
+              "A sub-page 'Report {{run_id}}' now exists under {{notion_eval_root}} with the uploaded PDF attached to it."
+            ],
+            "mechanism": [
+              "Uploads the file to obtain a file_upload id, then attaches it by referencing that returned id (a file block or files property) rather than passing the source URL directly to Notion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-page-by-body-text",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: Notion search matches titles, not body text — the right behavior is to not fabricate a body-text match.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Find the Notion page that mentions the phrase 'quarterly OKRs' somewhere in its body text.",
+          "assertions": {
+            "outcome": [
+              "The reply does not fabricate a page as a confirmed body-text match; it either reports that search matches page titles (so a body-text phrase can't be matched directly) or returns only genuine title matches / no match."
+            ],
+            "mechanism": [
+              "Does not claim a search result matched on body content when the search resolves titles."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-unshared-page",
+      "kind": "act-only",
+      "description": "Graceful handling: a page id the integration hasn't been granted access to returns not-found; the agent should attribute it, not invent content.",
+      "steps": [
+        {
+          "intent": "Read the contents of the Notion page with id 00000000-0000-0000-0000-000000000000.",
+          "assertions": {
+            "outcome": [
+              "The reply communicates that the page could not be found or isn't accessible to this integration, and does not fabricate page content."
+            ],
+            "mechanism": [
+              "Attributes the failure to the page not being found / not shared with the integration rather than to a malformed request, and does not retry destructively."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "share-page-with-user",
+      "kind": "act-only",
+      "description": "Graceful refusal: the connector exposes no sharing / permissions capability, so the agent should decline cleanly.",
+      "requires": ["notion_eval_root"],
+      "steps": [
+        {
+          "intent": "Share the {{notion_eval_root}} page with alex@example.com and give them edit access.",
+          "assertions": {
+            "outcome": [
+              "The reply states that managing page sharing or permissions isn't supported, and does not claim the page was shared."
+            ],
+            "mechanism": [
+              "Does not call a mutating tool in an attempt to fake sharing or permission changes."
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }
