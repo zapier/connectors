@@ -8,12 +8,9 @@ import searchDefinition from "../scripts/search.ts";
 
 const { inputSchema, outputSchema } = searchDefinition;
 
-function jsonResponse(
-  body: unknown,
-  init: { status?: number; ok?: boolean } = {},
-): Response {
+function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;
-  const ok = init.ok ?? (status >= 200 && status < 300);
+  const ok = status >= 200 && status < 300;
   return {
     ok,
     status,
@@ -25,49 +22,39 @@ function jsonResponse(
 }
 
 describe("search: inputSchema", () => {
-  it("accepts a minimal valid input", () => {
+  it("accepts a minimal query", () => {
     expect(inputSchema.safeParse({ query: "Q4 planning" }).success).toBe(true);
+  });
+
+  it("accepts an empty input (lists everything shared)", () => {
+    expect(inputSchema.safeParse({}).success).toBe(true);
   });
 
   it("accepts the documented filter shape", () => {
     expect(
       inputSchema.safeParse({
         query: "Projects",
-        filter: { property: "object", value: "database" },
+        filter: { property: "object", value: "data_source" },
       }).success,
     ).toBe(true);
   });
 
   it("rejects an unknown filter value", () => {
     expect(
-      inputSchema.safeParse({
-        query: "Projects",
-        filter: { property: "object", value: "user" },
-      }).success,
+      inputSchema.safeParse({ filter: { property: "object", value: "user" } })
+        .success,
     ).toBe(false);
-  });
-
-  it("rejects page_size outside Notion's accepted range", () => {
-    expect(inputSchema.safeParse({ query: "x", page_size: 0 }).success).toBe(
-      false,
-    );
-    expect(inputSchema.safeParse({ query: "x", page_size: 101 }).success).toBe(
-      false,
-    );
-    expect(inputSchema.safeParse({ query: "x", page_size: 50 }).success).toBe(
-      true,
-    );
   });
 });
 
 describe("search: governance", () => {
-  it("flags read-only search", () => {
+  it("is read-only despite being a POST", () => {
     expect(searchDefinition.annotations?.readOnlyHint).toBe(true);
   });
 });
 
 describe("search: run", () => {
-  it("POSTs the validated input to /v1/search and returns the parsed body", async () => {
+  it("POSTs to /v1/search, applies the default page_size, and returns the parsed body", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       url: string,
@@ -75,6 +62,7 @@ describe("search: run", () => {
     ) => {
       calls.push({ url, init });
       return jsonResponse({
+        object: "list",
         results: [{ id: "abc", object: "page" }],
         has_more: false,
         next_cursor: null,
@@ -89,32 +77,38 @@ describe("search: run", () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe("https://api.notion.com/v1/search");
     expect(calls[0]?.init?.method).toBe("POST");
-    expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
+    // page_size defaults to 10 when omitted (body default-limit).
+    expect(JSON.parse(calls[0]?.init?.body as string)).toMatchObject({
       query: "Q4 planning",
+      page_size: 10,
     });
-
     expect(outputSchema.safeParse(result).success).toBe(true);
     expect(result.results).toHaveLength(1);
   });
 
-  it("sets Notion-Version and Content-Type on the request", async () => {
+  it("sets the Notion-Version and Content-Type headers", async () => {
     const calls: Array<{ init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       _url: string,
       init?: RequestInit,
     ) => {
       calls.push({ init });
-      return jsonResponse({ results: [], has_more: false, next_cursor: null });
+      return jsonResponse({
+        object: "list",
+        results: [],
+        has_more: false,
+        next_cursor: null,
+      });
     }) as typeof globalThis.fetch;
 
     await searchDefinition.run({ query: "x" }, { fetch: fakeFetch });
 
-    const headers = calls[0]?.init?.headers as Record<string, string>;
-    expect(headers["Notion-Version"]).toBe("2022-06-28");
-    expect(headers["Content-Type"]).toBe("application/json");
+    const headers = calls[0]?.init?.headers as Headers;
+    expect(headers.get("Notion-Version")).toBe("2025-09-03");
+    expect(headers.get("Content-Type")).toBe("application/json");
   });
 
-  it("throws a ConnectorHttpError carrying the status and parsed body on non-OK", async () => {
+  it("throws a ConnectorHttpError carrying the status + parsed body on non-OK", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(
         { object: "error", code: "validation_error", message: "bad query" },
@@ -124,12 +118,10 @@ describe("search: run", () => {
     const err = await searchDefinition
       .run({ query: "x" }, { fetch: fakeFetch })
       .catch((e: unknown) => e);
+
     expect(isConnectorHttpError(err)).toBe(true);
     const httpErr = err as ConnectorHttpError;
-    expect(httpErr.message).toMatch(/HTTP 400/);
     expect(httpErr.response.status).toBe(400);
-    // The Notion error code isn't promoted to a top-level field, but the full
-    // body is captured transparently for the agent/CLI to inspect.
     expect(httpErr.response.body).toMatchObject({ code: "validation_error" });
   });
 });

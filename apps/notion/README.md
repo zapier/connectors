@@ -1,11 +1,8 @@
 # @zapier/notion-connector
 
-Search Notion workspaces, create rows in Notion databases, and copy pages between workspaces — three agent-callable tools wrapping the [Notion REST API](https://developers.notion.com/reference/intro). Auth is delegated to a Zapier connection (recommended; no third-party secret enters the agent's environment) or to a Notion integration token (fallback).
+Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments, and upload files. 24 tools across search, read, write, schema, comments, and files. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
-> [!NOTE]
-> **For human readers only — agents should skip this note.** This package is experimental and published for internal testing; APIs may change between minor versions without notice.
 
 ## Install
 
@@ -13,67 +10,66 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 # Run a tool with zero install — npx fetches the package on first use
 NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"Q4"}' --connection env:NOTION_TOKEN
 
-# Boot as an MCP server over stdio
-npx @zapier/notion-connector mcp --connection zapier:<connection-id>
-
 # Install as a dependency to import the tools in your own code
 npm install @zapier/notion-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill notion
-
-# Discover the surface
-npx @zapier/notion-connector --help
-npx @zapier/notion-connector run search --help   # per-script input schema + resolvers
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret — `zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment), and `env:NOTION_TOKEN` reads the token from `process.env.NOTION_TOKEN` (the actual token stays in the environment, never on argv). The `<resolver>:` prefix is optional: a bare UUID is claimed by `zapier`, a set env-var name by `env`. See [`SKILL.md`](SKILL.md#auth) for the tradeoffs and how to find a connection ID.
-
-Once the package is on disk, every script in `scripts/` is also directly executable via its shebang — no `npx` round-trip:
-
-```bash
-NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"Q4"}' --connection env:NOTION_TOKEN
-```
+Credentials are environment-variable only (never passed on argv). Pass auth as one connection string with `--connection [<resolver>:]<value>`: `env:NOTION_TOKEN` reads a Notion token (internal-integration secret or public-integration OAuth token) from the environment, or `zapier:<connection-id>` routes through Zapier-managed auth (no third-party secret enters the agent's environment); see [`SKILL.md`](SKILL.md#auth) for the capabilities gating, the per-resource sharing requirement, and how to find a connection ID.
 
 Requires Node.js 22.18+ or Bun 1.x on `PATH`.
 
 ## Tools
 
-| Tool name              | Default export       | What it does                                                                                                                                                      |
-| ---------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search`               | `search`             | Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).                               |
-| `create_database_item` | `createDatabaseItem` | Add a row (page) to a Notion database. `properties` keys + types depend on the database schema; discover the database's property names and types first.           |
-| `copy_page`            | `copyPage`           | Copy a Notion page from one workspace to another. Multi-connection — set a connection per slot with `--source-connection` / `--target-connection` (see `--help`). |
+One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) is the source of truth for its contract. All tools use the single `notion` connection.
 
-Each tool's `inputSchema` / `outputSchema` is the source of truth for its contract; the CLI's `--help` and the MCP `tools/list` response both surface them.
+| Tool                  | Description                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| `search`              | Search pages and data sources by title (the id-resolution entry point).                           |
+| `getPage`             | Retrieve a page's metadata + property values by id.                                               |
+| `getDatabase`         | Retrieve a database container and its list of data sources.                                       |
+| `getDataSource`       | Retrieve a data source's property schema (names, types, options).                                 |
+| `queryDataSource`     | Query the rows (pages) of a data source with filter / sorts.                                      |
+| `getBlockChildren`    | List the child blocks (body content) of a page or block.                                          |
+| `getBlock`            | Retrieve a single block by id.                                                                    |
+| `getPageAsMarkdown`   | Retrieve a page's body content as Markdown.                                                       |
+| `getPageProperty`     | Retrieve a single (paginated) page property value.                                                |
+| `listComments`        | List unresolved comments on a page or block.                                                      |
+| `listUsers`           | List workspace users (members + bots).                                                            |
+| `getUser`             | Retrieve a single user by id.                                                                     |
+| `getBotUser`          | Retrieve the bot user for the current token (integration identity).                               |
+| `createPage`          | Create a page: a row in a data source (`parent.data_source_id`) or a sub-page (`parent.page_id`). |
+| `updatePage`          | Update a page's properties, icon, cover, parent (move), or trash state (`in_trash`).              |
+| `appendBlockChildren` | Append content blocks to the end of a page or block.                                              |
+| `updateBlock`         | Update a single block's content or archive it.                                                    |
+| `deleteBlock`         | Delete a block (moves it to the trash; reversible).                                               |
+| `createDatabase`      | Create a database under a page with an initial data source schema.                                |
+| `updateDatabase`      | Update a database container's title / icon / cover / parent / inline / trash.                     |
+| `createDataSource`    | Add a new data source (schema) to an existing database.                                           |
+| `updateDataSource`    | Update a data source's schema (add / rename / retype / remove properties).                        |
+| `createComment`       | Add a comment to a page or reply to an existing thread.                                           |
+| `uploadFile`          | Upload a file from a public URL and return a `file_upload` id to attach.                          |
+
+Run `npx @zapier/notion-connector run <toolName> --help` to see any tool's exact input contract + which auth resolvers are available.
 
 ## Usage
 
 `npm install` the package, then call tools from your own TypeScript / Node code. Each named export is the consumer-facing `(input, opts) => Promise<output>`:
 
 ```ts
-import { search, createDatabaseItem } from "@zapier/notion-connector";
+import { search } from "@zapier/notion-connector";
 
 const results = await search(
   { query: "Q4 planning" },
-  { connection: "env:NOTION_TOKEN" },
-);
-```
-
-Pass auth as one `[<resolver>:]<value>` string — `"env:NOTION_TOKEN"`, `"zapier:<connection-id>"`, or a bare value the first matching resolver claims. Multi-connection scripts (e.g. `copyPage`) take `{ connections: { source: "...", target: "..." } }` instead; `connection` and `connections` are mutually exclusive. Or import the connector default for the structured shape (`scripts`, `connectionResolvers`):
-
-```ts
-import notion from "@zapier/notion-connector";
-
-const results = await notion.scripts.search.run(
-  { query: "Q4 planning" },
-  { connection: "zapier:<connection-id>" },
+  { connection: `env:NOTION_TOKEN` },
 );
 ```
 
 ## MCP Server
 
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the connector's tools over stdio:
+Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
 
 <!-- prettier-ignore -->
 ```jsonc
@@ -82,40 +78,29 @@ Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …
   "mcpServers": {
     "notion": {
       "command": "npx",
-      "args": ["@zapier/notion-connector", "mcp", "--connection", "zapier:<connection-id>"],
+      "args": ["@zapier/notion-connector", "mcp"],
+      "env": {
+        "NOTION_TOKEN": "secret_xxx"
+      }
     }
   }
 }
 ```
 
-No Zapier account? Use the `env:` resolver instead — point `--connection` at an env-var name and keep the token in `env`:
-
-<!-- prettier-ignore -->
-```jsonc
-{
-  "mcpServers": {
-    "notion": {
-      "command": "npx",
-      "args": ["@zapier/notion-connector", "mcp", "--connection", "env:NOTION_TOKEN"],
-      "env": { "NOTION_TOKEN": "secret_xxx" }
-    }
-  }
-}
-```
+Swap the `NOTION_TOKEN` env var for a `zapier:<connection-id>` connection if you'd rather route through Zapier-managed auth.
 
 ## When to use this
 
-- The agent needs **authenticated** access to a real Notion workspace and you want auth delegated to Zapier (one OAuth, no per-page sharing dance) or to a Notion integration token under the agent's control.
+- The agent needs **authenticated** access to a real Notion workspace — find, read, create, and edit pages and content, query data-source rows, manage database / data-source schemas, and work with comments and file uploads.
 - You want one artifact that works as an MCP tool, a CLI, or an imported function — without re-implementing each surface.
 
 ## When NOT to use this
 
-- The agent only needs to read public Notion pages without auth (use `fetch` directly).
-- You need Notion operations beyond the three tools above (page-block manipulation, comment threads, user / workspace admin) — extend this connector by dropping new `scripts/<tool>.ts` files.
+- **Permanently deleting** content, or deleting a whole database or data source — Notion only trashes (everything is reversible), and the API has no hard delete or container-delete.
+- **Workspace administration** — inviting members, changing roles / permissions, or managing database views. The user tools here are read-only and views aren't exposed by the API.
 
 ## Links
 
-- [`SKILL.md`](SKILL.md) — agent-runtime guidance: when to reach for each tool, auth tradeoffs, finding a Zapier connection ID.
-- [Notion API quirks](references/notion-api-gotchas.md).
-- [Notion REST API reference](https://developers.notion.com/reference/intro).
-- [Contributing](https://github.com/zapier/connectors/blob/main/CONTRIBUTING.md).
+- [`SKILL.md`](SKILL.md) — agent-runtime guidance: when to reach for each tool, the auth model, disambiguation + refusals.
+- [Notion API reference](https://developers.notion.com/reference/intro).
+- [Source](https://github.com/zapier/connectors/tree/main/apps/notion).

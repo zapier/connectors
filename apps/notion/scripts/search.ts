@@ -1,59 +1,81 @@
 #!/usr/bin/env node
-import {
-  defineTool,
-  handleIfScriptMain,
-  throwForStatus,
-} from "@zapier/connectors-sdk";
+import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
+import { notionFetch } from "../lib/notionFetch.ts";
 
-const definition = defineTool({
-  name: "search",
-  title: "Search Notion",
-  description:
-    "Search Notion pages and databases by query string. Returns matching items with metadata (object type, id, url, parent, created/last-edited time) and each page's properties bag.",
-  inputSchema: z.strictObject({
+const inputSchema = z
+  .object({
     query: z
       .string()
       .describe(
-        "The text query to search for in the user's Notion workspace. Searches both page titles and database titles.",
-      ),
+        "Title text to match. Omit to return all shared pages and data sources.",
+      )
+      .optional(),
     filter: z
-      .strictObject({
-        property: z.literal("object"),
-        value: z.enum(["page", "database"]),
+      .object({
+        property: z.literal("object").describe('Always the literal "object".'),
+        value: z
+          .enum(["page", "data_source"])
+          .describe("Return only pages or only data sources."),
       })
-      .optional()
+      .strict()
+      .describe("Restrict results to one object type.")
+      .optional(),
+    sort: z
+      .object({
+        direction: z.enum(["ascending", "descending"]).optional(),
+        timestamp: z.literal("last_edited_time").optional(),
+      })
+      .strict()
+      .describe("Sort by last-edited time. Omit for relevance order.")
+      .optional(),
+    start_cursor: z
+      .string()
+      .describe("Pagination cursor from a previous response's next_cursor.")
+      .optional(),
+    page_size: z
+      .number()
+      .int()
+      .gte(1)
+      .lte(100)
       .describe(
-        "Optional filter to limit results to either pages or databases. Omit to search both.",
-      ),
-    page_size: z.number().int().min(1).max(100).optional(),
-    start_cursor: z.string().optional(),
-  }),
-  outputSchema: z.object({
-    results: z.array(
-      z.object({
-        object: z.string().describe('The item type — "page" or "database".'),
-        id: z.string(),
-        url: z.string().optional(),
-        created_time: z.string().optional(),
-        last_edited_time: z.string().optional(),
-        parent: z
-          .object({ type: z.string() })
-          .describe("The item's parent (workspace, page, or database).")
-          .optional(),
-        properties: z
-          .record(z.string(), z.json())
-          .describe(
-            "Property values (pages) keyed by property name; shape depends on each property's type. Filter this down for large results.",
-          )
-          .optional(),
-      }),
-    ),
-    next_cursor: z.string().nullable().optional(),
-    has_more: z.boolean().optional(),
-  }),
+        "Results per page (max 100). Defaults to 10 when omitted; pass a value when you need a specific number of results.",
+      )
+      .optional(),
+  })
+  .strict();
+const outputSchema = z.object({
+  object: z.string().describe('Always "list".'),
+  results: z
+    .array(z.record(z.string(), z.any()))
+    .describe("Matching pages and data sources."),
+  next_cursor: z
+    .union([
+      z
+        .string()
+        .describe(
+          "Pass as start_cursor to fetch the next page; null when no more.",
+        ),
+      z
+        .null()
+        .describe(
+          "Pass as start_cursor to fetch the next page; null when no more.",
+        ),
+    ])
+    .describe("Pass as start_cursor to fetch the next page; null when no more.")
+    .optional(),
+  has_more: z.boolean().describe("True if more results are available."),
+});
+
+const definition = defineTool({
+  name: "search",
+  title: "Search",
+  description:
+    "Search pages and data sources by title across the workspace. The primary way to resolve a name to an id before any get/query/update call. Omit query to list everything shared with the integration.",
+  inputSchema,
+  outputSchema,
   annotations: {
     readOnlyHint: true,
     destructiveHint: false,
@@ -62,15 +84,18 @@ const definition = defineTool({
   },
   connection: "notion",
   run: async (input, ctx) => {
-    const res = await ctx.fetch("https://api.notion.com/v1/search", {
+    const url = `https://api.notion.com/v1/search`;
+    const body: Record<string, unknown> = {};
+    if (input.query !== undefined) body["query"] = input.query;
+    if (input.filter !== undefined) body["filter"] = input.filter;
+    if (input.sort !== undefined) body["sort"] = input.sort;
+    if (input.start_cursor !== undefined)
+      body["start_cursor"] = input.start_cursor;
+    body["page_size"] = input.page_size ?? 10;
+    const res = await notionFetch(ctx.fetch, "search", url, {
       method: "POST",
-      headers: {
-        "Notion-Version": "2022-06-28",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(input),
+      body: JSON.stringify(body),
     });
-    await throwForStatus(res);
     return res.json();
   },
 });

@@ -1,6 +1,6 @@
 ---
 name: notion
-description: Search Notion pages and databases, create rows in Notion databases, and copy pages between Notion workspaces — three tools wrapping the Notion REST API. Use when the user wants to read or write Notion content. If the user mentions Notion or asks to find, add, or duplicate pages or databases, use this connector.
+description: Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
@@ -11,26 +11,47 @@ metadata:
 
 # Notion
 
-Tools for searching a Notion workspace and creating new rows (pages) inside a Notion database, against the [Notion REST API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`).
+Tools for working with a Notion workspace against the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): find pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments, and upload files. 24 tools across search, read, write, schema, comments, and files. This version uses Notion's **data sources** model: a _database_ is a container that holds one or more _data sources_, and a _data source_ carries the property schema + the rows (pages).
 
 ## When to use this connector
 
-- An agent needs to find existing Notion pages or databases by name / content.
-- An agent needs to add a row to a Notion database the user has already chosen.
-
-For broader Notion operations (page-block manipulation, comment threads, user / workspace admin), use this skill as a **recipe** to generate custom code — see [Use as a recipe](#3-use-as-a-recipe) below. The shipped skill may be installed read-only or in a sandbox where the agent can't add new files to `scripts/`, so don't assume new scripts can be persisted in place; generate code in the agent's own working area and link it back to this skill via the source comment.
+- An agent needs to **find or read** content — search pages and data sources by title, then read a page, its block body, a data source's schema, or its rows.
+- An agent needs to **create or edit** pages and content — add a page (a row in a data source or a sub-page), update properties, append blocks, or edit / delete blocks.
+- An agent needs to **query data sources** — filter and sort the rows of a data source, or read a single page property.
+- An agent needs to **manage schemas** — create or update databases and data sources (add / rename / retype / remove properties), read or post **comments**, or **upload a file** to attach.
 
 ## Scripts
 
-| Script                                                               | Default export       | Tool name              | Connections                            | What it does                                                                                                | Has dependent fields? |
-| -------------------------------------------------------------------- | -------------------- | ---------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------- |
-| [`scripts/search.ts`](scripts/search.ts)                             | `search`             | `search`               | Single (`connection: "notion"`)        | Search Notion pages and databases by query string. Returns matching items with metadata.                    | No                    |
-| [`scripts/create-database-item.ts`](scripts/create-database-item.ts) | `createDatabaseItem` | `create_database_item` | Single (`connection: "notion"`)        | Add a row (page) to a Notion database. Properties keys + types depend on the database's schema.             | No                    |
-| [`scripts/copy-page.ts`](scripts/copy-page.ts)                       | `copyPage`           | `copy_page`            | Multi (`source` + `target` → `notion`) | Copy a Notion page from one workspace ("source") to another ("target"). Canonical multi-connection example. | No                    |
+One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract. All tools use the single connection `notion`.
 
-Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
+| Script                                                             | Default export        | Tool name             | Connections | Description                                                                                       | Has dependent fields? |
+| ------------------------------------------------------------------ | --------------------- | --------------------- | ----------- | ------------------------------------------------------------------------------------------------- | --------------------- |
+| [`scripts/search.ts`](scripts/search.ts)                           | `search`              | `search`              | `notion`    | Search pages and data sources by title (the id-resolution entry point).                           | No                    |
+| [`scripts/getPage.ts`](scripts/getPage.ts)                         | `getPage`             | `getPage`             | `notion`    | Retrieve a page's metadata + property values by id.                                               | No                    |
+| [`scripts/getDatabase.ts`](scripts/getDatabase.ts)                 | `getDatabase`         | `getDatabase`         | `notion`    | Retrieve a database container and its list of data sources.                                       | No                    |
+| [`scripts/getDataSource.ts`](scripts/getDataSource.ts)             | `getDataSource`       | `getDataSource`       | `notion`    | Retrieve a data source's property schema (names, types, options).                                 | No                    |
+| [`scripts/queryDataSource.ts`](scripts/queryDataSource.ts)         | `queryDataSource`     | `queryDataSource`     | `notion`    | Query the rows (pages) of a data source with filter / sorts.                                      | No                    |
+| [`scripts/getBlockChildren.ts`](scripts/getBlockChildren.ts)       | `getBlockChildren`    | `getBlockChildren`    | `notion`    | List the child blocks (body content) of a page or block.                                          | No                    |
+| [`scripts/getBlock.ts`](scripts/getBlock.ts)                       | `getBlock`            | `getBlock`            | `notion`    | Retrieve a single block by id.                                                                    | No                    |
+| [`scripts/getPageAsMarkdown.ts`](scripts/getPageAsMarkdown.ts)     | `getPageAsMarkdown`   | `getPageAsMarkdown`   | `notion`    | Retrieve a page's body content as Markdown.                                                       | No                    |
+| [`scripts/getPageProperty.ts`](scripts/getPageProperty.ts)         | `getPageProperty`     | `getPageProperty`     | `notion`    | Retrieve a single (paginated) page property value.                                                | No                    |
+| [`scripts/listComments.ts`](scripts/listComments.ts)               | `listComments`        | `listComments`        | `notion`    | List unresolved comments on a page or block.                                                      | No                    |
+| [`scripts/listUsers.ts`](scripts/listUsers.ts)                     | `listUsers`           | `listUsers`           | `notion`    | List workspace users (members + bots).                                                            | No                    |
+| [`scripts/getUser.ts`](scripts/getUser.ts)                         | `getUser`             | `getUser`             | `notion`    | Retrieve a single user by id.                                                                     | No                    |
+| [`scripts/getBotUser.ts`](scripts/getBotUser.ts)                   | `getBotUser`          | `getBotUser`          | `notion`    | Retrieve the bot user for the current token (integration identity).                               | No                    |
+| [`scripts/createPage.ts`](scripts/createPage.ts)                   | `createPage`          | `createPage`          | `notion`    | Create a page: a row in a data source (`parent.data_source_id`) or a sub-page (`parent.page_id`). | No                    |
+| [`scripts/updatePage.ts`](scripts/updatePage.ts)                   | `updatePage`          | `updatePage`          | `notion`    | Update a page's properties, icon, cover, parent (move), or trash state (`in_trash`).              | No                    |
+| [`scripts/appendBlockChildren.ts`](scripts/appendBlockChildren.ts) | `appendBlockChildren` | `appendBlockChildren` | `notion`    | Append content blocks to the end of a page or block.                                              | No                    |
+| [`scripts/updateBlock.ts`](scripts/updateBlock.ts)                 | `updateBlock`         | `updateBlock`         | `notion`    | Update a single block's content or archive it.                                                    | No                    |
+| [`scripts/deleteBlock.ts`](scripts/deleteBlock.ts)                 | `deleteBlock`         | `deleteBlock`         | `notion`    | Delete a block (moves it to the trash; reversible).                                               | No                    |
+| [`scripts/createDatabase.ts`](scripts/createDatabase.ts)           | `createDatabase`      | `createDatabase`      | `notion`    | Create a database under a page with an initial data source schema.                                | No                    |
+| [`scripts/updateDatabase.ts`](scripts/updateDatabase.ts)           | `updateDatabase`      | `updateDatabase`      | `notion`    | Update a database container's title / icon / cover / parent / inline / trash.                     | No                    |
+| [`scripts/createDataSource.ts`](scripts/createDataSource.ts)       | `createDataSource`    | `createDataSource`    | `notion`    | Add a new data source (schema) to an existing database.                                           | No                    |
+| [`scripts/updateDataSource.ts`](scripts/updateDataSource.ts)       | `updateDataSource`    | `updateDataSource`    | `notion`    | Update a data source's schema (add / rename / retype / remove properties).                        | No                    |
+| [`scripts/createComment.ts`](scripts/createComment.ts)             | `createComment`       | `createComment`       | `notion`    | Add a comment to a page or reply to an existing thread.                                           | No                    |
+| [`scripts/uploadFile.ts`](scripts/uploadFile.ts)                   | `uploadFile`          | `uploadFile`          | `notion`    | Upload a file from a public URL and return a `file_upload` id to attach.                          | No                    |
 
-**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — or read the script's `inputSchema` in the source directly. Both `--help` forms render `inputSchema` as JSON Schema and list the connection flags and available resolvers for that script. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip — inspect the schema first, then construct the input to match it exactly.
+**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag(s) and available resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip.
 
 ## Output format
 
@@ -44,24 +65,30 @@ Every script returns a `{ data, meta }` envelope (same shape across the CLI's JS
 
 **Reading dropped fields / `skipOutputValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputValidation` — CLI: append `--skipOutputValidation`; MCP: pass `meta: { skipOutputValidation: true }` as a tool argument; SDK: pass `{ skipOutputValidation: true }` in the run options. Input validation is never skipped.
 
+## Disambiguation & refusals
+
+**Disambiguation before a write.** Before writing to a page or row you looked up by name (e.g. update a page found via `search`, or a row found via `queryDataSource`), count the **exact case-insensitive title matches**:
+
+- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
+- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (`parent`, `url`, or `last_edited_time`) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
+
+**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
+
+- **Permanently delete** anything. Everything is trash / restore — pages via `updatePage` `in_trash`, blocks via `deleteBlock` (reversible). There is no hard delete.
+- **Delete a whole database or data source.** There is no tool for it. Don't substitute trashing every row to simulate it.
+- **Manage workspace members or permissions** (inviting users, changing roles, sharing). `listUsers` / `getUser` are read-only.
+- **Create or manage database views.** Views aren't exposed by the API.
+
+If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
+
 ## Auth
 
-Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a _selector_, not the secret. The `<resolver>:` prefix is optional — a bare value goes to the first resolver that claims it. Notion ships two resolvers, Zapier-first: prefer `zapier`; fall back to `env` if the user doesn't want a Zapier account.
+The script needs a single Notion **bearer token**, resolved into the one `notion` connection slot. Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a _selector_, not the secret. Two resolvers:
 
-- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Notion connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; that one connection then covers their entire Notion workspace without per-resource sharing. A bare, UUID-shaped value auto-claims this resolver, so `--connection <connection-id>` works without the `zapier:` prefix.
+- **`env:<ENV_VAR>`** — direct mode. Read the Notion token from the named environment variable (conventionally `env:NOTION_TOKEN`, with the token exported in `NOTION_TOKEN`; the token stays in `env`, never on argv). The token is either an **internal-integration secret** (from <https://www.notion.so/profile/integrations>) or a **public-integration OAuth access token**.
+- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Notion connection; the Zapier auth / retries / governance layer injects the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>, ~1 minute). Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
 
-  **Finding the connection ID.** The Zapier connections UI doesn't currently expose connection IDs, so use the Zapier SDK CLI:
-
-  **Sandbox heads-up:** `npx` fetches the CLI from the npm registry on first use, writing to the npm cache — so under the same sandbox condition the pre-flight flags for the dependency install (a blocked home dir or read-only workspace), these calls fail with `EPERM`. Run them with the sandbox disabled (or however your harness permits the npm cache write), just like the install step. Use `bunx` instead of `npx` when `PREFLIGHT_RUNNER` is `bun`.
-  1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
-  2. `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` — prints `title (connection ID)` per matching connection. Use `NotionCLIAPI` exactly (the canonical Zapier app key for Notion). Add `--json` for machine-readable output. If the user has multiple Notion connections (different workspaces), list the titles and ask which one to use.
-  3. **If the connection is shared with the user** (e.g. an org-wide team connection), the default `list-connections` call hides it. Opt in explicitly with both flags: `npx @zapier/zapier-sdk-cli --can-include-shared-connections list-connections NotionCLIAPI --include-shared`. Don't auto-retry with this on if the first call returns empty — ask the user first.
-
-- **`env:<ENV_VAR>`** _(fallback)_ — read a Notion integration token from the named environment variable and send it as `Authorization: Bearer <token>`. The value is the env-var NAME, not the token itself; the token stays in `env` and never touches argv. Conventionally `--connection env:NOTION_TOKEN` with `NOTION_TOKEN` exported (a bare `--connection NOTION_TOKEN` auto-claims `env` once that var is set). Create the token at <https://www.notion.so/profile/integrations>. **Prerequisite: only the Notion account the user already has** — create the integration, then share each page or database with it manually via Notion's UI (Connections menu) before the agent can access that resource.
-
-For the multi-connection `copy_page` script, pass one connection per slot: `--source-connection <…>` and `--target-connection <…>` (or `{ connections: { source, target } }` when imported). Run `<script> --help` to see the exact flags and resolvers.
-
-If the user mentions they don't have a Zapier account, surface signup as a real option alongside the `env:` token path rather than silently falling back — the ~1-minute signup is comparable to the per-page-sharing dance the token path requires for any workspace with more than a handful of pages.
+**Capabilities gating + per-resource sharing.** A Notion token is scoped by the integration's **capabilities** (read content, update content, insert content, comment, read user info) — a call outside the granted capabilities is rejected even with a valid token. Separately, the integration only sees resources **explicitly shared with it**: a valid token still returns `404` for any page, database, or data source that hasn't been shared with the integration in Notion's UI. If a read 404s on an id you believe exists, the resource almost certainly isn't shared yet.
 
 If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
 
@@ -69,74 +96,48 @@ If no connection is passed the script fails with an actionable error telling you
 
 ### 0. Pre-flight and auth
 
-Run the bundled pre-flight check **once** at the start of a session, then run scripts directly — don't re-run it before every call:
+Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
 
 ```bash
 ./preflight.sh
 ```
 
-It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the exact next step to run.
+Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/search.ts --help`). The `--help` output renders `inputSchema` as JSON Schema, lists the connection flag(s) the script reads and every resolver each accepts, and tells you exactly what to provide. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
 
-By exit code:
-
-- **Exit `0` (`READY`)** — follow `PREFLIGHT_RECOMMENDATION`: it gives the exact `--help` command to run on the script you intend to use (e.g. `` `node /path/scripts/search.ts --help` ``). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. See [Auth](#auth) for how to obtain each credential type. If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`).
-- **Exit `1` (`NEEDS_ACTION`)** — follow `PREFLIGHT_RECOMMENDATION`: it spells out the single self-verifying install step (e.g. `npm install`) and the exact `--help` command to run afterward. Re-running `./preflight.sh` to reconfirm is optional.
-
-**Match the package runner to `PREFLIGHT_RUNNER`.** Wherever this skill shows `npx` — the package CLI ([path 2](#2-use-the-packages-cli)) and the Zapier SDK CLI ([Auth](#auth)) — substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`.
+Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
 
 The three invocation paths below all assume the pre-flight reported `READY`.
 
 ### 1. Execute scripts directly
 
-When the agent has shell access to the skill's installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang, so it's invoked like any other executable:
+When the agent has shell access to the installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang. **Run `--help` first** to read the input contract and confirm an auth resolver is ready — `--help` is the one path for both "learn the input contract" and "check auth":
 
 ```bash
-# Single-conn — Zapier connection (recommended)
-./scripts/search.ts '{"query":"foo"}' --connection zapier:conn_xxx
+# Inspect the contract + resolvers first
+./scripts/search.ts --help
 
-# Single-conn — direct Notion integration token (token stays in env)
-NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"foo"}' --connection env:NOTION_TOKEN
+# Then invoke (direct token — token stays in env)
+NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"Q4 planning"}' --connection env:NOTION_TOKEN
 
-# Multi-conn — copy a page between two Zapier-connected workspaces
-./scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}' \
-  --source-connection zapier:conn_src \
-  --target-connection zapier:conn_tgt
-
-# Per-script `--help` lists the exact connection flags per slot + resolvers
-./scripts/copy-page.ts --help
+# Or route through a Zapier connection
+./scripts/queryDataSource.ts '{"data_source_id":"..."}' --connection zapier:conn_xxx
 ```
 
-**Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory** so the connector's deps resolve. Node 22.18+ strips TypeScript natively, so the shebang stays minimal (`#!/usr/bin/env node`) — no extra flag needed, which also keeps it parseable under BusyBox's `env` on Alpine-based agent harnesses.
-
-**Equivalent forms — pin the runtime explicitly when needed:**
-
-```bash
-# Node — explicit interpreter (ignores the shebang)
-node scripts/search.ts '{"query":"foo"}' --connection zapier:conn_xxx
-
-# Bun — Bun ignores the Node-targeted shebang and runs the same source
-bun  scripts/search.ts '{"query":"foo"}' --connection zapier:conn_xxx
-```
-
-All three forms run the same script body unchanged — only the I/O wrapper differs.
+Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
 
 ### 2. Use the package's CLI
 
 ```bash
-NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"foo"}' --connection env:NOTION_TOKEN
-npx @zapier/notion-connector --help                    # all scripts
-npx @zapier/notion-connector run search --help         # per-script schema + resolvers
+NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"Q4"}' --connection env:NOTION_TOKEN
+npx @zapier/notion-connector --help                  # all scripts
+npx @zapier/notion-connector run search --help       # per-script schema + resolvers
 ```
 
-The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. When `PREFLIGHT_RUNNER` is `bun`, use `bunx @zapier/notion-connector …` instead of `npx`. **Caveat:** not every agent harness allows arbitrary `npx`/`bunx` invocations — sandboxed runtimes may block network fetches or process spawns. If neither is available, fall back to (1).
+Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
 
 ### 3. Use as a recipe
 
-When no shipped script matches the use case, or one needs to be tweaked, the agent can read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code.
-
-Each script's body is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"notion"`; the connector's `index.ts` attaches the connection's resolvers via `defineConnector({ scripts, connectionResolvers })`. Imitate that shape: Zod input/output schemas, `(input, ctx) => …` `run` body, app-specific auth via [`connections.ts`](connections.ts). The auth recipe for direct mode is just a Bearer token in the `Authorization` header plus the required `Notion-Version` header (pinned to `2022-06-28` in each script — bump as the API evolves).
-
-If the generated code is persisted (committed, saved to a notebook, dropped into a code-Zap, …), include a comment pointing back to this skill's source so a future agent can re-fetch the canonical recipe when the code needs fixing or re-grounding:
+When no shipped script matches, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"notion"`; imitate that shape (Zod input/output schemas, `(input, ctx) => …` run body, the direct-mode auth being a Bearer token in the `Authorization` header plus the `Notion-Version` header pinned to `2025-09-03`). If you persist generated code, add a comment pointing back to this skill's source:
 
 ```ts
 // Source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
@@ -144,4 +145,4 @@ If the generated code is persisted (committed, saved to a notebook, dropped into
 
 ## API quirks worth knowing
 
-See [`references/notion-api-gotchas.md`](references/notion-api-gotchas.md) for the durable per-app knowledge agents have surfaced — UUID extraction from URLs, parent-type shapes, rich-text array structure, pagination cursors, database-sharing-with-integration requirement.
+<!-- references-table: filled by generate-references -->
