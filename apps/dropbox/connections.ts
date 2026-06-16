@@ -1,5 +1,5 @@
 import {
-  defineBearerTokenResolver,
+  defineEnvTokenResolver,
   zapierConnectionResolver,
 } from "@zapier/connectors-sdk";
 
@@ -13,6 +13,6 @@ import {
 export const connectionResolvers = {
   dropbox: [
     zapierConnectionResolver,
-    defineBearerTokenResolver({ name: "access-token" }),
+    defineEnvTokenResolver({ name: "access-token" }),
   ],
 } as const;
