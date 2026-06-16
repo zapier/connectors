@@ -11,7 +11,7 @@ const inputSchema = z
       .number()
       .int()
       .min(1)
-      .default(20)
+      .optional()
       .describe(
         "Max file requests per page. Defaults to 20 when omitted; pass a value when you need a specific number of results.",
       ),
@@ -57,7 +57,7 @@ const definition = defineTool({
       : `${API_BASE}/2/file_requests/list_v2`;
     const body = input.cursor
       ? { cursor: input.cursor }
-      : { limit: input.limit };
+      : { limit: input.limit ?? 20 };
     const res = await ctx.fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

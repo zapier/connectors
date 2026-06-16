@@ -64,8 +64,10 @@ const inputSchema = z
       .int()
       .min(1)
       .max(1000)
-      .default(20)
-      .describe("Max matches per page (1–1000). Defaults to 20 when omitted."),
+      .optional()
+      .describe(
+        "Max matches per page (1–1000). Defaults to 20 when omitted; pass a value when you need a specific number of results.",
+      ),
     cursor: z
       .string()
       .describe(
@@ -110,7 +112,9 @@ const definition = defineTool({
       url = `${API_BASE}/2/files/search/continue_v2`;
       body = { cursor: input.cursor };
     } else {
-      const options: Record<string, unknown> = { max_results: input.limit };
+      const options: Record<string, unknown> = {
+        max_results: input.limit ?? 20,
+      };
       if (input.path !== undefined) options.path = input.path;
       if (input.file_status !== undefined)
         options.file_status = tagged(input.file_status);

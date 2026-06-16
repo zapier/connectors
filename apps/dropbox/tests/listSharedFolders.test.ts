@@ -31,9 +31,9 @@ describe("listSharedFolders: governance", () => {
     expect(listSharedFoldersDefinition.annotations?.readOnlyHint).toBe(true);
   });
 
-  it("defaults limit to 20 when omitted", () => {
+  it("leaves limit optional (undefined when omitted); the default is applied on the wire", () => {
     const parsed = inputSchema.parse({});
-    expect(parsed.limit).toBe(20);
+    expect(parsed.limit).toBeUndefined();
   });
 });
 

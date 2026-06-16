@@ -12,7 +12,7 @@ const inputSchema = z
       .int()
       .min(1)
       .max(1000)
-      .default(20)
+      .optional()
       .describe(
         "Max shared folders per page (1–1000). Defaults to 20 when omitted; pass a value when you need a specific number of results.",
       ),
@@ -67,7 +67,7 @@ const definition = defineTool({
       : `${API_BASE}/2/sharing/list_folders`;
     const body = input.cursor
       ? { cursor: input.cursor }
-      : { limit: input.limit };
+      : { limit: input.limit ?? 20 };
     const res = await ctx.fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

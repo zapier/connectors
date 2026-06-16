@@ -30,7 +30,7 @@ const inputSchema = z
       .int()
       .min(1)
       .max(2000)
-      .default(20)
+      .optional()
       .describe(
         "Max entries per page (1–2000). Defaults to 20 when omitted; pass a value when you need a specific number of results.",
       ),
@@ -83,7 +83,7 @@ const definition = defineTool({
       : {
           path: input.path,
           recursive: input.recursive,
-          limit: input.limit,
+          limit: input.limit ?? 20,
           include_deleted: input.include_deleted,
         };
     const res = await ctx.fetch(url, {
