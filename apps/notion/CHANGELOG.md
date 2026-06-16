@@ -1,5 +1,45 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.15
+
+### Minor Changes
+
+- 357bc84: Unify the connection interface across CLI, MCP, and the SDK/Node-import surface on a single `<resolverName>:<resolverValue>` string.
+  - CLI & MCP accept `--connection [<resolver>:]<value>` and `--<slot>-connection [<resolver>:]<value>` flags (the `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver). The value names an env var or a connection id — never the secret itself — so it is safe on the command line. `--help` documents the two-part contract, the optional prefix, and the available resolvers.
+  - The SDK takes `{ connection: "[<resolver>:]<value>" }` or `{ connections: { <slot>: "[<resolver>:]<value>" } }`; the two are mutually exclusive. The old fetch-handle / object-handle shape is gone.
+  - A bare value (no `<resolver>:` prefix) is claimed by the first resolver whose `canHandle` accepts it (e.g. the Zapier resolver claims UUID-shaped values).
+  - `defineBearerTokenResolver` is renamed to `defineEnvTokenResolver`. It has no default env key — the `resolverValue` _is_ the env-var name (`process.env[resolverValue]`). Its resolver name defaults to `env` (configurable) and a `scheme` option controls the `Authorization` header word.
+  - The previous composed-env variable scheme (`<SLOT>_<KEY>_<RESOLVER>[_<SUFFIX>]`) and `buildRunOptionsFromEnv` are removed; there is no zero-argument default — an explicit connection string (or an auto-claimed bare value) is always required.
+
+### Patch Changes
+
+- Updated dependencies [357bc84]
+- Updated dependencies [ae5b812]
+  - @zapier/connectors-sdk@0.1.0-experimental.18
+
+## 0.1.0-experimental.14
+
+### Patch Changes
+
+- a126ab5: Drop the stale "lists any optional packages still needed" guidance (and the `@zapier/zapier-sdk [not installed — run npm install …]` example) from connector `SKILL.md` files and the scaffold template. The `optionalPackages` `--help` annotation was removed in STAFF-4181 now that `@zapier/zapier-sdk` is a required peer dependency installed by `npm install`, so the pre-flight docs no longer describe it.
+
+## 0.1.0-experimental.13
+
+### Minor Changes
+
+- 6209a75: Make `@zapier/zapier-sdk` a required (non-optional) peer dependency of every connector to simplify onboarding (STAFF-4181). It stays a peer dependency — the host still owns the single installed copy — but dropping the `peerDependenciesMeta.optional` flag means a plain `npm install` now pulls the SDK automatically, so an agent no longer has to run a second install before switching a connector to Zapier mode.
+
+  `ensurePackage` now strips a stale `optional: true` from `@zapier/zapier-sdk` (and prunes an empty `peerDependenciesMeta` block) instead of adding it. The connector validator (`@zapier/connectors-ref`) follows automatically.
+
+  Also widens the declared `@zapier/zapier-sdk` range from `^0.59.0` to `>=0.59.0 <1.0.0`. On a `0.x` package a caret pins to the minor (`^0.59.0` === `>=0.59.0 <0.60.0`), which rejected every current SDK (npm `latest` is already 0.70.x) and would force a connector-wide bump on every SDK minor. The floor + major ceiling tolerates the frequent pre-1.0 minors while still excluding the potentially-breaking `1.x` line.
+
+  Removes the now-unused `optionalPackages` resolver feature from the SDK: the `optionalPackages` field on `ConnectionResolver` types, the `--help` "optional package not installed" annotations, and the `zapierConnectionResolver` declaration. The lazy `@zapier/zapier-sdk` import and the clear runtime error from `build-zapier-fetch` remain as a safety net.
+
+### Patch Changes
+
+- Updated dependencies [6209a75]
+  - @zapier/connectors-sdk@0.1.0-experimental.17
+
 ## 0.1.0-experimental.12
 
 ### Patch Changes

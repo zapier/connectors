@@ -11,10 +11,10 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a tool with zero install — npx fetches the package on first use
-NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"Q4"}'
+NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"Q4"}' --connection env:NOTION_TOKEN
 
 # Boot as an MCP server over stdio
-NOTION_TOKEN=secret_xxx npx @zapier/notion-connector mcp
+npx @zapier/notion-connector mcp --connection zapier:<connection-id>
 
 # Install as a dependency to import the tools in your own code
 npm install @zapier/notion-connector
@@ -24,26 +24,26 @@ npx skills zapier/connectors --skill notion
 
 # Discover the surface
 npx @zapier/notion-connector --help
-npx @zapier/notion-connector run search --help   # per-script input + auth env vars
+npx @zapier/notion-connector run search --help   # per-script input schema + resolvers
 ```
 
-Credentials are environment-variable only (never passed on argv, which would leak through shell history, `ps`, and CI logs). Use `NOTION_ZAPIER_CONNECTION_ID=<id>` instead of `NOTION_TOKEN` to route through Zapier-managed auth (recommended; no third-party secret enters the agent's environment); see [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret — `zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment), and `env:NOTION_TOKEN` reads the token from `process.env.NOTION_TOKEN` (the actual token stays in the environment, never on argv). The `<resolver>:` prefix is optional: a bare UUID is claimed by `zapier`, a set env-var name by `env`. See [`SKILL.md`](SKILL.md#auth) for the tradeoffs and how to find a connection ID.
 
 Once the package is on disk, every script in `scripts/` is also directly executable via its shebang — no `npx` round-trip:
 
 ```bash
-NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"Q4"}'
+NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"Q4"}' --connection env:NOTION_TOKEN
 ```
 
 Requires Node.js 22.18+ or Bun 1.x on `PATH`.
 
 ## Tools
 
-| Tool name              | Default export       | What it does                                                                                                                                                  |
-| ---------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search`               | `search`             | Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).                           |
-| `create_database_item` | `createDatabaseItem` | Add a row (page) to a Notion database. `properties` keys + types depend on the database schema; discover the database's property names and types first.       |
-| `copy_page`            | `copyPage`           | Copy a Notion page from one workspace to another. Multi-connection — set credentials per slot with `SOURCE_*` and `TARGET_*` env-var prefixes (see `--help`). |
+| Tool name              | Default export       | What it does                                                                                                                                                      |
+| ---------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `search`               | `search`             | Search Notion pages and databases by query string. Returns matching items with metadata (id, title, parent, url, last_edited_time).                               |
+| `create_database_item` | `createDatabaseItem` | Add a row (page) to a Notion database. `properties` keys + types depend on the database schema; discover the database's property names and types first.           |
+| `copy_page`            | `copyPage`           | Copy a Notion page from one workspace to another. Multi-connection — set a connection per slot with `--source-connection` / `--target-connection` (see `--help`). |
 
 Each tool's `inputSchema` / `outputSchema` is the source of truth for its contract; the CLI's `--help` and the MCP `tools/list` response both surface them.
 
@@ -56,17 +56,19 @@ import { search, createDatabaseItem } from "@zapier/notion-connector";
 
 const results = await search(
   { query: "Q4 planning" },
-  { connection: { TOKEN: process.env.NOTION_TOKEN! } },
+  { connection: "env:NOTION_TOKEN" },
 );
 ```
 
-Or import the connector default for the structured shape (`scripts`, `connectionResolvers`, `buildRunOptionsFromEnv`):
+Pass auth as one `[<resolver>:]<value>` string — `"env:NOTION_TOKEN"`, `"zapier:<connection-id>"`, or a bare value the first matching resolver claims. Multi-connection scripts (e.g. `copyPage`) take `{ connections: { source: "...", target: "..." } }` instead; `connection` and `connections` are mutually exclusive. Or import the connector default for the structured shape (`scripts`, `connectionResolvers`):
 
 ```ts
 import notion from "@zapier/notion-connector";
 
-const opts = notion.buildRunOptionsFromEnv(notion.scripts.search, process.env);
-const results = await notion.scripts.search.run({ query: "Q4 planning" }, opts);
+const results = await notion.scripts.search.run(
+  { query: "Q4 planning" },
+  { connection: "zapier:<connection-id>" },
+);
 ```
 
 ## MCP Server
@@ -80,16 +82,26 @@ Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …
   "mcpServers": {
     "notion": {
       "command": "npx",
-      "args": ["@zapier/notion-connector", "mcp"],
-      "env": {
-        "NOTION_ZAPIER_CONNECTION_ID": "<connection-id>"
-      }
+      "args": ["@zapier/notion-connector", "mcp", "--connection", "zapier:<connection-id>"],
     }
   }
 }
 ```
 
-Swap `NOTION_ZAPIER_CONNECTION_ID` for `NOTION_TOKEN` if you don't have a Zapier account.
+No Zapier account? Use the `env:` resolver instead — point `--connection` at an env-var name and keep the token in `env`:
+
+<!-- prettier-ignore -->
+```jsonc
+{
+  "mcpServers": {
+    "notion": {
+      "command": "npx",
+      "args": ["@zapier/notion-connector", "mcp", "--connection", "env:NOTION_TOKEN"],
+      "env": { "NOTION_TOKEN": "secret_xxx" }
+    }
+  }
+}
+```
 
 ## When to use this
 
