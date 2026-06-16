@@ -1,5 +1,22 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.13
+
+### Minor Changes
+
+- 6209a75: Make `@zapier/zapier-sdk` a required (non-optional) peer dependency of every connector to simplify onboarding (STAFF-4181). It stays a peer dependency — the host still owns the single installed copy — but dropping the `peerDependenciesMeta.optional` flag means a plain `npm install` now pulls the SDK automatically, so an agent no longer has to run a second install before switching a connector to Zapier mode.
+
+  `ensurePackage` now strips a stale `optional: true` from `@zapier/zapier-sdk` (and prunes an empty `peerDependenciesMeta` block) instead of adding it. The connector validator (`@zapier/connectors-ref`) follows automatically.
+
+  Also widens the declared `@zapier/zapier-sdk` range from `^0.59.0` to `>=0.59.0 <1.0.0`. On a `0.x` package a caret pins to the minor (`^0.59.0` === `>=0.59.0 <0.60.0`), which rejected every current SDK (npm `latest` is already 0.70.x) and would force a connector-wide bump on every SDK minor. The floor + major ceiling tolerates the frequent pre-1.0 minors while still excluding the potentially-breaking `1.x` line.
+
+  Removes the now-unused `optionalPackages` resolver feature from the SDK: the `optionalPackages` field on `ConnectionResolver` types, the `--help` "optional package not installed" annotations, and the `zapierConnectionResolver` declaration. The lazy `@zapier/zapier-sdk` import and the clear runtime error from `build-zapier-fetch` remain as a safety net.
+
+### Patch Changes
+
+- Updated dependencies [6209a75]
+  - @zapier/connectors-sdk@0.1.0-experimental.17
+
 ## 0.1.0-experimental.12
 
 ### Patch Changes
