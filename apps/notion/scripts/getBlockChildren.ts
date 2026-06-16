@@ -35,7 +35,9 @@ const outputSchema = z.object({
       .object({
         object: z.string().describe('Always "block".'),
         id: z.string().describe("The block id (UUID)."),
-        type: z.string().describe("The block type (e.g. paragraph"),
+        type: z
+          .string()
+          .describe("The block type (e.g. paragraph, heading_1, to_do)."),
         has_children: z
           .boolean()
           .describe(

@@ -84,7 +84,7 @@ const definition = defineTool({
   name: "queryDataSource",
   title: "Query Data Source",
   description:
-    "Query the rows (pages) of a data source with optional filter and sorts. Filter/sort property keys and operators depend on each property's type — discover them via getDataSource. Returns up to 10,000 results across pages.",
+    "Query the rows (pages) of a data source with optional filter and sorts. Filter/sort property keys and operators depend on each property's type — discover them via getDataSource. Returns one page of rows; paginate via next_cursor (Notion caps a query at 10,000 total results).",
   inputSchema,
   outputSchema,
   annotations: {

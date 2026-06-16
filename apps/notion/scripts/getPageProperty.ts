@@ -21,6 +21,7 @@ const inputSchema = z
     page_size: z
       .number()
       .int()
+      .gte(1)
       .lte(100)
       .describe("Results per page for paginated property values (max 100).")
       .optional(),
@@ -33,7 +34,10 @@ const inputSchema = z
 const outputSchema = z
   .object({
     object: z.string().describe('"property_item" or "list".'),
-    type: z.string().describe("The property type (e.g. relation").optional(),
+    type: z
+      .string()
+      .describe("The property type (e.g. relation, select, date).")
+      .optional(),
     next_cursor: z.union([z.string(), z.null()]).optional(),
     has_more: z.boolean().optional(),
   })
