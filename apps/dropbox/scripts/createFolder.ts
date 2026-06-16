@@ -17,7 +17,7 @@ const inputSchema = z
     path: z
       .string()
       .describe(
-        "Full path of the folder to create, e.g. /Projects/2026. Must start with a slash; max 255 chars.",
+        "Full path of the folder to create, e.g. /Projects/2026. Must start with a slash.",
       ),
     autorename: z
       .boolean()
@@ -33,7 +33,7 @@ const definition = defineTool({
   name: "createFolder",
   title: "Create Folder",
   description:
-    "Create a new folder at a Dropbox path. Returns the created folder's metadata. Parent folders are created as needed.",
+    "Create a new folder at a Dropbox path. Returns the created folder's metadata.",
   inputSchema,
   outputSchema: entrySchema,
   annotations: {

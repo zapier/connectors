@@ -16,7 +16,7 @@ const inputSchema = z
     leave_a_copy: z
       .boolean()
       .describe(
-        "If true, the removed member keeps a copy of the folder's contents in their own Dropbox. Default false.",
+        "If true, the removed member keeps a copy of the folder's contents after removal. Default false.",
       )
       .optional(),
   })
