@@ -1,5 +1,22 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.15
+
+### Minor Changes
+
+- 357bc84: Unify the connection interface across CLI, MCP, and the SDK/Node-import surface on a single `<resolverName>:<resolverValue>` string.
+  - CLI & MCP accept `--connection [<resolver>:]<value>` and `--<slot>-connection [<resolver>:]<value>` flags (the `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver). The value names an env var or a connection id — never the secret itself — so it is safe on the command line. `--help` documents the two-part contract, the optional prefix, and the available resolvers.
+  - The SDK takes `{ connection: "[<resolver>:]<value>" }` or `{ connections: { <slot>: "[<resolver>:]<value>" } }`; the two are mutually exclusive. The old fetch-handle / object-handle shape is gone.
+  - A bare value (no `<resolver>:` prefix) is claimed by the first resolver whose `canHandle` accepts it (e.g. the Zapier resolver claims UUID-shaped values).
+  - `defineBearerTokenResolver` is renamed to `defineEnvTokenResolver`. It has no default env key — the `resolverValue` _is_ the env-var name (`process.env[resolverValue]`). Its resolver name defaults to `env` (configurable) and a `scheme` option controls the `Authorization` header word.
+  - The previous composed-env variable scheme (`<SLOT>_<KEY>_<RESOLVER>[_<SUFFIX>]`) and `buildRunOptionsFromEnv` are removed; there is no zero-argument default — an explicit connection string (or an auto-claimed bare value) is always required.
+
+### Patch Changes
+
+- Updated dependencies [357bc84]
+- Updated dependencies [ae5b812]
+  - @zapier/connectors-sdk@0.1.0-experimental.18
+
 ## 0.1.0-experimental.14
 
 ### Patch Changes
