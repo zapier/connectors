@@ -1,5 +1,11 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.14
+
+### Patch Changes
+
+- a126ab5: Drop the stale "lists any optional packages still needed" guidance (and the `@zapier/zapier-sdk [not installed — run npm install …]` example) from connector `SKILL.md` files and the scaffold template. The `optionalPackages` `--help` annotation was removed in STAFF-4181 now that `@zapier/zapier-sdk` is a required peer dependency installed by `npm install`, so the pre-flight docs no longer describe it.
+
 ## 0.1.0-experimental.13
 
 ### Minor Changes
