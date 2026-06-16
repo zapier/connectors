@@ -58,7 +58,7 @@ describe("createFolder: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await createFolderDefinition.run(
+    const { data: result } = await createFolderDefinition.run(
       { path: "/P/2026" },
       { fetch: fakeFetch },
     );

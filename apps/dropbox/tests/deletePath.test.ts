@@ -51,7 +51,7 @@ describe("deletePath: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await deletePathDefinition.run(
+    const { data: result } = await deletePathDefinition.run(
       { path: "/Old/notes.txt" },
       { fetch: fakeFetch },
     );

@@ -55,7 +55,7 @@ describe("getFileMetadata: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await getFileMetadataDefinition.run(
+    const { data: result } = await getFileMetadataDefinition.run(
       { path: "/Documents/report.pdf" },
       { fetch: fakeFetch },
     );

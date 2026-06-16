@@ -47,7 +47,7 @@ describe("searchFiles: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await searchFilesDefinition.run(
+    const { data: result } = await searchFilesDefinition.run(
       searchFilesDefinition.inputSchema.parse({ query: "x" }),
       { fetch: fakeFetch },
     );

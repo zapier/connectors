@@ -44,7 +44,7 @@ describe("listFolder: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await listFolderDefinition.run(
+    const { data: result } = await listFolderDefinition.run(
       listFolderDefinition.inputSchema.parse({ path: "" }),
       { fetch: fakeFetch },
     );

@@ -47,7 +47,7 @@ describe("addFolderMember: run", () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse({})) as typeof globalThis.fetch;
 
-    const result = await addFolderMemberDefinition.run(
+    const { data: result } = await addFolderMemberDefinition.run(
       {
         shared_folder_id: "sf1",
         members: ["a@x.com", "b@x.com"],

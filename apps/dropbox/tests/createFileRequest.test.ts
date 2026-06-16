@@ -46,7 +46,7 @@ describe("createFileRequest: run", () => {
         file_count: 0,
       })) as typeof globalThis.fetch;
 
-    const result = await createFileRequestDefinition.run(
+    const { data: result } = await createFileRequestDefinition.run(
       { title: "T", destination: "/D" },
       { fetch: fakeFetch },
     );

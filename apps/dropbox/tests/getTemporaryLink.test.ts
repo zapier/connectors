@@ -51,7 +51,7 @@ describe("getTemporaryLink: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await getTemporaryLinkDefinition.run(
+    const { data: result } = await getTemporaryLinkDefinition.run(
       { path: "/F.pdf" },
       { fetch: fakeFetch },
     );

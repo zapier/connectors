@@ -67,7 +67,7 @@ describe("uploadFile: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await uploadFileDefinition.run(
+    const { data: result } = await uploadFileDefinition.run(
       uploadFileDefinition.inputSchema.parse({
         file_url: "https://host/photo.jpg",
         path: "/Uploads/photo.jpg",

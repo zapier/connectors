@@ -48,7 +48,7 @@ describe("getCurrentAccount: run", () => {
         },
       })) as typeof globalThis.fetch;
 
-    const result = await getCurrentAccountDefinition.run(
+    const { data: result } = await getCurrentAccountDefinition.run(
       {},
       { fetch: fakeFetch },
     );
@@ -74,7 +74,7 @@ describe("getCurrentAccount: run", () => {
         },
       })) as typeof globalThis.fetch;
 
-    const result = await getCurrentAccountDefinition.run(
+    const { data: result } = await getCurrentAccountDefinition.run(
       {},
       { fetch: fakeFetch },
     );

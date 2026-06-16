@@ -57,7 +57,7 @@ describe("createTextFile: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await createTextFileDefinition.run(
+    const { data: result } = await createTextFileDefinition.run(
       createTextFileDefinition.inputSchema.parse({
         path: "/Notes/todo.txt",
         content: "hello",

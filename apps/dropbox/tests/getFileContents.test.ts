@@ -66,7 +66,7 @@ describe("getFileContents: run", () => {
         size: 11,
       })) as typeof globalThis.fetch;
 
-    const result = await getFileContentsDefinition.run(
+    const { data: result } = await getFileContentsDefinition.run(
       getFileContentsDefinition.inputSchema.parse({ path: "/A.txt" }),
       { fetch: fakeFetch },
     );
@@ -85,7 +85,7 @@ describe("getFileContents: run", () => {
         size: 4,
       })) as typeof globalThis.fetch;
 
-    const result = await getFileContentsDefinition.run(
+    const { data: result } = await getFileContentsDefinition.run(
       getFileContentsDefinition.inputSchema.parse({ path: "/x.bin" }),
       { fetch: fakeFetch },
     );
@@ -102,7 +102,7 @@ describe("getFileContents: run", () => {
         size: 8,
       })) as typeof globalThis.fetch;
 
-    const result = await getFileContentsDefinition.run(
+    const { data: result } = await getFileContentsDefinition.run(
       getFileContentsDefinition.inputSchema.parse({
         path: "/big.txt",
         max_bytes: 4,

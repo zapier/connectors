@@ -47,7 +47,7 @@ describe("createSharedLink: run", () => {
         path_lower: "/f.txt",
       })) as typeof globalThis.fetch;
 
-    const result = await createSharedLinkDefinition.run(
+    const { data: result } = await createSharedLinkDefinition.run(
       { path: "/f.txt" },
       { fetch: fakeFetch },
     );
@@ -100,7 +100,7 @@ describe("createSharedLink: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await createSharedLinkDefinition.run(
+    const { data: result } = await createSharedLinkDefinition.run(
       { path: "/f.txt" },
       { fetch: fakeFetch },
     );

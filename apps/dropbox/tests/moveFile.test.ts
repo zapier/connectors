@@ -55,7 +55,7 @@ describe("moveFile: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await moveFileDefinition.run(
+    const { data: result } = await moveFileDefinition.run(
       { from_path: "/Inbox/report.pdf", to_path: "/Archive/report.pdf" },
       { fetch: fakeFetch },
     );

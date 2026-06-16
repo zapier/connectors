@@ -44,7 +44,7 @@ describe("listSharedLinks: run", () => {
         has_more: false,
       })) as typeof globalThis.fetch;
 
-    const result = await listSharedLinksDefinition.run(
+    const { data: result } = await listSharedLinksDefinition.run(
       { path: "/f.txt" },
       { fetch: fakeFetch },
     );

@@ -52,7 +52,7 @@ describe("modifySharedLinkSettings: run", () => {
         url: "https://x/f?dl=0",
       })) as typeof globalThis.fetch;
 
-    const result = await modifySharedLinkSettingsDefinition.run(
+    const { data: result } = await modifySharedLinkSettingsDefinition.run(
       { url: "https://x/f?dl=0" },
       { fetch: fakeFetch },
     );

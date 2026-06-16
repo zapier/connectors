@@ -47,7 +47,7 @@ describe("listSharedFolders: run", () => {
         cursor: "c",
       })) as typeof globalThis.fetch;
 
-    const result = await listSharedFoldersDefinition.run(
+    const { data: result } = await listSharedFoldersDefinition.run(
       inputSchema.parse({}),
       { fetch: fakeFetch },
     );

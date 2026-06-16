@@ -55,7 +55,7 @@ describe("copyFile: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await copyFileDefinition.run(
+    const { data: result } = await copyFileDefinition.run(
       { from_path: "/Templates/base.docx", to_path: "/Projects/base.docx" },
       { fetch: fakeFetch },
     );

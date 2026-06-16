@@ -86,7 +86,7 @@ describe("appendToTextFile: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await appendToTextFileDefinition.run(
+    const { data: result } = await appendToTextFileDefinition.run(
       { path: "/Logs/run.log", content: "line2" },
       { fetch: fakeFetch },
     );
@@ -130,7 +130,7 @@ describe("appendToTextFile: run", () => {
       });
     }) as typeof globalThis.fetch;
 
-    const result = await appendToTextFileDefinition.run(
+    const { data: result } = await appendToTextFileDefinition.run(
       { path: "/Logs/new.log", content: "first" },
       { fetch: fakeFetch },
     );

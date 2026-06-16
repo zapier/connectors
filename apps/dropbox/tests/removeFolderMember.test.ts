@@ -45,7 +45,7 @@ describe("removeFolderMember: run", () => {
       return jsonResponse({ ".tag": "complete" });
     }) as typeof globalThis.fetch;
 
-    const result = await removeFolderMemberDefinition.run(
+    const { data: result } = await removeFolderMemberDefinition.run(
       { shared_folder_id: "sf1", member: "sam@acme.com" },
       { fetch: fakeFetch },
     );
@@ -82,7 +82,7 @@ describe("removeFolderMember: run", () => {
       throw new Error(`unexpected url ${url}`);
     }) as typeof globalThis.fetch;
 
-    const result = await removeFolderMemberDefinition.run(
+    const { data: result } = await removeFolderMemberDefinition.run(
       { shared_folder_id: "sf1", member: "sam@acme.com" },
       { fetch: fakeFetch },
     );

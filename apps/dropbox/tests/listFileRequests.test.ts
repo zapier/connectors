@@ -41,7 +41,7 @@ describe("listFileRequests: run", () => {
         has_more: false,
       })) as typeof globalThis.fetch;
 
-    const result = await listFileRequestsDefinition.run(
+    const { data: result } = await listFileRequestsDefinition.run(
       listFileRequestsDefinition.inputSchema.parse({}),
       { fetch: fakeFetch },
     );
