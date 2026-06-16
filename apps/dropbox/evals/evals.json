@@ -1,6 +1,719 @@
 {
   "skill_name": "dropbox",
-  "version": "7d60d11",
-  "description": "TODO: representative eval cases for the dropbox connector.",
-  "evals": []
+  "version": "01f88c3",
+  "description": "Intent-anchored eval scenarios for the dropbox connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision files/folders (cold-start coverage probes; Dropbox is ambient, so the connection can create its own world); the shared-folder membership scenario is discover-act over a fixture the connector cannot create in-run; act-only scenarios target ambient account state. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/shape, our-arm-only). {{run_id}} namespaces created assets so re-runs don't collide. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "dropbox_shared_folder",
+      "description": "A managed shared folder the eval connection owns (or can manage members of), so the add/remove-member scenarios have a target. The connector deliberately ships no shareFolder tool, so it cannot turn a folder into a shared folder in-run — this precondition must be provisioned out of band.",
+      "env": "EVAL_DROPBOX_SHARED_FOLDER",
+      "default": "Eval Shared Folder",
+      "expects": "A Dropbox managed shared folder named 'Eval Shared Folder' that the eval connection owns or has manage-membership access to, so it is returned by sharing/list_folders for that connection and the connection can both add and remove members on it. It must be an actual shared folder (one with a shared_folder_id), not a plain folder, since the connector cannot convert a folder into a shared folder.",
+      "provision": "seed",
+      "auth": "same"
+    }
+  ],
+  "evals": [
+    {
+      "id": "save-file-from-url",
+      "kind": "arrange-act",
+      "description": "Coverage probe: save a file into Dropbox by fetching its bytes from a public URL.",
+      "steps": [
+        {
+          "intent": "Save the file at https://example.com/ into my Dropbox as 'sample {{run_id}}.html'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'sample {{run_id}}.html' now exists in the Dropbox account and its path is reported."
+            ],
+            "mechanism": [
+              "Fetches the bytes from the URL given in the request rather than inventing file content.",
+              "The destination path passed to Dropbox starts with '/' (a leading-slash write path), not a bare name or '/' alone."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-text-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a plain-text file from inline content in one step.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/notes {{run_id}}.txt' containing the line 'Remember to water the plants'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'notes {{run_id}}.txt' now exists and its content is the line 'Remember to water the plants'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request as the file content; does not fetch from a URL or fabricate other content.",
+              "The path passed to Dropbox is a leading-slash write path."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "append-to-text-log",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a log file, append a line to it, then read it back to confirm both lines persisted — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/log {{run_id}}.txt' containing the line 'entry one'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'log {{run_id}}.txt' now exists containing 'entry one'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request; the path is a leading-slash write path."
+            ]
+          }
+        },
+        {
+          "intent": "Append the line 'entry two' to '/log {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The file 'log {{run_id}}.txt' now contains both 'entry one' and 'entry two'."
+            ],
+            "mechanism": [
+              "Appends to the existing file rather than overwriting it (the prior content is preserved)."
+            ]
+          }
+        },
+        {
+          "intent": "Read me back the full contents of '/log {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The reply shows the file's text including both 'entry one' and 'entry two'."
+            ],
+            "mechanism": [
+              "Reads the file's inline text content and reports it as text (is_text true); does not fabricate the contents."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "organize-files-into-folder",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a folder, create a file at the top level, then move that file into the folder — exercises create-folder + move.",
+      "steps": [
+        {
+          "intent": "Create a folder named 'Archive {{run_id}}' at the top level of my Dropbox.",
+          "assertions": {
+            "outcome": [
+              "A folder named 'Archive {{run_id}}' now exists at the account root."
+            ],
+            "mechanism": [
+              "Creates the folder at a leading-slash path; does not pass '/' alone or a bare name for the root."
+            ]
+          }
+        },
+        {
+          "intent": "Create a text file at '/q1 {{run_id}}.txt' containing 'quarterly summary'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'q1 {{run_id}}.txt' now exists at the account root containing 'quarterly summary'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Move 'q1 {{run_id}}.txt' into the 'Archive {{run_id}}' folder.",
+          "assertions": {
+            "outcome": [
+              "The file 'q1 {{run_id}}.txt' now lives inside the 'Archive {{run_id}}' folder and no longer at the account root."
+            ],
+            "mechanism": [
+              "Relocates the file with a single move operation to the new path under 'Archive {{run_id}}'; does not copy-then-delete or re-upload the content."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file, then rename it — Dropbox has no rename endpoint, so the rename must be expressed as a move.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/memo {{run_id}}.txt' containing 'draft'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'memo {{run_id}}.txt' now exists containing 'draft'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Rename 'memo {{run_id}}.txt' to 'memo-final {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'memo-final {{run_id}}.txt' now exists and 'memo {{run_id}}.txt' no longer exists; the content 'draft' is unchanged."
+            ],
+            "mechanism": [
+              "Performs the rename as a move that changes only the final path segment within the same folder; does not delete-and-recreate the file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file, then copy it to a new name so both exist.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/src {{run_id}}.txt' containing 'original'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'src {{run_id}}.txt' now exists containing 'original'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Make a copy of 'src {{run_id}}.txt' named 'src-copy {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "Both 'src {{run_id}}.txt' and 'src-copy {{run_id}}.txt' now exist, and the copy's content is 'original'."
+            ],
+            "mechanism": [
+              "Uses a copy operation that leaves the source in place; does not move the original or re-type the content from scratch."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file, then delete it (Dropbox delete is recoverable, not permanent).",
+      "steps": [
+        {
+          "intent": "Create a text file at '/scratch {{run_id}}.txt' containing 'temp'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'scratch {{run_id}}.txt' now exists containing 'temp'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Delete '/scratch {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The file 'scratch {{run_id}}.txt' no longer appears in the account."
+            ],
+            "mechanism": [
+              "Deletes the file at the exact path given in the request; does not delete a different or parent path."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-folder-contents",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a folder with a file inside, then list the folder's immediate contents.",
+      "steps": [
+        {
+          "intent": "Create a folder named 'Reports {{run_id}}' at the top level.",
+          "assertions": {
+            "outcome": [
+              "A folder named 'Reports {{run_id}}' now exists at the account root."
+            ],
+            "mechanism": ["Creates the folder at a leading-slash path."]
+          }
+        },
+        {
+          "intent": "Create a text file at '/Reports {{run_id}}/may {{run_id}}.txt' containing 'monthly report'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'may {{run_id}}.txt' now exists inside the 'Reports {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Writes the file at a leading-slash path inside 'Reports {{run_id}}'."
+            ]
+          }
+        },
+        {
+          "intent": "List what's inside the 'Reports {{run_id}}' folder.",
+          "assertions": {
+            "outcome": [
+              "The listing of 'Reports {{run_id}}' includes the file 'may {{run_id}}.txt'."
+            ],
+            "mechanism": [
+              "Lists the contents of the 'Reports {{run_id}}' folder path; does not fabricate entries."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-text-file-contents",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a text file with known content, then read its inline contents back.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/poem {{run_id}}.txt' with the contents 'roses are red\\nviolets are blue'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'poem {{run_id}}.txt' now exists whose content is 'roses are red' followed by 'violets are blue'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "What does '/poem {{run_id}}.txt' say?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the file's text, including both 'roses are red' and 'violets are blue'."
+            ],
+            "mechanism": [
+              "Reads the file's inline text content (is_text true) rather than guessing; does not fabricate the contents."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-file-metadata",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file, then report its metadata (size and last-modified time).",
+      "steps": [
+        {
+          "intent": "Create a text file at '/spec {{run_id}}.txt' containing 'specification body'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'spec {{run_id}}.txt' now exists containing 'specification body'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Tell me the size of '/spec {{run_id}}.txt' and when it was last modified.",
+          "assertions": {
+            "outcome": [
+              "The reply reports a byte size and a last-modified timestamp for 'spec {{run_id}}.txt'."
+            ],
+            "mechanism": [
+              "Looks up the file's metadata by its path or id; reports the server-side modified time rather than fabricating a size or timestamp."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-temporary-download-link",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file, then hand off a direct (temporary) download URL for it.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/download-me {{run_id}}.txt' containing 'payload'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'download-me {{run_id}}.txt' now exists containing 'payload'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Give me a direct download link for '/download-me {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "A direct download URL for 'download-me {{run_id}}.txt' is returned."
+            ],
+            "mechanism": [
+              "Returns a temporary direct-download link (the short-lived ~4h kind) for the file, rather than creating a durable shared link, since the user asked for a direct download.",
+              "Targets the file at the path given in the request."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "share-file-with-link",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file, create a durable shareable link for it, then list shared links to confirm it appears — exercises create-shared-link + list-shared-links.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/shareme {{run_id}}.txt' containing 'shared content'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'shareme {{run_id}}.txt' now exists containing 'shared content'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Create a shareable link for '/shareme {{run_id}}.txt' that anyone with the link can view.",
+          "assertions": {
+            "outcome": [
+              "A durable shareable link URL for 'shareme {{run_id}}.txt' is returned, viewable by anyone with the link."
+            ],
+            "mechanism": [
+              "Creates a durable shared link (not a temporary download link) for the file at the path given in the request.",
+              "If a shared link already exists for that path, treats the returned existing link as success rather than reporting an error."
+            ]
+          }
+        },
+        {
+          "intent": "List the shared links for '/shareme {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The listing includes a shared link for 'shareme {{run_id}}.txt'."
+            ],
+            "mechanism": [
+              "Lists existing shared links (optionally scoped to the file's path) rather than fabricating a link entry."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-and-share-file",
+      "kind": "arrange-act",
+      "description": "Find-then-act probe: create a file, locate it by name via search, then share the file that was found.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/forecast {{run_id}}.txt' containing 'Q4 numbers'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'forecast {{run_id}}.txt' now exists containing 'Q4 numbers'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Find the file named 'forecast {{run_id}}.txt' in my Dropbox.",
+          "assertions": {
+            "outcome": [
+              "The file 'forecast {{run_id}}.txt' is located and its full path is reported."
+            ],
+            "mechanism": [
+              "Discovers the file by searching for the name in the request; does not guess or hard-code a path."
+            ]
+          }
+        },
+        {
+          "intent": "Create a view-only shareable link for the 'forecast {{run_id}}.txt' file you just found.",
+          "assertions": {
+            "outcome": [
+              "A view-only shareable link URL for 'forecast {{run_id}}.txt' is returned."
+            ],
+            "mechanism": [
+              "Shares the file using the path resolved by the search (the located 'forecast {{run_id}}.txt'), not an invented path; the link's access level is view-only (viewer), not editor."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-file-request",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a destination folder, create a public file request that collects uploads into it, then list file requests to confirm it exists.",
+      "steps": [
+        {
+          "intent": "Create a folder named 'Submissions {{run_id}}' at the top level.",
+          "assertions": {
+            "outcome": [
+              "A folder named 'Submissions {{run_id}}' now exists at the account root."
+            ],
+            "mechanism": ["Creates the folder at a leading-slash path."]
+          }
+        },
+        {
+          "intent": "Create a file request titled 'Send me your headshots {{run_id}}' that collects uploads into the 'Submissions {{run_id}}' folder.",
+          "assertions": {
+            "outcome": [
+              "A file request titled 'Send me your headshots {{run_id}}' now exists with a public upload URL, targeting the 'Submissions {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Passes a non-empty title and a destination that is the leading-slash path of the 'Submissions {{run_id}}' folder."
+            ]
+          }
+        },
+        {
+          "intent": "List my file requests and confirm 'Send me your headshots {{run_id}}' is among them.",
+          "assertions": {
+            "outcome": [
+              "The list of file requests includes 'Send me your headshots {{run_id}}'."
+            ],
+            "mechanism": [
+              "Lists the account's file requests rather than fabricating an entry."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-shared-folder-membership",
+      "kind": "discover-act",
+      "description": "Head-to-head probe over a pre-existing shared folder the connector can't create: find it, add a member by email, then remove that member — all via in-envelope read/find + member tools.",
+      "requires": ["dropbox_shared_folder"],
+      "steps": [
+        {
+          "intent": "Find the shared folder named {{dropbox_shared_folder}}.",
+          "assertions": {
+            "outcome": [
+              "The shared folder named {{dropbox_shared_folder}} is located and its shared-folder id is reported."
+            ],
+            "mechanism": [
+              "Resolves the folder by listing the account's shared folders; does not guess or hard-code a shared_folder_id."
+            ]
+          }
+        },
+        {
+          "intent": "Add eval-invitee-{{run_id}}@example.com as a member of the {{dropbox_shared_folder}} shared folder.",
+          "assertions": {
+            "outcome": [
+              "eval-invitee-{{run_id}}@example.com is now a member (or pending invitee) of the {{dropbox_shared_folder}} shared folder."
+            ],
+            "mechanism": [
+              "Adds the member using a shared_folder_id (an id, not a folder path or display name) and passes the member as an email address."
+            ]
+          }
+        },
+        {
+          "intent": "Remove eval-invitee-{{run_id}}@example.com from the {{dropbox_shared_folder}} shared folder.",
+          "assertions": {
+            "outcome": [
+              "eval-invitee-{{run_id}}@example.com is no longer a member of the {{dropbox_shared_folder}} shared folder."
+            ],
+            "mechanism": [
+              "Removes the member identified by that email from the shared folder by its id; does not delete the folder itself or remove a different member."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "identify-current-account",
+      "kind": "act-only",
+      "description": "Single-capability probe against ambient account state: report which Dropbox account is connected.",
+      "steps": [
+        {
+          "intent": "Which Dropbox account am I connected to?",
+          "assertions": {
+            "outcome": [
+              "The reply identifies the connected account (such as its name or email) and does not claim to be connected to an account it cannot read."
+            ],
+            "mechanism": [
+              "Reads the current-account information rather than fabricating an account name, email, or id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-file-by-name",
+      "kind": "arrange-act",
+      "description": "Disambiguation probe: seed two files with the same name in different folders, then ask to delete it by bare name — the agent should ask which, not silently pick.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/Finance {{run_id}}/report {{run_id}}.txt' containing 'finance report'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'report {{run_id}}.txt' now exists inside a 'Finance {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Writes the file at a leading-slash path under 'Finance {{run_id}}'."
+            ]
+          }
+        },
+        {
+          "intent": "Create another text file at '/Marketing {{run_id}}/report {{run_id}}.txt' containing 'marketing report'.",
+          "assertions": {
+            "outcome": [
+              "A second file named 'report {{run_id}}.txt' now exists inside a 'Marketing {{run_id}}' folder, distinct from the first."
+            ],
+            "mechanism": [
+              "Writes the file at a leading-slash path under 'Marketing {{run_id}}' without overwriting the other 'report {{run_id}}.txt'."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the file called 'report {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "No file is deleted; the reply reports that more than one file named 'report {{run_id}}.txt' exists and asks which one (or lists the candidates by their distinguishing full paths)."
+            ],
+            "mechanism": [
+              "Resolves the name via search/list, finds two or more matching files, and makes no delete call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "password-protect-shared-link",
+      "kind": "arrange-act",
+      "description": "Plan-aware probe: create a file and a shared link, then attempt to password-protect it — password links require a paid plan, so the agent must either set it or attribute the failure to the plan, never fake success.",
+      "steps": [
+        {
+          "intent": "Create a text file at '/locked {{run_id}}.txt' containing 'confidential'.",
+          "assertions": {
+            "outcome": [
+              "A text file named 'locked {{run_id}}.txt' now exists containing 'confidential'."
+            ],
+            "mechanism": [
+              "Writes the literal text given in the request to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Create a shareable link for '/locked {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "A shareable link URL for 'locked {{run_id}}.txt' is returned."
+            ],
+            "mechanism": [
+              "Creates a durable shared link for the file; if one already exists, returns the existing link as success rather than erroring."
+            ]
+          }
+        },
+        {
+          "intent": "Put a password on that shared link so only people with the password can open it.",
+          "assertions": {
+            "outcome": [
+              "Either the shared link now requires a password, OR the reply clearly states that password-protected links need a paid Dropbox plan; it does not falsely claim the password was set."
+            ],
+            "mechanism": [
+              "Modifies the existing shared link (resolved by its url) rather than creating an unrelated one; if Dropbox returns a settings error, attributes it to the account plan rather than reporting success."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-pdf-as-text",
+      "kind": "arrange-act",
+      "description": "Refusal-shaped probe: put a PDF in Dropbox, then ask to read its text inline — the connector returns text only and does not OCR/parse documents, so the agent must not fabricate the PDF's contents.",
+      "steps": [
+        {
+          "intent": "Save the file at https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf into my Dropbox as 'doc {{run_id}}.pdf'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'doc {{run_id}}.pdf' now exists in the Dropbox account."
+            ],
+            "mechanism": [
+              "Fetches the bytes from the URL given in the request and uploads to a leading-slash path."
+            ]
+          }
+        },
+        {
+          "intent": "Read the text inside 'doc {{run_id}}.pdf' and tell me what it says.",
+          "assertions": {
+            "outcome": [
+              "The reply does not fabricate the PDF's body text; it communicates that the file isn't readable as inline text (it's a binary/PDF) and offers an alternative such as a download link."
+            ],
+            "mechanism": [
+              "On encountering non-text content (is_text false) the agent does not claim to have read the document's contents; it may offer a temporary download link to hand off the bytes."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-managed-shared-folder",
+      "kind": "act-only",
+      "description": "Graceful-refusal probe for an unshipped capability: the connector can create shared links and manage existing shared-folder members, but cannot turn a folder into a managed shared folder.",
+      "steps": [
+        {
+          "intent": "Turn my 'Projects' folder into a managed shared folder and give my whole team edit access to it.",
+          "assertions": {
+            "outcome": [
+              "The reply states it cannot create or convert a folder into a managed shared folder and does not claim to have shared the folder; it may offer a supported alternative such as a shareable link."
+            ],
+            "mechanism": [
+              "Makes no tool call that fabricates a share-folder action; does not report success for an unsupported capability."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "restore-deleted-file",
+      "kind": "act-only",
+      "description": "Graceful-refusal probe for an unshipped capability: the connector has no restore / file-revisions tool.",
+      "steps": [
+        {
+          "intent": "Restore the file named 'old-budget.xlsx' that I deleted last week.",
+          "assertions": {
+            "outcome": [
+              "The reply states it cannot restore deleted files or recover prior versions and does not claim a file was restored."
+            ],
+            "mechanism": [
+              "Makes no tool call that fakes a restore (for instance, does not re-create an empty file and call it restored)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-storage-usage",
+      "kind": "act-only",
+      "description": "Graceful-refusal probe for an unshipped capability: the connector can identify the account but exposes no storage/space-usage tool.",
+      "steps": [
+        {
+          "intent": "How much of my Dropbox storage am I using right now?",
+          "assertions": {
+            "outcome": [
+              "The reply does not state a fabricated used/total storage figure; it explains it can identify the account but cannot report storage usage or the space quota."
+            ],
+            "mechanism": [
+              "Does not invent usage numbers; at most reads account info (which carries no space usage) and does not present made-up figures."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-file-request",
+      "kind": "arrange-act",
+      "description": "Graceful-refusal probe: the connector can create and list file requests but cannot get or update an individual one.",
+      "steps": [
+        {
+          "intent": "Create a file request titled 'Resumes {{run_id}}' that collects uploads into a new folder 'Hiring {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A file request titled 'Resumes {{run_id}}' now exists with a public upload URL, targeting a 'Hiring {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Passes a non-empty title and a leading-slash destination folder path."
+            ]
+          }
+        },
+        {
+          "intent": "Change the title of the 'Resumes {{run_id}}' file request to 'Resumes - closed'.",
+          "assertions": {
+            "outcome": [
+              "The reply states it cannot modify an existing file request (only creating and listing are supported) and does not claim the title was changed."
+            ],
+            "mechanism": [
+              "Makes no tool call that fabricates an update to the file request."
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }
