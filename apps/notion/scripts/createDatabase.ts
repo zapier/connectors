@@ -71,7 +71,7 @@ const definition = defineTool({
   name: "createDatabase",
   title: "Create Database",
   description:
-    "Create a database under a parent page, with an initial data source and its property schema. The parent must be a page id (databases cannot be created at the workspace root via the API).",
+    "Create a database under a parent page, with an initial data source and its property schema. Pass the parent page id.",
   inputSchema,
   outputSchema,
   annotations: {

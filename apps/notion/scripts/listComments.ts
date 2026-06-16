@@ -61,7 +61,7 @@ const definition = defineTool({
   name: "listComments",
   title: "List Comments",
   description:
-    "List unresolved comments on a page or block. Pass the page or block id as block_id. Returns comments in the order they were created.",
+    "List unresolved comments on a page or block. Pass the page or block id as block_id.",
   inputSchema,
   outputSchema,
   annotations: {

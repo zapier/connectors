@@ -41,7 +41,7 @@ const definition = defineTool({
   name: "uploadFile",
   title: "Upload File",
   description:
-    "Upload a file from a public URL to Notion and return a file_upload id to attach to a page, block, or files property. Single-part upload only (up to 20 MB; Free-plan workspaces cap at 5 MB).",
+    "Upload a file from a public URL to Notion and return a file_upload id to attach to a page, block, or files property. Single-part upload only (up to 20 MB).",
   inputSchema,
   outputSchema,
   annotations: {

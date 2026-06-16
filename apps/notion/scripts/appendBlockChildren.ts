@@ -23,7 +23,7 @@ const inputSchema = z
           ),
       )
       .describe(
-        'Block objects to append (max 1000 per call, 2 levels of nesting). E.g. a paragraph { type "paragraph", paragraph { rich_text [...] } }. See references/notion-blocks.md.',
+        'Block objects to append (max 100 per call, 2 levels of nesting). E.g. a paragraph { type "paragraph", paragraph { rich_text [...] } }. See references/notion-blocks.md.',
       ),
     after: z
       .string()

@@ -40,7 +40,7 @@ const inputSchema = z
           ),
       )
       .describe(
-        "Optional body content as block objects (max 1000, 2 levels deep). See references/notion-blocks.md.",
+        "Optional body content as block objects (max 100, 2 levels deep). See references/notion-blocks.md.",
       )
       .optional(),
     icon: z
