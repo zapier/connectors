@@ -1,5 +1,16 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.16
+
+### Patch Changes
+
+- 9f0d7fe: Wrap every script run in a `{ data, meta }` envelope and report what output validation did. `run` (and therefore the package/script CLI's JSON stdout, the imported SDK return value, and the MCP tool's `structuredContent`) now resolves to `{ data, meta }` instead of the bare output. `meta.outputValidation` is a discriminated union: `{ skipped: false, droppedPaths: null }` when validation removed nothing, `{ skipped: false, droppedPaths: string[], instruction }` when a stripping `outputSchema` silently dropped keys the API returned (the exact dot/bracket paths plus a recovery hint), or `{ skipped: true }` when validation was bypassed. A hard validation failure now throws an `Error` whose message names output validation and carries the original `ZodError` on `.cause`.
+
+  Add a single canonical `skipOutputValidation` escape hatch — CLI flag `--skipOutputValidation`, SDK run option `skipOutputValidation: true`, and (on MCP) a nested `meta: { skipOutputValidation: true }` tool argument. On MCP the flag must travel as a declared input parameter because request-level `_meta` is protocol-reserved and not reachable by the model through normal clients; it is nested under a single optional `meta` object (which carries its own description, since some clients only render top-level input properties in their preview) so future control flags slot in without reserving more names, and the dispatch callback strips `meta` back off before the author's `run`. The `meta` key is reserved SDK-wide — `defineTool` throws if a script's `inputSchema` declares it — so the injected control object can never silently shadow a real input field. The escape hatch totally bypasses output validation (the schema is not run at all) and returns the author's raw output as `data`; input parsing always stays strict. CLI `--help`, the MCP tool `inputSchema`, and the MCP output-schema descriptor advertise the wrapped envelope and the flag. (STAFF-3974)
+
+- Updated dependencies [9f0d7fe]
+  - @zapier/connectors-sdk@0.1.0-experimental.20
+
 ## 0.1.0-experimental.15
 
 ### Minor Changes
