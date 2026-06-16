@@ -30,13 +30,13 @@ For broader Notion operations (page-block manipulation, comment threads, user / 
 
 Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
 
-**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — or read the script's `inputSchema` in the source directly. Both `--help` forms render `inputSchema` as JSON Schema and list the env vars required for that script's resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip — inspect the schema first, then construct the input to match it exactly.
+**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — or read the script's `inputSchema` in the source directly. Both `--help` forms render `inputSchema` as JSON Schema and list the connection flags and available resolvers for that script. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip — inspect the schema first, then construct the input to match it exactly.
 
 ## Auth
 
-The script needs one of two credentials, passed via environment variable (no CLI flags). Prefer the Zapier connection ID; fall back to the direct Notion token if the user doesn't want a Zapier account.
+Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a _selector_, not the secret. The `<resolver>:` prefix is optional — a bare value goes to the first resolver that claims it. Notion ships two resolvers, Zapier-first: prefer `zapier`; fall back to `env` if the user doesn't want a Zapier account.
 
-- **`NOTION_ZAPIER_CONNECTION_ID`** _(recommended)_ — a Zapier Notion connection ID. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; that one connection then covers their entire Notion workspace without per-resource sharing.
+- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Notion connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; no credit card, ~1 minute). The user authorises Notion once via Zapier's OAuth flow at <https://zapier.com/app/connections>; that one connection then covers their entire Notion workspace without per-resource sharing. A bare, UUID-shaped value auto-claims this resolver, so `--connection <connection-id>` works without the `zapier:` prefix.
 
   **Finding the connection ID.** The Zapier connections UI doesn't currently expose connection IDs, so use the Zapier SDK CLI:
 
@@ -45,13 +45,13 @@ The script needs one of two credentials, passed via environment variable (no CLI
   2. `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` — prints `title (connection ID)` per matching connection. Use `NotionCLIAPI` exactly (the canonical Zapier app key for Notion). Add `--json` for machine-readable output. If the user has multiple Notion connections (different workspaces), list the titles and ask which one to use.
   3. **If the connection is shared with the user** (e.g. an org-wide team connection), the default `list-connections` call hides it. Opt in explicitly with both flags: `npx @zapier/zapier-sdk-cli --can-include-shared-connections list-connections NotionCLIAPI --include-shared`. Don't auto-retry with this on if the first call returns empty — ask the user first.
 
-- **`NOTION_TOKEN`** _(fallback)_ — a Notion integration token from <https://www.notion.so/profile/integrations>. **Prerequisite: only the Notion account the user already has.** The user creates the integration, then shares each page or database with it manually via Notion's UI (Connections menu) before the agent can access that resource.
+- **`env:<ENV_VAR>`** _(fallback)_ — read a Notion integration token from the named environment variable and send it as `Authorization: Bearer <token>`. The value is the env-var NAME, not the token itself; the token stays in `env` and never touches argv. Conventionally `--connection env:NOTION_TOKEN` with `NOTION_TOKEN` exported (a bare `--connection NOTION_TOKEN` auto-claims `env` once that var is set). Create the token at <https://www.notion.so/profile/integrations>. **Prerequisite: only the Notion account the user already has** — create the integration, then share each page or database with it manually via Notion's UI (Connections menu) before the agent can access that resource.
 
-For the multi-connection `copy_page` script, prefix env vars with the slot name: `SOURCE_NOTION_ZAPIER_CONNECTION_ID`, `TARGET_NOTION_TOKEN`, etc. Run `<script> --help` to see the exact env vars the script consumes.
+For the multi-connection `copy_page` script, pass one connection per slot: `--source-connection <…>` and `--target-connection <…>` (or `{ connections: { source, target } }` when imported). Run `<script> --help` to see the exact flags and resolvers.
 
-If the user mentions they don't have a Zapier account, surface signup as a real option alongside the `NOTION_TOKEN` path rather than silently falling back — the ~1-minute signup is comparable to the per-page-sharing dance the `NOTION_TOKEN` path requires for any workspace with more than a handful of pages.
+If the user mentions they don't have a Zapier account, surface signup as a real option alongside the `env:` token path rather than silently falling back — the ~1-minute signup is comparable to the per-page-sharing dance the token path requires for any workspace with more than a handful of pages.
 
-If neither env var is set the script fails with `Set NOTION_TOKEN or NOTION_ZAPIER_CONNECTION_ID.`
+If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
 
 ## Using this skill
 
@@ -67,7 +67,7 @@ It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are insta
 
 By exit code:
 
-- **Exit `0` (`READY`)** — follow `PREFLIGHT_RECOMMENDATION`: it gives the exact `--help` command to run on the script you intend to use (e.g. `` `node /path/scripts/search.ts --help` ``). The `--help` output marks the recommended auth option `[READY — use this]` and annotates each env var as `[set]` or `[not set]`. If no option is ready it tells you exactly what to provide — see [Auth](#auth) for how to obtain each credential type. If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`).
+- **Exit `0` (`READY`)** — follow `PREFLIGHT_RECOMMENDATION`: it gives the exact `--help` command to run on the script you intend to use (e.g. `` `node /path/scripts/search.ts --help` ``). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. See [Auth](#auth) for how to obtain each credential type. If a script call later fails with a **network error**, this sandbox blocks egress to that host — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`).
 - **Exit `1` (`NEEDS_ACTION`)** — follow `PREFLIGHT_RECOMMENDATION`: it spells out the single self-verifying install step (e.g. `npm install`) and the exact `--help` command to run afterward. Re-running `./preflight.sh` to reconfirm is optional.
 
 **Match the package runner to `PREFLIGHT_RUNNER`.** Wherever this skill shows `npx` — the package CLI ([path 2](#2-use-the-packages-cli)) and the Zapier SDK CLI ([Auth](#auth)) — substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`.
@@ -80,17 +80,17 @@ When the agent has shell access to the skill's installed directory, run a script
 
 ```bash
 # Single-conn — Zapier connection (recommended)
-NOTION_ZAPIER_CONNECTION_ID=conn_xxx ./scripts/search.ts '{"query":"foo"}'
+./scripts/search.ts '{"query":"foo"}' --connection zapier:conn_xxx
 
-# Single-conn — direct Notion integration token
-NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"foo"}'
+# Single-conn — direct Notion integration token (token stays in env)
+NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"foo"}' --connection env:NOTION_TOKEN
 
 # Multi-conn — copy a page between two Zapier-connected workspaces
-SOURCE_NOTION_ZAPIER_CONNECTION_ID=conn_src \
-TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
-./scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}'
+./scripts/copy-page.ts '{"sourcePageId":"...","targetParentPageId":"..."}' \
+  --source-connection zapier:conn_src \
+  --target-connection zapier:conn_tgt
 
-# Per-script `--help` lists the exact env vars per slot / resolver
+# Per-script `--help` lists the exact connection flags per slot + resolvers
 ./scripts/copy-page.ts --help
 ```
 
@@ -100,10 +100,10 @@ TARGET_NOTION_ZAPIER_CONNECTION_ID=conn_tgt \
 
 ```bash
 # Node — explicit interpreter (ignores the shebang)
-NOTION_ZAPIER_CONNECTION_ID=conn_xxx node scripts/search.ts '{"query":"foo"}'
+node scripts/search.ts '{"query":"foo"}' --connection zapier:conn_xxx
 
 # Bun — Bun ignores the Node-targeted shebang and runs the same source
-NOTION_ZAPIER_CONNECTION_ID=conn_xxx bun  scripts/search.ts '{"query":"foo"}'
+bun  scripts/search.ts '{"query":"foo"}' --connection zapier:conn_xxx
 ```
 
 All three forms run the same script body unchanged — only the I/O wrapper differs.
@@ -111,9 +111,9 @@ All three forms run the same script body unchanged — only the I/O wrapper diff
 ### 2. Use the package's CLI
 
 ```bash
-NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"foo"}'
+NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"foo"}' --connection env:NOTION_TOKEN
 npx @zapier/notion-connector --help                    # all scripts
-npx @zapier/notion-connector run search --help         # per-script env vars
+npx @zapier/notion-connector run search --help         # per-script schema + resolvers
 ```
 
 The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1), just a different entry point. When `PREFLIGHT_RUNNER` is `bun`, use `bunx @zapier/notion-connector …` instead of `npx`. **Caveat:** not every agent harness allows arbitrary `npx`/`bunx` invocations — sandboxed runtimes may block network fetches or process spawns. If neither is available, fall back to (1).
