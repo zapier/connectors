@@ -42,7 +42,7 @@ Every script returns a `{ data, meta }` envelope (same shape across the CLI's JS
   - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
   - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
 
-**Reading dropped fields / `skipOutputValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputValidation` — CLI: append `--skipOutputValidation`; MCP: pass `skipOutputValidation: true` as a tool argument; SDK: pass `{ skipOutputValidation: true }` in the run options. Input validation is never skipped.
+**Reading dropped fields / `skipOutputValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputValidation` — CLI: append `--skipOutputValidation`; MCP: pass `meta: { skipOutputValidation: true }` as a tool argument; SDK: pass `{ skipOutputValidation: true }` in the run options. Input validation is never skipped.
 
 ## Auth
 
