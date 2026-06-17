@@ -11,14 +11,14 @@ metadata:
 
 # Notion
 
-Tools for working with a Notion workspace against the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): find pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments, and upload files. 24 tools across search, read, write, schema, comments, and files. This version uses Notion's **data sources** model: a _database_ is a container that holds one or more _data sources_, and a _data source_ carries the property schema + the rows (pages).
+Tools for working with a Notion workspace against the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): find pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 23 tools across search, read, write, schema, and comments. This version uses Notion's **data sources** model: a _database_ is a container that holds one or more _data sources_, and a _data source_ carries the property schema + the rows (pages).
 
 ## When to use this connector
 
 - An agent needs to **find or read** content — search pages and data sources by title, then read a page, its block body, a data source's schema, or its rows.
 - An agent needs to **create or edit** pages and content — add a page (a row in a data source or a sub-page), update properties, append blocks, or edit / delete blocks.
 - An agent needs to **query data sources** — filter and sort the rows of a data source, or read a single page property.
-- An agent needs to **manage schemas** — create or update databases and data sources (add / rename / retype / remove properties), read or post **comments**, or **upload a file** to attach.
+- An agent needs to **manage schemas** — create or update databases and data sources (add / rename / retype / remove properties), read or post **comments**.
 
 ## Scripts
 
@@ -49,7 +49,6 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/createDataSource.ts`](scripts/createDataSource.ts)       | `createDataSource`    | `createDataSource`    | `notion`    | Add a new data source (schema) to an existing database.                                           | No                    |
 | [`scripts/updateDataSource.ts`](scripts/updateDataSource.ts)       | `updateDataSource`    | `updateDataSource`    | `notion`    | Update a data source's schema (add / rename / retype / remove properties).                        | No                    |
 | [`scripts/createComment.ts`](scripts/createComment.ts)             | `createComment`       | `createComment`       | `notion`    | Add a comment to a page or reply to an existing thread.                                           | No                    |
-| [`scripts/uploadFile.ts`](scripts/uploadFile.ts)                   | `uploadFile`          | `uploadFile`          | `notion`    | Upload a file from a public URL and return a `file_upload` id to attach.                          | No                    |
 
 **Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag(s) and available resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip.
 

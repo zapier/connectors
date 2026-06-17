@@ -1,6 +1,6 @@
 # @zapier/notion-connector
 
-Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments, and upload files. 24 tools across search, read, write, schema, comments, and files. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
+Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 23 tools across search, read, write, schema, and comments. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
@@ -50,7 +50,6 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | `createDataSource`    | Add a new data source (schema) to an existing database.                                           |
 | `updateDataSource`    | Update a data source's schema (add / rename / retype / remove properties).                        |
 | `createComment`       | Add a comment to a page or reply to an existing thread.                                           |
-| `uploadFile`          | Upload a file from a public URL and return a `file_upload` id to attach.                          |
 
 Run `npx @zapier/notion-connector run <toolName> --help` to see any tool's exact input contract + which auth resolvers are available.
 
@@ -91,7 +90,7 @@ Swap the `NOTION_TOKEN` env var for a `zapier:<connection-id>` connection if you
 
 ## When to use this
 
-- The agent needs **authenticated** access to a real Notion workspace — find, read, create, and edit pages and content, query data-source rows, manage database / data-source schemas, and work with comments and file uploads.
+- The agent needs **authenticated** access to a real Notion workspace — find, read, create, and edit pages and content, query data-source rows, manage database / data-source schemas, and work with comments.
 - You want one artifact that works as an MCP tool, a CLI, or an imported function — without re-implementing each surface.
 
 ## When NOT to use this

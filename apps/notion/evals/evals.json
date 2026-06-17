@@ -460,25 +460,6 @@
       ]
     },
     {
-      "id": "upload-and-attach-file",
-      "kind": "arrange-act",
-      "description": "Upload a file from a public URL and attach it to a page — exercises the multi-step file_upload flow.",
-      "requires": ["notion_eval_root"],
-      "steps": [
-        {
-          "intent": "Create a sub-page titled 'Report {{run_id}}' under {{notion_eval_root}}, then upload the file at https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf and attach it to that page.",
-          "assertions": {
-            "outcome": [
-              "A sub-page 'Report {{run_id}}' now exists under {{notion_eval_root}} with the uploaded PDF attached to it."
-            ],
-            "mechanism": [
-              "Uploads the file to obtain a file_upload id, then attaches it by referencing that returned id (a file block or files property) rather than passing the source URL directly to Notion."
-            ]
-          }
-        }
-      ]
-    },
-    {
       "id": "find-page-by-body-text",
       "kind": "discover-act",
       "description": "Guidance-dependent: Notion search matches titles, not body text — the right behavior is to not fabricate a body-text match.",

@@ -24,7 +24,6 @@ import updateBlockDefinition from "./scripts/updateBlock.ts";
 import updateDatabaseDefinition from "./scripts/updateDatabase.ts";
 import updateDataSourceDefinition from "./scripts/updateDataSource.ts";
 import updatePageDefinition from "./scripts/updatePage.ts";
-import uploadFileDefinition from "./scripts/uploadFile.ts";
 
 const connector = defineConnector({
   scripts: {
@@ -51,7 +50,6 @@ const connector = defineConnector({
     updateDatabase: updateDatabaseDefinition,
     updateDataSource: updateDataSourceDefinition,
     updatePage: updatePageDefinition,
-    uploadFile: uploadFileDefinition,
   },
   connectionResolvers,
 });
@@ -81,5 +79,4 @@ export const {
   updateDatabase,
   updateDataSource,
   updatePage,
-  uploadFile,
 } = toFunctions(connector);
