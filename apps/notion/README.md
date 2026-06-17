@@ -1,5 +1,7 @@
 # @zapier/notion-connector
 
+_Independent, unofficial connector for Notion. Not affiliated with, endorsed by, or sponsored by Notion. "Notion" is a trademark of its owner, used only to identify the service this connector works with._
+
 Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 24 tools across search, read, write, schema, comments, and cross-workspace copy. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection (`copyPage` is the exception — it uses two connections to copy across workspaces).
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
@@ -104,3 +106,17 @@ Swap the `NOTION_TOKEN` env var for a `zapier:<connection-id>` connection if you
 - [`SKILL.md`](SKILL.md) — agent-runtime guidance: when to reach for each tool, the auth model, disambiguation + refusals.
 - [Notion API reference](https://developers.notion.com/reference/intro).
 - [Source](https://github.com/zapier/connectors/tree/main/apps/notion).
+
+## Legal
+
+**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Notion's API, services, data, schemas, documentation, or other materials, which remain the property of Notion. Your use of Notion's API is governed by your own agreement with Notion.
+
+**Trademarks and affiliation.** Notion and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Notion.
+
+**Your responsibility.** This connector calls Notion's API using credentials you supply. You are responsible for holding a valid Notion account, for complying with Notion's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
+
+**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Notion product. Zapier is not responsible for changes Notion makes to its API or for any consequence of your use of Notion's API. See the repository LICENSE for the full disclaimer.
+
+**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
+
+Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
