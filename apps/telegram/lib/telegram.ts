@@ -1,3 +1,4 @@
+import { ConnectorHttpError } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 /** Base host for the Telegram Bot API. The /bot<token>/ path segment is injected by the connection resolver. */
@@ -298,65 +299,92 @@ export const okResultSchema = z
   .describe("Confirmation that the operation succeeded.");
 
 // ───────────────────────── Error handling ─────────────────────────
+//
+// Telegram signals failure with an HTTP 4xx/409 status AND an
+// `{ ok:false, error_code, description, parameters? }` body. error_code is
+// documented as subject to change, so the hint logic branches on the
+// `description` text (where the distinguishing detail lives) plus the
+// structured `parameters`. Centralized here so the mapping is identical across
+// all tools (mirrors Slack's `mapSlackError`/`readSlack`).
 
-interface TelegramErrorBody {
-  ok?: boolean;
+/** The envelope every Telegram Bot API response shares. */
+export interface TelegramResponse {
+  ok: boolean;
+  result?: unknown;
   error_code?: number;
   description?: string;
   parameters?: { retry_after?: number; migrate_to_chat_id?: number };
 }
 
-/**
- * Map a non-OK Telegram response to an actionable Error and throw it. Telegram
- * returns `{ ok:false, error_code, description, parameters? }`; error_code is
- * documented as subject to change, so we branch on the description text too.
- */
-export async function throwTelegramError(
-  toolName: string,
-  res: Response,
-): Promise<never> {
-  let body: TelegramErrorBody = {};
-  try {
-    body = (await res.json()) as TelegramErrorBody;
-  } catch {
-    // Non-JSON error body — fall back to status text below.
-  }
-  const code = body.error_code ?? res.status;
-  const desc = body.description ?? res.statusText ?? "unknown error";
+/** Build an actionable, agent-facing hint for a failed Telegram response. */
+function telegramErrorHint(body: TelegramResponse, status: number): string {
+  const desc = body.description ?? "unknown error";
   const d = desc.toLowerCase();
+  const code = body.error_code ?? status;
   const migrateTo = body.parameters?.migrate_to_chat_id;
   const retryAfter = body.parameters?.retry_after;
 
-  let hint = desc;
-  if (code === 401 || d.includes("unauthorized")) {
-    hint =
-      "the bot token is invalid — check the connection (TELEGRAM_BOT_TOKEN) and reconnect.";
-  } else if (migrateTo !== undefined) {
-    hint = `this group has migrated to a supergroup — retry with chat_id ${migrateTo} and persist the new id.`;
-  } else if (code === 429) {
-    hint = `rate limited${retryAfter !== undefined ? ` — retry after ${retryAfter}s` : ""}.`;
-  } else if (d.includes("chat not found")) {
-    hint =
-      "chat not found — verify the chat_id (resolve via listRecentChats or getChat); the bot must be a member.";
-  } else if (d.includes("can't initiate conversation")) {
-    hint =
-      "the bot can't start a private chat — the user must message the bot first.";
-  } else if (
+  if (code === 401 || d.includes("unauthorized"))
+    return "the bot token is invalid — check the connection (TELEGRAM_BOT_TOKEN) and reconnect.";
+  if (migrateTo !== undefined)
+    return `this group has migrated to a supergroup — retry with chat_id ${migrateTo} and persist the new id.`;
+  if (code === 429)
+    return `rate limited${retryAfter !== undefined ? ` — retry after ${retryAfter}s` : ""}.`;
+  if (d.includes("chat not found"))
+    return "chat not found — verify the chat_id (resolve via listRecentChats or getChat); the bot must be a member.";
+  if (d.includes("can't initiate conversation"))
+    return "the bot can't start a private chat — the user must message the bot first.";
+  if (
     d.includes("blocked") ||
     d.includes("kicked") ||
     d.includes("not a member") ||
     d.includes("deactivated")
-  ) {
-    hint = `the bot can't message this chat (${desc}). Do not retry.`;
-  } else if (d.includes("webhook is active")) {
-    hint =
-      "can't read recent updates while a webhook is active on this bot; use a known chat_id or @username instead.";
-  } else if (d.includes("can't parse entities")) {
-    hint =
-      "message formatting is invalid for the chosen parse_mode — check the HTML/MarkdownV2 syntax.";
-  } else if (d.includes("not found")) {
-    hint = `${desc} — the target may no longer exist or be too old.`;
-  }
+  )
+    return `the bot can't message this chat (${desc}). Do not retry.`;
+  if (d.includes("webhook is active"))
+    return "can't read recent updates while a webhook is active on this bot; use a known chat_id or @username instead.";
+  if (d.includes("can't parse entities"))
+    return "message formatting is invalid for the chosen parse_mode — check the HTML/MarkdownV2 syntax.";
+  if (d.includes("not found"))
+    return `${desc} — the target may no longer exist or be too old.`;
+  return desc;
+}
 
-  throw new Error(`Telegram ${toolName} ${code}: ${hint}`);
+/**
+ * Build a `ConnectorHttpError` from a failed Telegram response. The message
+ * names the failing tool, the error_code, and a recovery hint; the full
+ * response (status, headers, and the `{ ok:false, … }` body carrying
+ * `parameters`) is carried for agents/CLI to inspect.
+ */
+export function mapTelegramError(
+  tool: string,
+  res: Pick<Response, "status" | "statusText" | "headers">,
+  body: TelegramResponse,
+): ConnectorHttpError {
+  const code = body.error_code ?? res.status;
+  return ConnectorHttpError.fromResponseBody(res, body, {
+    message: `Telegram ${tool} ${code}: ${telegramErrorHint(body, res.status)}`,
+  });
+}
+
+/**
+ * Read a Telegram response, enforce success (HTTP status + the `ok` flag), and
+ * return the parsed `{ ok, result, … }` envelope. Throws a mapped
+ * `ConnectorHttpError` otherwise. Callers read `.result` (or `.ok`) off the
+ * returned body — mirrors Slack's `readSlack`.
+ */
+export async function readTelegram(
+  tool: string,
+  res: Pick<Response, "ok" | "status" | "statusText" | "headers" | "json">,
+): Promise<TelegramResponse> {
+  let body: TelegramResponse;
+  try {
+    body = (await res.json()) as TelegramResponse;
+  } catch {
+    body = { ok: false, description: res.statusText };
+  }
+  if (!res.ok || body.ok === false) {
+    throw mapTelegramError(tool, res, body);
+  }
+  return body;
 }

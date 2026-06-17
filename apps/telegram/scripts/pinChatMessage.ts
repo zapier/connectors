@@ -3,11 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import {
-  okResultSchema,
-  TELEGRAM_API,
-  throwTelegramError,
-} from "../lib/telegram.ts";
+import { okResultSchema, readTelegram, TELEGRAM_API } from "../lib/telegram.ts";
 
 const inputSchema = z
   .object({
@@ -48,9 +44,8 @@ const definition = defineTool({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) await throwTelegramError("pinChatMessage", res);
-    const { ok } = (await res.json()) as { ok: boolean };
-    return { ok };
+    const data = await readTelegram("pinChatMessage", res);
+    return { ok: data.ok };
   },
 });
 

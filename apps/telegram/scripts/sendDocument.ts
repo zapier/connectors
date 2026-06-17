@@ -3,11 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import {
-  messageSchema,
-  TELEGRAM_API,
-  throwTelegramError,
-} from "../lib/telegram.ts";
+import { messageSchema, readTelegram, TELEGRAM_API } from "../lib/telegram.ts";
 
 const inputSchema = z
   .object({
@@ -86,9 +82,8 @@ const definition = defineTool({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) await throwTelegramError("sendDocument", res);
-    const { result } = (await res.json()) as { result: unknown };
-    return result;
+    const data = await readTelegram("sendDocument", res);
+    return data.result;
   },
 });
 

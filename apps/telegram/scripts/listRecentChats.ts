@@ -3,11 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import {
-  chatSchema,
-  TELEGRAM_API,
-  throwTelegramError,
-} from "../lib/telegram.ts";
+import { chatSchema, readTelegram, TELEGRAM_API } from "../lib/telegram.ts";
 
 const inputSchema = z
   .object({
@@ -62,8 +58,8 @@ const definition = defineTool({
         allowed_updates: ["message", "channel_post"],
       }),
     });
-    if (!res.ok) await throwTelegramError("listRecentChats", res);
-    const { result = [] } = (await res.json()) as { result?: TelegramUpdate[] };
+    const data = await readTelegram("listRecentChats", res);
+    const result = (data.result ?? []) as TelegramUpdate[];
 
     // Extract the chat from each update and de-dupe by id (most recent first).
     const seen = new Map<number, z.infer<typeof chatSchema>>();

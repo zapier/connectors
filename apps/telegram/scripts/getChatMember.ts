@@ -5,8 +5,8 @@ import { z } from "zod";
 import { connectionResolvers } from "../connections.ts";
 import {
   chatMemberSchema,
+  readTelegram,
   TELEGRAM_API,
-  throwTelegramError,
 } from "../lib/telegram.ts";
 
 const inputSchema = z
@@ -45,9 +45,8 @@ const definition = defineTool({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) await throwTelegramError("getChatMember", res);
-    const { result } = (await res.json()) as { result: unknown };
-    return result;
+    const data = await readTelegram("getChatMember", res);
+    return data.result;
   },
 });
 
