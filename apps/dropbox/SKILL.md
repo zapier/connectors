@@ -93,7 +93,7 @@ The entity types most likely to collide here are **files/folders by name** (reso
 
 ## Auth
 
-The connector uses a single Dropbox OAuth2 connection. Dropbox issues one identity per token — there is no bot/user split; capability is gated by the **OAuth scopes** granted when the connection is authorized (e.g. `files.content.write`, `sharing.read`). A call missing a scope fails with a `missing_scope` error naming the scope to reconnect with.
+The connector uses a single Dropbox OAuth2 connection — one credential, with no separate bot/user tokens. Capability is gated by the **OAuth scopes** granted when the connection is authorized (e.g. `files.content.write`, `sharing.read`); a call missing a scope fails with a `missing_scope` error naming the scope to reconnect with.
 
 Provide one of two credentials via environment variable (no CLI flags). Prefer the Zapier-managed connection.
 
@@ -104,7 +104,7 @@ Provide one of two credentials via environment variable (no CLI flags). Prefer t
   2. `npx @zapier/zapier-sdk-cli list-connections DropBoxCLIAPI` — prints `title (connection ID)` per matching connection. Use `DropBoxCLIAPI` exactly (note the capital B). Add `--json` for machine-readable output.
   3. Substitute `bunx` for `npx` when `PREFLIGHT_RUNNER` is `bun`.
 
-- **`DROPBOX_ACCESS_TOKEN`** _(fallback, direct mode)_ — a Dropbox access token from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: Dropbox access tokens are short-lived (~4 hours).** This connector sends the token as-is and does not refresh it, so a static `DROPBOX_ACCESS_TOKEN` stops working after a few hours — re-mint it, or use the Zapier-managed path above, which handles rotation. Long-lived tokens were discontinued by Dropbox in 2021.
+- **`DROPBOX_ACCESS_TOKEN`** _(fallback, direct mode)_ — a Dropbox access token from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it.** A static `DROPBOX_ACCESS_TOKEN` from a Dropbox app is short-lived and stops working after a few hours — re-mint it, or use the Zapier-managed path above, which handles rotation for you. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
 
 If neither env var is set the script reports the missing credentials via `--help`.
 

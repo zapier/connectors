@@ -60,12 +60,14 @@ export const entrySchema = z.object({
     .optional(),
   client_modified: z
     .string()
+    .datetime({ offset: true })
     .describe(
       "ISO-8601 time the file was last modified by a client (files only).",
     )
     .optional(),
   server_modified: z
     .string()
+    .datetime({ offset: true })
     .describe("ISO-8601 time Dropbox last received the file (files only).")
     .optional(),
 });
@@ -87,6 +89,7 @@ export const sharedLinkSchema = z.object({
     .optional(),
   expires: z
     .string()
+    .datetime({ offset: true })
     .describe("ISO-8601 expiration time, if the link expires.")
     .optional(),
 });
@@ -101,7 +104,11 @@ export const fileRequestSchema = z.object({
     ),
   title: z.string(),
   destination: z.string().describe("Folder path where uploads land."),
-  created: z.string().describe("ISO-8601 creation time.").optional(),
+  created: z
+    .string()
+    .datetime({ offset: true })
+    .describe("ISO-8601 creation time.")
+    .optional(),
   is_open: z
     .boolean()
     .describe("Whether the request is currently accepting uploads.")
