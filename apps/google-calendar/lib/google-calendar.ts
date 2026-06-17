@@ -61,9 +61,7 @@ const attendeeFields = {
     .optional(),
   responseStatus: z
     .enum(["needsAction", "declined", "tentative", "accepted"])
-    .describe(
-      "RSVP state. Only settable for the authenticated user (self); other attendees' statuses are read-only.",
-    )
+    .describe("The attendee's RSVP status.")
     .optional(),
   organizer: z
     .boolean()
@@ -193,7 +191,7 @@ export const EventSchema = z
     hangoutLink: z
       .string()
       .describe(
-        "Legacy Meet link convenience field; prefer conferenceData.entryPoints.",
+        "The event's Google Meet link, when one exists. The resolved link is also available via conferenceData.entryPoints.",
       )
       .optional(),
     colorId: z
