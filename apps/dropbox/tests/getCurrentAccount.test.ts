@@ -37,7 +37,7 @@ describe("getCurrentAccount: run", () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse({
         account_id: "a1",
-        email: "u@x.com",
+        email: "u@x.com", // pii:allow
         name: { display_name: "U X" },
         account_type: { ".tag": "pro" },
         team: { name: "Acme" },
@@ -65,7 +65,7 @@ describe("getCurrentAccount: run", () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse({
         account_id: "a1",
-        email: "u@x.com",
+        email: "u@x.com", // pii:allow
         name: { display_name: "U X" },
         account_type: { ".tag": "basic" },
         root_info: {
@@ -92,7 +92,7 @@ describe("getCurrentAccount: run", () => {
       calls.push({ init });
       return jsonResponse({
         account_id: "a1",
-        email: "u@x.com",
+        email: "u@x.com", // pii:allow
         name: { display_name: "U X" },
       });
     }) as typeof globalThis.fetch;

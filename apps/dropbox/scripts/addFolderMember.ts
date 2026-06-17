@@ -13,7 +13,7 @@ const inputSchema = z
     members: z
       .array(z.string())
       .min(1)
-      .describe('Email addresses of the people to add, e.g. ["sam@acme.com"].'),
+      .describe('Email addresses of the people to add, e.g. ["sam@acme.com"].'), // pii:allow
     access_level: z
       .enum(["editor", "viewer", "viewer_no_comment", "traverse"])
       .describe(

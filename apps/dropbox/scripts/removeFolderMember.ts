@@ -12,7 +12,7 @@ const inputSchema = z
       .describe("ID of the shared folder. Resolve it via listSharedFolders."),
     member: z
       .string()
-      .describe("Email address of the member to remove, e.g. sam@acme.com."),
+      .describe("Email address of the member to remove, e.g. sam@acme.com."), // pii:allow
     leave_a_copy: z
       .boolean()
       .describe(

@@ -46,13 +46,13 @@ describe("removeFolderMember: run", () => {
     }) as typeof globalThis.fetch;
 
     const { data: result } = await removeFolderMemberDefinition.run(
-      { shared_folder_id: "sf1", member: "sam@acme.com" },
+      { shared_folder_id: "sf1", member: "sam@acme.com" }, // pii:allow
       { fetch: fakeFetch },
     );
 
     expect(result).toEqual({
       shared_folder_id: "sf1",
-      member: "sam@acme.com",
+      member: "sam@acme.com", // pii:allow
       removed: true,
     });
     expect(outputSchema.safeParse(result).success).toBe(true);
@@ -66,7 +66,7 @@ describe("removeFolderMember: run", () => {
       string,
       unknown
     >;
-    expect(body.member).toEqual({ ".tag": "email", email: "sam@acme.com" });
+    expect(body.member).toEqual({ ".tag": "email", email: "sam@acme.com" }); // pii:allow
   });
 
   it("polls check_remove_member_job_status after an async_job_id, then completes", async () => {
@@ -83,7 +83,7 @@ describe("removeFolderMember: run", () => {
     }) as typeof globalThis.fetch;
 
     const { data: result } = await removeFolderMemberDefinition.run(
-      { shared_folder_id: "sf1", member: "sam@acme.com" },
+      { shared_folder_id: "sf1", member: "sam@acme.com" }, // pii:allow
       { fetch: fakeFetch },
     );
 
@@ -103,7 +103,7 @@ describe("removeFolderMember: run", () => {
 
     await expect(
       removeFolderMemberDefinition.run(
-        { shared_folder_id: "sf1", member: "sam@acme.com" },
+        { shared_folder_id: "sf1", member: "sam@acme.com" }, // pii:allow
         { fetch: fakeFetch },
       ),
     ).rejects.toThrow(/failed/);

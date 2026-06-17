@@ -31,7 +31,7 @@ describe("addFolderMember: governance", () => {
     expect(
       inputSchema.safeParse({
         shared_folder_id: "sf1",
-        members: ["a@x.com"],
+        members: ["a@x.com"], // pii:allow
         access_level: "editor",
       }).success,
     ).toBe(true);
@@ -50,7 +50,7 @@ describe("addFolderMember: run", () => {
     const { data: result } = await addFolderMemberDefinition.run(
       {
         shared_folder_id: "sf1",
-        members: ["a@x.com", "b@x.com"],
+        members: ["a@x.com", "b@x.com"], // pii:allow
         access_level: "editor",
       },
       { fetch: fakeFetch },
@@ -58,7 +58,7 @@ describe("addFolderMember: run", () => {
 
     expect(result).toEqual({
       shared_folder_id: "sf1",
-      members_added: ["a@x.com", "b@x.com"],
+      members_added: ["a@x.com", "b@x.com"], // pii:allow
     });
     expect(outputSchema.safeParse(result).success).toBe(true);
   });
@@ -76,7 +76,7 @@ describe("addFolderMember: run", () => {
     await addFolderMemberDefinition.run(
       {
         shared_folder_id: "sf1",
-        members: ["a@x.com", "b@x.com"],
+        members: ["a@x.com", "b@x.com"], // pii:allow
         access_level: "editor",
       },
       { fetch: fakeFetch },
@@ -91,11 +91,11 @@ describe("addFolderMember: run", () => {
     >;
     expect(body.members).toEqual([
       {
-        member: { ".tag": "email", email: "a@x.com" },
+        member: { ".tag": "email", email: "a@x.com" }, // pii:allow
         access_level: { ".tag": "editor" },
       },
       {
-        member: { ".tag": "email", email: "b@x.com" },
+        member: { ".tag": "email", email: "b@x.com" }, // pii:allow
         access_level: { ".tag": "editor" },
       },
     ]);
@@ -112,7 +112,7 @@ describe("addFolderMember: run", () => {
       addFolderMemberDefinition.run(
         {
           shared_folder_id: "sf1",
-          members: ["a@x.com"],
+          members: ["a@x.com"], // pii:allow
           access_level: "editor",
         },
         { fetch: fakeFetch },
