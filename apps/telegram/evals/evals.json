@@ -397,7 +397,7 @@
       "requires": ["telegram_sandbox_chat"],
       "steps": [
         {
-          "intent": "Upload the file at /Users/me/report.pdf to {{telegram_sandbox_chat}}.",
+          "intent": "Upload my local file report.pdf (it's saved on my computer) to {{telegram_sandbox_chat}}.",
           "assertions": {
             "outcome": [
               "The reply explains it can send a file by public URL or an existing Telegram file_id but cannot read a local-disk path, and asks for a URL (or file_id) — it does not claim the local file was uploaded."
