@@ -21,7 +21,13 @@ function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   } as unknown as Response;
 }
 
-const MARKDOWN = { markdown: "# Hi" };
+const MARKDOWN = {
+  object: "page_markdown",
+  id: "1429989f-e8ac-4eff-bc8f-57f56486db54",
+  markdown: "# Hi",
+  truncated: false,
+  unknown_block_ids: [],
+};
 
 describe("getPageAsMarkdown: inputSchema", () => {
   it("requires page_id", () => {
@@ -61,6 +67,35 @@ describe("getPageAsMarkdown: run", () => {
     );
     expect(outputSchema.safeParse(result).success).toBe(true);
     expect(result.markdown).toBe("# Hi");
+  });
+
+  it("preserves the truncation signal (truncated + unknown_block_ids) through output validation", async () => {
+    const TRUNCATED = {
+      object: "page_markdown",
+      id: "1429989f-e8ac-4eff-bc8f-57f56486db54",
+      markdown: "# Big page (partial)",
+      truncated: true,
+      unknown_block_ids: ["aaaaaaaa-0000-0000-0000-000000000001"],
+    };
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse(TRUNCATED)) as typeof globalThis.fetch;
+
+    const { data: result, meta } = await getPageAsMarkdownDefinition.run(
+      { page_id: "1429989f-e8ac-4eff-bc8f-57f56486db54" },
+      { fetch: fakeFetch },
+    );
+
+    // The fields the API returns must survive — not be stripped by a narrow outputSchema.
+    expect(result.truncated).toBe(true);
+    expect(result.unknown_block_ids).toEqual([
+      "aaaaaaaa-0000-0000-0000-000000000001",
+    ]);
+    const ov = meta.outputValidation;
+    expect(ov.skipped).toBe(false);
+    if (!ov.skipped) {
+      expect(ov.droppedPaths ?? []).not.toContain("truncated");
+      expect(ov.droppedPaths ?? []).not.toContain("unknown_block_ids");
+    }
   });
 
   it("normalizes a pasted Notion URL to a dashed UUID in the path", async () => {
