@@ -2,7 +2,7 @@
 import {
   defineTool,
   handleIfScriptMain,
-  throwForStatus,
+  throwIfNotOk,
 } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
@@ -57,7 +57,7 @@ const definition = defineTool({
       },
       body: JSON.stringify(body),
     });
-    await throwForStatus(res);
+    await throwIfNotOk(res);
     return res.json();
   },
 });

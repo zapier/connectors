@@ -2,7 +2,7 @@
 import {
   defineTool,
   handleIfScriptMain,
-  throwForStatus,
+  throwIfNotOk,
 } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
@@ -45,7 +45,7 @@ const definition = defineTool({
         headers: { "Notion-Version": "2022-06-28" },
       },
     );
-    await throwForStatus(readRes, "Failed to read the source page");
+    await throwIfNotOk(readRes, "Failed to read the source page");
     const sourcePage = (await readRes.json()) as {
       properties: Record<string, unknown>;
     };
@@ -64,7 +64,7 @@ const definition = defineTool({
         }),
       },
     );
-    await throwForStatus(
+    await throwIfNotOk(
       createRes,
       "Failed to create the page in the target workspace",
     );
