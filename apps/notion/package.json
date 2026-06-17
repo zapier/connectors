@@ -1,6 +1,6 @@
 {
   "name": "@zapier/notion-connector",
-  "version": "0.1.0-experimental.16",
+  "version": "0.1.0-experimental.17",
   "publishConfig": {
     "access": "restricted"
   },

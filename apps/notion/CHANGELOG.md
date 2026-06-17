@@ -1,5 +1,11 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.17
+
+### Minor Changes
+
+- 7268c5e: Rebuild the Notion connector through the Factory pipeline on Notion's 2025-09-03 data-sources API model (was 3 hand-authored tools, now 23). Tools span search, page / database / data-source reads, page and block writes (create / update / append / delete), database and data-source schema management, comments, and users. Single-token bearer auth; shared `lib/` (`notionFetch` for the version header + `ConnectorHttpError` mapping, `notionId` for URL/id normalization); clean-room `references/`.
+
 ## 0.1.0-experimental.16
 
 ### Patch Changes
