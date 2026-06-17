@@ -26,6 +26,10 @@ const PAGE = {
   id: "1429989f-e8ac-4eff-bc8f-57f56486db54",
   url: "https://www.notion.so/My-Page-1429989fe8ac4effbc8f57f56486db54",
   parent: { type: "data_source_id", data_source_id: "ds-1" },
+  // Notion returns null (not absent) for these on pages with no icon/cover —
+  // the output schema must accept null, not just undefined.
+  icon: null,
+  cover: null,
 };
 
 describe("getPage: inputSchema", () => {

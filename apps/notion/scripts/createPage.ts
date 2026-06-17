@@ -84,8 +84,8 @@ const outputSchema = z
         "Property values keyed by property name. Shapes are type-specific (title, rich_text, select, date, relation, etc.).",
       )
       .optional(),
-    icon: z.record(z.string(), z.any()).optional(),
-    cover: z.record(z.string(), z.any()).optional(),
+    icon: z.record(z.string(), z.any()).nullable().optional(),
+    cover: z.record(z.string(), z.any()).nullable().optional(),
   })
   .describe("A Notion page (a standalone page or a row in a data source).");
 
