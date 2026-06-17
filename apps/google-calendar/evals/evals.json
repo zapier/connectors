@@ -35,7 +35,7 @@
     {
       "id": "quick-add-event",
       "kind": "arrange-act",
-      "description": "Single-action probe: create an event from a natural-language phrase (the lossy quick-add path).",
+      "description": "Single-action probe: create an event from a simple text string (the quick-add path).",
       "steps": [
         {
           "intent": "Quickly add to my calendar: 'Coffee with Alex {{run_id}} tomorrow at 10am'.",
