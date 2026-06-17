@@ -514,6 +514,123 @@
           }
         }
       ]
+    },
+    {
+      "id": "read-database-data-sources",
+      "kind": "discover-act",
+      "description": "Inspect a database container and report the data sources it holds — exercises getDatabase, the second-highest-reach read, and the database-vs-data-source distinction.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "Find the {{notion_tasks_db}} database and tell me which data sources it contains.",
+          "assertions": {
+            "outcome": [
+              "The {{notion_tasks_db}} database is located and its data source(s) are reported (it has at least one), rather than a fabricated list."
+            ],
+            "mechanism": [
+              "Resolves the database container by id (found by searching for its name) and reads its list of data sources, rather than treating the database id as a data source or inventing the data sources."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "inspect-data-source-schema",
+      "kind": "discover-act",
+      "description": "Read a data source's property schema before acting on it — exercises getDataSource (the agent-shaped schema-discovery add) grounded in the seeded tasks-db schema.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "What properties (columns) does the {{notion_tasks_db}} database have? List each property name and its type.",
+          "assertions": {
+            "outcome": [
+              "The data source's property schema is reported and includes the 'Name' title property, the 'Status' select property, and the 'Due' date property, with their types."
+            ],
+            "mechanism": [
+              "Resolves the database's data source id and reads its schema definition, rather than guessing the property names/types or inferring them by querying rows."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-task-with-due-date",
+      "kind": "discover-act",
+      "description": "Add a row that sets both a typed select and a typed date property — exercises createPage against a resolved data source with the date property the select-only create case doesn't cover.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "Add a task named 'Publish changelog {{run_id}}' to the {{notion_tasks_db}} database, with Status 'In progress' and a Due date of 2026-07-01.",
+          "assertions": {
+            "outcome": [
+              "A row named 'Publish changelog {{run_id}}' now exists in {{notion_tasks_db}} with Status 'In progress' and a Due date of 2026-07-01, and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the row under the database's data source id (resolved from the database), not under the bare database id.",
+              "Writes the 'Status' select and the 'Due' date using Notion's typed property-value shapes (a select value and an ISO-8601 date), not bare strings."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-user-details",
+      "kind": "discover-act",
+      "description": "List workspace users then fetch one person's full profile by id — exercises getUser distinct from the bulk listing.",
+      "steps": [
+        {
+          "intent": "List the people in this Notion workspace.",
+          "assertions": {
+            "outcome": [
+              "A list of the workspace's users (members and/or bots) is returned with names or ids, rather than a fabricated list."
+            ],
+            "mechanism": [
+              "Retrieves users via the workspace user listing rather than inventing people."
+            ]
+          }
+        },
+        {
+          "intent": "Pick one of those people and retrieve their full profile details by id.",
+          "assertions": {
+            "outcome": [
+              "The full details of a single workspace user (e.g. name, type, and id) are returned, not fabricated."
+            ],
+            "mechanism": [
+              "Fetches one specific user by id rather than re-listing the entire workspace or making up a profile."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-page-property",
+      "kind": "arrange-act",
+      "description": "Create a row with a known date value then read that single property back — exercises getPageProperty, the per-property read.",
+      "requires": ["notion_tasks_db"],
+      "steps": [
+        {
+          "intent": "Add a task named 'Audit dependencies {{run_id}}' to the {{notion_tasks_db}} database with Status 'To do' and a Due date of 2026-08-15.",
+          "assertions": {
+            "outcome": [
+              "A row named 'Audit dependencies {{run_id}}' now exists in {{notion_tasks_db}} with Status 'To do' and a Due date of 2026-08-15, and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the row under the database's data source id, writing Status as a typed select and Due as a typed ISO-8601 date."
+            ]
+          }
+        },
+        {
+          "intent": "Read back just the Due date property of that task.",
+          "assertions": {
+            "outcome": [
+              "The Due date property of the 'Audit dependencies {{run_id}}' task is reported as 2026-08-15."
+            ],
+            "mechanism": [
+              "Reads the single named property value of the row just created in this session, rather than re-creating the row or fabricating the value."
+            ]
+          }
+        }
+      ]
     }
   ]
 }
