@@ -90,7 +90,7 @@ describe("getPageAsMarkdown: run", () => {
     expect(result.unknown_block_ids).toEqual([
       "aaaaaaaa-0000-0000-0000-000000000001",
     ]);
-    const ov = meta.outputValidation;
+    const ov = meta.outputDataValidation;
     expect(ov.skipped).toBe(false);
     if (!ov.skipped) {
       expect(ov.droppedPaths ?? []).not.toContain("truncated");
