@@ -64,8 +64,8 @@ const { data, meta } = await createEvent(
   },
   { connection: "env:GOOGLE_CALENDAR_ACCESS_TOKEN" },
 );
-// data is the created Event (id, htmlLink, start, end, …); meta.outputValidation reports
-// what validation did. Pass { skipOutputValidation: true } to receive the raw API output.
+// data is the created Event (id, htmlLink, start, end, …); meta.outputDataValidation reports
+// what validation did. Pass { skipOutputDataValidation: true } to receive the raw API output.
 ```
 
 ## MCP Server
