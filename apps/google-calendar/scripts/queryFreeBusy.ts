@@ -17,13 +17,13 @@ const inputSchema = z
       .string()
       .datetime({ offset: true })
       .describe(
-        "Start of the window (inclusive). RFC3339 with offset, e.g. 2026-06-16T00:00:00Z — a bare timestamp is rejected.",
+        "Start of the query window. RFC3339 with offset, e.g. 2026-06-16T00:00:00Z.",
       ),
     timeMax: z
       .string()
       .datetime({ offset: true })
       .describe(
-        "End of the window (exclusive). RFC3339 with offset; must be greater than timeMin.",
+        "End of the query window. RFC3339 with offset; must be greater than timeMin.",
       ),
     calendar_ids: z
       .array(z.string())

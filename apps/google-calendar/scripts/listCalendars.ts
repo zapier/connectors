@@ -32,7 +32,7 @@ const CalendarListEntrySchema = z
           minutes: z.number().int().optional(),
         }),
       )
-      .describe("The calendar's default reminders, applied to new events.")
+      .describe("The default reminders the user has for this calendar.")
       .optional(),
     conferenceProperties: z
       .object({

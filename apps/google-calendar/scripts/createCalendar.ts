@@ -14,9 +14,7 @@ const inputSchema = z
       .optional(),
     timeZone: z
       .string()
-      .describe(
-        "IANA timezone id (e.g. America/Los_Angeles). Defaults to the user's setting if omitted.",
-      )
+      .describe("IANA timezone id (e.g. America/Los_Angeles).")
       .optional(),
     location: z
       .string()
@@ -43,7 +41,7 @@ const CalendarSchema = z
         allowedConferenceSolutionTypes: z
           .array(z.string())
           .describe(
-            "Conference types this calendar supports (e.g. hangoutsMeet). Empty means Meet links can't be created here.",
+            "Conference solution types this calendar supports (e.g. hangoutsMeet).",
           )
           .optional(),
       })

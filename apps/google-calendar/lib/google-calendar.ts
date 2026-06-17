@@ -30,7 +30,7 @@ const eventDateTimeFields = {
     .string()
     .datetime({ offset: true })
     .describe(
-      "Timed start/end, RFC3339 with offset, e.g. 2026-06-16T09:00:00-07:00. Without an offset it resolves to timeZone (or the calendar's default zone, NOT UTC).",
+      "Timed start/end, RFC3339, e.g. 2026-06-16T09:00:00-07:00. A time zone offset is required unless timeZone is set.",
     )
     .optional(),
   timeZone: z
@@ -198,7 +198,7 @@ export const EventSchema = z
       .optional(),
     colorId: z
       .string()
-      .describe("Event color palette index 1-11 (resolve via getColors).")
+      .describe("Event color palette index (resolve via getColors).")
       .optional(),
     visibility: z.string().optional(),
     transparency: z.string().optional(),

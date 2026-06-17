@@ -27,9 +27,7 @@ const inputSchema = z
     summary: z.string().describe("Event title.").optional(),
     description: z
       .string()
-      .describe(
-        "Event details. A limited HTML subset is accepted (b, i, a, ul/li); plain text is safest.",
-      )
+      .describe("Event details. Can contain HTML; plain text is safest.")
       .optional(),
     location: z.string().describe("Free-text location.").optional(),
     attendees: z
@@ -46,7 +44,7 @@ const inputSchema = z
     colorId: z
       .string()
       .describe(
-        "Event color as a palette index 1-11 (NOT a hex value). Resolve indexes via getColors.",
+        "Event color as a palette index, NOT a hex value. Resolve the available indexes via getColors.",
       )
       .optional(),
     visibility: z
@@ -60,7 +58,7 @@ const inputSchema = z
     eventType: z
       .enum(["default", "outOfOffice", "focusTime", "workingLocation"])
       .describe(
-        "Event type. birthday and fromGmail are NOT creatable. outOfOffice/focusTime need a timed start/end and transparency=opaque.",
+        "Event type. fromGmail events cannot be created. outOfOffice and focusTime must be timed (not all-day) with transparency=opaque, and exist only on primary calendars.",
       )
       .optional(),
     guestsCanModify: z

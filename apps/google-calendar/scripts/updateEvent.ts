@@ -26,9 +26,7 @@ const inputSchema = z
     summary: z.string().describe("Event title.").optional(),
     description: z
       .string()
-      .describe(
-        "Event details. A limited HTML subset is accepted (b, i, a, ul/li); plain text is safest.",
-      )
+      .describe("Event details. Can contain HTML; plain text is safest.")
       .optional(),
     location: z.string().describe("Free-text location.").optional(),
     start: EventDateTimeInput.describe(
@@ -53,7 +51,7 @@ const inputSchema = z
     colorId: z
       .string()
       .describe(
-        "Event color as a palette index 1-11 (NOT a hex value). Resolve indexes via getColors.",
+        "Event color as a palette index, NOT a hex value. Resolve the available indexes via getColors.",
       )
       .optional(),
     visibility: z

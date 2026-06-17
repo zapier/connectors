@@ -29,7 +29,7 @@ const inputSchema = z
     q: z
       .string()
       .describe(
-        "Free-text search over summary, description, location, and attendee/organizer name+email. Does not match extended properties or attachments.",
+        "Free-text search over summary, description, location, and attendee/organizer name and email.",
       )
       .optional(),
     singleEvents: z
@@ -41,7 +41,7 @@ const inputSchema = z
     orderBy: z
       .enum(["startTime", "updated"])
       .describe(
-        "Sort order. startTime requires singleEvents=true (else 400); updated works either way.",
+        "Sort order. startTime requires singleEvents=true; updated works either way.",
       )
       .optional(),
     eventTypes: z

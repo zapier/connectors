@@ -15,7 +15,7 @@ const inputSchema = z
     text: z
       .string()
       .describe(
-        'Natural-language event phrase Google parses into an event, e.g. "Lunch with Sam tomorrow 12pm".',
+        'Simple text string Google parses into an event, e.g. "Lunch with Sam tomorrow 12pm".',
       ),
     sendUpdates: z
       .enum(["all", "externalOnly", "none"])
@@ -30,7 +30,7 @@ const definition = defineTool({
   name: "quickAddEvent",
   title: "Quick Add Event",
   description:
-    'Create an event from a natural-language phrase (e.g. "Lunch with Sam tomorrow 12pm"). LOSSY — parses title + date/time only and silently drops attendees, recurrence, conferencing, and location; use createEvent for any of those.',
+    'Create an event from a simple text string (e.g. "Lunch with Sam tomorrow 12pm") — parses a title and date/time. For attendees, recurrence, conferencing, or location, use createEvent.',
   inputSchema,
   outputSchema: EventSchema,
   annotations: {

@@ -33,7 +33,7 @@ const CalendarSchema = z
         allowedConferenceSolutionTypes: z
           .array(z.string())
           .describe(
-            "Conference types this calendar supports (e.g. hangoutsMeet). Empty means Meet links can't be created here.",
+            "Conference solution types this calendar supports (e.g. hangoutsMeet).",
           )
           .optional(),
       })

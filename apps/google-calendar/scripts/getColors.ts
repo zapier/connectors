@@ -16,7 +16,7 @@ const outputSchema = z
           foreground: z.string().optional(),
         }),
       )
-      .describe("Event color palette, keyed by colorId (1-11).")
+      .describe("Event color palette, keyed by colorId.")
       .optional(),
     calendar: z
       .record(
@@ -26,7 +26,7 @@ const outputSchema = z
           foreground: z.string().optional(),
         }),
       )
-      .describe("Calendar color palette, keyed by colorId (1-24).")
+      .describe("Calendar color palette, keyed by colorId.")
       .optional(),
   })
   .describe(
@@ -37,7 +37,7 @@ const definition = defineTool({
   name: "getColors",
   title: "Get Colors",
   description:
-    "Return the event and calendar color palettes (colorId index to background/foreground hex). The resolver for any colorId input — colorId is a palette index (events 1-11), not a hex value.",
+    "Return the event and calendar color palettes (colorId index to background/foreground hex). The resolver for any colorId input — colorId is a palette index, not a hex value.",
   inputSchema,
   outputSchema,
   annotations: {
