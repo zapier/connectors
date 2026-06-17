@@ -16,8 +16,7 @@ const outputSchema = z
           foreground: z.string().optional(),
         }),
       )
-      .describe("Event color palette, keyed by colorId.")
-      .optional(),
+      .describe("Event color palette, keyed by colorId."),
     calendar: z
       .record(
         z.string(),
@@ -26,8 +25,7 @@ const outputSchema = z
           foreground: z.string().optional(),
         }),
       )
-      .describe("Calendar color palette, keyed by colorId.")
-      .optional(),
+      .describe("Calendar color palette, keyed by colorId."),
   })
   .describe(
     "Color palettes. Each entry maps a colorId index to background/foreground hex.",
