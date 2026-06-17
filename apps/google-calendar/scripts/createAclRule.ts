@@ -65,7 +65,7 @@ const definition = defineTool({
   name: "createAclRule",
   title: "Create ACL Rule",
   description:
-    "Share a calendar with a user, group, or domain at a given role. Requires the owner role on the calendar.",
+    "Share a calendar with a user, group, or domain at a given role — or change an existing share's role (inserting a rule for a scope that already has one updates it). Requires the owner role on the calendar.",
   inputSchema,
   outputSchema,
   annotations: {
