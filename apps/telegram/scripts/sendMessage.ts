@@ -20,7 +20,7 @@ const inputSchema = z
     parse_mode: z
       .enum(["HTML", "MarkdownV2", "Markdown"])
       .describe(
-        "Formatting mode. Prefer HTML: tags <b><i><u><s><a href><code><pre><blockquote>; escape < > &. MarkdownV2 must escape _*[]()~`>#+-=|{}.! See the formatting reference.",
+        "Formatting mode. Prefer HTML: tags <b><i><u><s><a href><code><pre><blockquote>; escape < > &. MarkdownV2 must escape _*[]()~`>#+-=|{}.! See the Formatting section of the references.",
       )
       .optional(),
     disable_link_preview: z

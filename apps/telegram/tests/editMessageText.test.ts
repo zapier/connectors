@@ -86,6 +86,39 @@ describe("editMessageText: run", () => {
     expect(result.text).toBe("edited");
   });
 
+  it("maps disable_link_preview to the wire's link_preview_options.is_disabled", async () => {
+    const calls: Array<{ init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      _url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ init });
+      return jsonResponse({
+        ok: true,
+        result: {
+          message_id: 5,
+          date: 1700000000,
+          chat: { id: 1, type: "private" },
+          text: "edited",
+        },
+      });
+    }) as typeof globalThis.fetch;
+
+    await editMessageTextDefinition.run(
+      {
+        chat_id: "1",
+        message_id: 5,
+        text: "edited",
+        disable_link_preview: true,
+      },
+      { fetch: fakeFetch },
+    );
+
+    const body = JSON.parse(calls[0]?.init?.body as string);
+    expect(body.link_preview_options).toEqual({ is_disabled: true });
+    expect(body.disable_link_preview).toBeUndefined();
+  });
+
   it("throws an Error whose message reflects the Telegram error on non-OK", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(

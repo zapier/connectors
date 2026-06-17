@@ -12,9 +12,15 @@ const inputSchema = z
       .describe(
         "Target chat — numeric id or @username. The bot must be a member.",
       ),
-    question: z.string().describe("Poll question, 1–300 characters."),
+    question: z
+      .string()
+      .min(1)
+      .max(300)
+      .describe("Poll question, 1–300 characters."),
     options: z
-      .array(z.string())
+      .array(z.string().min(1).max(100))
+      .min(1)
+      .max(12)
       .describe("Answer options, 1–12 items, each 1–100 characters."),
     type: z
       .enum(["regular", "quiz"])

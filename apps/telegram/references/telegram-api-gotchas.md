@@ -153,5 +153,3 @@ part of a tag or an HTML entity must be replaced with the corresponding HTML ent
 
 A malformed entity comes back as a `Bad Request` with "can't parse entities" in the
 `description` — fix the markup for the chosen `parse_mode` rather than retrying as-is.
-</content>
-</invoke>

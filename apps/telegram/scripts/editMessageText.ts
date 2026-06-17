@@ -48,8 +48,12 @@ const definition = defineTool({
     if (input.message_id !== undefined) body["message_id"] = input.message_id;
     if (input.text !== undefined) body["text"] = input.text;
     if (input.parse_mode !== undefined) body["parse_mode"] = input.parse_mode;
+    // Agent-facing disable_link_preview maps to the wire's link_preview_options.is_disabled
+    // (the flat disable_link_preview key is not recognized by editMessageText).
     if (input.disable_link_preview !== undefined)
-      body["disable_link_preview"] = input.disable_link_preview;
+      body["link_preview_options"] = {
+        is_disabled: input.disable_link_preview,
+      };
     const res = await ctx.fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

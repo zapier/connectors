@@ -24,7 +24,7 @@ const inputSchema = z
     parse_mode: z
       .enum(["HTML", "MarkdownV2", "Markdown"])
       .describe(
-        "Formatting mode for the caption. Prefer HTML — see the formatting reference.",
+        "Formatting mode for the caption. Prefer HTML — see the Formatting section of the references.",
       )
       .optional(),
     has_spoiler: z
