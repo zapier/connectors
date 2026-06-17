@@ -1,6 +1,6 @@
 # @zapier/notion-connector
 
-Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 23 tools across search, read, write, schema, and comments. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
+Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 24 tools across search, read, write, schema, comments, and cross-workspace copy. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection (`copyPage` is the exception — it uses two connections to copy across workspaces).
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
@@ -23,33 +23,34 @@ Requires Node.js 22.18+ or Bun 1.x on `PATH`.
 
 ## Tools
 
-One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) is the source of truth for its contract. All tools use the single `notion` connection.
+One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) is the source of truth for its contract. All tools use the single `notion` connection, except `copyPage`, which uses two (`source` + `target`) to copy a page across workspaces.
 
-| Tool                  | Description                                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------- |
-| `search`              | Search pages and data sources by title (the id-resolution entry point).                           |
-| `getPage`             | Retrieve a page's metadata + property values by id.                                               |
-| `getDatabase`         | Retrieve a database container and its list of data sources.                                       |
-| `getDataSource`       | Retrieve a data source's property schema (names, types, options).                                 |
-| `queryDataSource`     | Query the rows (pages) of a data source with filter / sorts.                                      |
-| `getBlockChildren`    | List the child blocks (body content) of a page or block.                                          |
-| `getBlock`            | Retrieve a single block by id.                                                                    |
-| `getPageAsMarkdown`   | Retrieve a page's body content as Markdown.                                                       |
-| `getPageProperty`     | Retrieve a single (paginated) page property value.                                                |
-| `listComments`        | List unresolved comments on a page or block.                                                      |
-| `listUsers`           | List workspace users (members + bots).                                                            |
-| `getUser`             | Retrieve a single user by id.                                                                     |
-| `getBotUser`          | Retrieve the bot user for the current token (integration identity).                               |
-| `createPage`          | Create a page: a row in a data source (`parent.data_source_id`) or a sub-page (`parent.page_id`). |
-| `updatePage`          | Update a page's properties, icon, cover, parent (move), or trash state (`in_trash`).              |
-| `appendBlockChildren` | Append content blocks to the end of a page or block.                                              |
-| `updateBlock`         | Update a single block's content or archive it.                                                    |
-| `deleteBlock`         | Delete a block (moves it to the trash; reversible).                                               |
-| `createDatabase`      | Create a database under a page with an initial data source schema.                                |
-| `updateDatabase`      | Update a database container's title / icon / cover / parent / inline / trash.                     |
-| `createDataSource`    | Add a new data source (schema) to an existing database.                                           |
-| `updateDataSource`    | Update a data source's schema (add / rename / retype / remove properties).                        |
-| `createComment`       | Add a comment to a page or reply to an existing thread.                                           |
+| Tool                  | Description                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `search`              | Search pages and data sources by title (the id-resolution entry point).                            |
+| `getPage`             | Retrieve a page's metadata + property values by id.                                                |
+| `getDatabase`         | Retrieve a database container and its list of data sources.                                        |
+| `getDataSource`       | Retrieve a data source's property schema (names, types, options).                                  |
+| `queryDataSource`     | Query the rows (pages) of a data source with filter / sorts.                                       |
+| `getBlockChildren`    | List the child blocks (body content) of a page or block.                                           |
+| `getBlock`            | Retrieve a single block by id.                                                                     |
+| `getPageAsMarkdown`   | Retrieve a page's body content as Markdown.                                                        |
+| `getPageProperty`     | Retrieve a single (paginated) page property value.                                                 |
+| `listComments`        | List unresolved comments on a page or block.                                                       |
+| `listUsers`           | List workspace users (members + bots).                                                             |
+| `getUser`             | Retrieve a single user by id.                                                                      |
+| `getBotUser`          | Retrieve the bot user for the current token (integration identity).                                |
+| `createPage`          | Create a page: a row in a data source (`parent.data_source_id`) or a sub-page (`parent.page_id`).  |
+| `updatePage`          | Update a page's properties, icon, cover, parent (move), or trash state (`in_trash`).               |
+| `appendBlockChildren` | Append content blocks to the end of a page or block.                                               |
+| `updateBlock`         | Update a single block's content or archive it.                                                     |
+| `deleteBlock`         | Delete a block (moves it to the trash; reversible).                                                |
+| `createDatabase`      | Create a database under a page with an initial data source schema.                                 |
+| `updateDatabase`      | Update a database container's title / icon / cover / parent / inline / trash.                      |
+| `createDataSource`    | Add a new data source (schema) to an existing database.                                            |
+| `updateDataSource`    | Update a data source's schema (add / rename / retype / remove properties).                         |
+| `createComment`       | Add a comment to a page or reply to an existing thread.                                            |
+| `copyPage`            | Copy a page (title + top-level blocks) from one workspace to another. Uses two Notion connections. |
 
 Run `npx @zapier/notion-connector run <toolName> --help` to see any tool's exact input contract + which auth resolvers are available.
 

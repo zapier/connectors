@@ -2,6 +2,7 @@ import { defineConnector, toFunctions } from "@zapier/connectors-sdk";
 
 import { connectionResolvers } from "./connections.ts";
 import appendBlockChildrenDefinition from "./scripts/appendBlockChildren.ts";
+import copyPageDefinition from "./scripts/copyPage.ts";
 import createCommentDefinition from "./scripts/createComment.ts";
 import createDatabaseDefinition from "./scripts/createDatabase.ts";
 import createDataSourceDefinition from "./scripts/createDataSource.ts";
@@ -28,6 +29,7 @@ import updatePageDefinition from "./scripts/updatePage.ts";
 const connector = defineConnector({
   scripts: {
     appendBlockChildren: appendBlockChildrenDefinition,
+    copyPage: copyPageDefinition,
     createComment: createCommentDefinition,
     createDatabase: createDatabaseDefinition,
     createDataSource: createDataSourceDefinition,
@@ -57,6 +59,7 @@ const connector = defineConnector({
 export default connector;
 export const {
   appendBlockChildren,
+  copyPage,
   createComment,
   createDatabase,
   createDataSource,
