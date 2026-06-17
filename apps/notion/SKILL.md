@@ -37,12 +37,12 @@ Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the s
 Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
 
 - **`data`** — the script's result (the shape declared by its `outputSchema`).
-- **`meta.outputValidation`** — what validation did to the output:
+- **`meta.outputDataValidation`** — what validating `data` did:
   - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
   - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
   - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
 
-**Reading dropped fields / `skipOutputValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputValidation` — CLI: append `--skipOutputValidation`; MCP: pass `meta: { skipOutputValidation: true }` as a tool argument; SDK: pass `{ skipOutputValidation: true }` in the run options. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
 
 ## Auth
 
