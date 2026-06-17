@@ -1,7 +1,10 @@
 {
   "name": "@zapier/notion-connector",
-  "version": "0.1.0-experimental.16",
-  "description": "Agent-callable tools for Notion — search and database-item creation against the Notion REST API.",
+  "version": "0.1.0-experimental.17",
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
   "exports": {
@@ -18,41 +21,30 @@
     "cli.js",
     "*.ts",
     "scripts/",
-    "references/",
     "preflight.sh",
     "SKILL.md",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "references/"
   ],
   "scripts": {
     "build": "tsup",
     "prepare": "node cli.js build || bun cli.js build || true"
   },
   "dependencies": {
+    "@zapier/connectors-sdk": "^0.1.0-experimental.20",
     "zod": "^4.0.0",
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "@zapier/connectors-sdk": "^0.1.0-experimental.20"
+    "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "peerDependencies": {
     "@zapier/zapier-sdk": ">=0.59.0 <1.0.0"
-  },
-  "publishConfig": {
-    "access": "restricted"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/zapier/connectors.git",
-    "directory": "apps/notion"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
   },
   "keywords": [
     "notion",
     "database",
     "wiki",
     "docs",
+    "pages",
     "zapier",
     "connector",
     "tools",
@@ -61,5 +53,14 @@
     "agent",
     "ai",
     "automation"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/notion"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
 }
