@@ -29,12 +29,12 @@ const inputSchema = z
   })
   .strict();
 const outputSchema = z.object({
-  object: z.string().describe('Always "list".'),
+  object: z.literal("list"),
   results: z.array(
     z
       .object({
-        object: z.string().describe('Always "block".'),
-        id: z.string().describe("The block id (UUID)."),
+        object: z.literal("block"),
+        id: z.string().describe("The block id."),
         type: z
           .string()
           .describe("The block type (e.g. paragraph, heading_1, to_do)."),
@@ -77,14 +77,9 @@ const definition = defineTool({
     if (input.start_cursor !== undefined) {
       url.searchParams.set("start_cursor", String(input.start_cursor));
     }
-    const res = await notionFetch(
-      ctx.fetch,
-      "getBlockChildren",
-      url.toString(),
-      {
-        method: "GET",
-      },
-    );
+    const res = await notionFetch(ctx.fetch, url.toString(), {
+      method: "GET",
+    });
     return res.json();
   },
 });

@@ -27,8 +27,8 @@ const inputSchema = z
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "block".'),
-    id: z.string().describe("The block id (UUID)."),
+    object: z.literal("block"),
+    id: z.string().describe("The block id."),
     type: z
       .string()
       .describe("The block type (e.g. paragraph, heading_1, to_do)."),
@@ -65,7 +65,7 @@ const definition = defineTool({
     // root alongside in_trash, matching Notion's PATCH /v1/blocks/{id} shape.
     const body: Record<string, unknown> = { ...(input.content ?? {}) };
     if (input.in_trash !== undefined) body["in_trash"] = input.in_trash;
-    const res = await notionFetch(ctx.fetch, "updateBlock", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "PATCH",
       body: JSON.stringify(body),
     });

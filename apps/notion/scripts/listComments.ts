@@ -28,27 +28,27 @@ const inputSchema = z
   })
   .strict();
 const outputSchema = z.object({
-  object: z.string().describe('Always "list".'),
+  object: z.literal("list"),
   results: z.array(
     z
       .object({
-        object: z.string().describe('Always "comment".'),
-        id: z.string().describe("The comment id (UUID)."),
+        object: z.literal("comment"),
+        id: z.string().describe("The comment id."),
         parent: z
-          .any()
-          .describe("Nested Parent object — shape passes through.")
+          .record(z.string(), z.json())
+          .describe("The container this comment belongs to (a page or block).")
           .optional(),
         discussion_id: z
           .string()
           .describe("The thread id; pass to createComment to reply."),
         created_time: z.string().datetime({ offset: true }).optional(),
         created_by: z
-          .any()
-          .describe("Nested object — shape passes through.")
+          .record(z.string(), z.json())
+          .describe("The user who created the comment.")
           .optional(),
         rich_text: z
-          .any()
-          .describe("Nested object — shape passes through.")
+          .array(z.record(z.string(), z.json()))
+          .describe("The comment body as rich-text objects.")
           .optional(),
       })
       .describe("A comment on a page or block."),
@@ -80,7 +80,7 @@ const definition = defineTool({
     if (input.start_cursor !== undefined) {
       url.searchParams.set("start_cursor", String(input.start_cursor));
     }
-    const res = await notionFetch(ctx.fetch, "listComments", url.toString(), {
+    const res = await notionFetch(ctx.fetch, url.toString(), {
       method: "GET",
     });
     return res.json();

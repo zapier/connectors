@@ -11,44 +11,50 @@ const inputSchema = z
       .object({ page_id: z.string().optional() })
       .strict()
       .describe(
-        'Start a new comment thread on a page. Shape { page_id "<uuid>" }. Fields `parent` and `discussion_id` are mutually exclusive — pass at most one.',
+        'Start a new comment thread on a page. Shape { "page_id": "<uuid>" }. Provide either `parent` or `discussion_id`, not both.',
       )
       .optional(),
     discussion_id: z
       .string()
       .describe(
-        "Reply to an existing comment thread by its discussion id (from listComments). Fields `parent` and `discussion_id` are mutually exclusive — pass at most one.",
+        "Reply to an existing comment thread by its discussion id (from listComments). Provide either `parent` or `discussion_id`, not both.",
       )
       .optional(),
     rich_text: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe(
-        'The comment body as a rich-text array, e.g. [{ text { content "Looks good!" } }].',
+        'The comment body as a rich-text array, e.g. [{ "text": { "content": "Looks good!" } }].',
       ),
   })
   .strict()
   .refine(
     (input) =>
       [input.parent, input.discussion_id].filter((v) => v !== undefined)
-        .length <= 1,
+        .length === 1,
     {
       message:
-        "Fields `parent` and `discussion_id` are mutually exclusive — pass at most one.",
+        "Provide exactly one of `parent` (start a thread on a page) or `discussion_id` (reply to a thread).",
       path: ["parent"],
     },
   )
-  .meta({ allOf: [{ not: { required: ["parent", "discussion_id"] } }] });
+  .meta({
+    oneOf: [{ required: ["parent"] }, { required: ["discussion_id"] }],
+  });
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "comment".'),
-    id: z.string().describe("The comment id (UUID)."),
+    object: z.literal("comment"),
+    id: z.string().describe("The comment id."),
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -65,7 +71,7 @@ const outputSchema = z
       .object({ id: z.string().optional(), object: z.string().optional() })
       .optional(),
     rich_text: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe("The comment body as rich-text objects.")
       .optional(),
   })
@@ -92,7 +98,7 @@ const definition = defineTool({
     if (input.discussion_id !== undefined)
       body["discussion_id"] = input.discussion_id;
     if (input.rich_text !== undefined) body["rich_text"] = input.rich_text;
-    const res = await notionFetch(ctx.fetch, "createComment", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "POST",
       body: JSON.stringify(body),
     });

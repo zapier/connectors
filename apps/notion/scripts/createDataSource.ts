@@ -14,14 +14,14 @@ const inputSchema = z
       })
       .strict()
       .describe(
-        'The parent database. Shape { type "database_id", database_id "<uuid>" }.',
+        'The parent database. Shape { "type": "database_id", "database_id": "<uuid>" }.',
       ),
     title: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe("Data source title as a rich-text array.")
       .optional(),
     properties: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe(
         "The schema, keyed by property NAME. Must include exactly one title property. Each value is a property-definition object. See references/notion-properties.md.",
       ),
@@ -29,21 +29,25 @@ const inputSchema = z
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "data_source".'),
-    id: z.string().describe("The data source id (UUID)."),
+    object: z.literal("data_source"),
+    id: z.string().describe("The data source id."),
     name: z.string().describe("The data source name.").optional(),
     properties: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe(
         "The property schema, keyed by property name. Each value defines the property's type, id, and options (e.g. select choices).",
       ),
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -77,7 +81,7 @@ const definition = defineTool({
     if (input.parent !== undefined) body["parent"] = input.parent;
     if (input.title !== undefined) body["title"] = input.title;
     if (input.properties !== undefined) body["properties"] = input.properties;
-    const res = await notionFetch(ctx.fetch, "createDataSource", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "POST",
       body: JSON.stringify(body),
     });

@@ -17,7 +17,7 @@ const inputSchema = z
   .strict();
 const outputSchema = z.object({
   object: z.literal("page_markdown").optional(),
-  id: z.string().describe("The page id (UUID).").optional(),
+  id: z.string().describe("The page id.").optional(),
   markdown: z.string().describe("The page body rendered as Markdown."),
   truncated: z
     .boolean()
@@ -49,7 +49,7 @@ const definition = defineTool({
   connection: "notion",
   run: async (input, ctx) => {
     const url = `https://api.notion.com/v1/pages/${encodeURIComponent(normalizeNotionId(input.page_id))}/markdown`;
-    const res = await notionFetch(ctx.fetch, "getPageAsMarkdown", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "GET",
     });
     return res.json();

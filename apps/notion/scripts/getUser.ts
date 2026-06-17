@@ -13,9 +13,9 @@ const inputSchema = z
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "user".'),
-    id: z.string().describe("The user id (UUID)."),
-    type: z.string().describe('"person" or "bot".').optional(),
+    object: z.literal("user"),
+    id: z.string().describe("The user id."),
+    type: z.enum(["person", "bot"]).describe('"person" or "bot".').optional(),
     name: z.string().describe("The user's display name.").optional(),
     avatar_url: z.union([z.string(), z.null()]).optional(),
     person: z
@@ -25,7 +25,7 @@ const outputSchema = z
       )
       .optional(),
     bot: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe("Present for bot users; carries the owner and workspace info.")
       .optional(),
   })
@@ -47,7 +47,7 @@ const definition = defineTool({
   connection: "notion",
   run: async (input, ctx) => {
     const url = `https://api.notion.com/v1/users/${encodeURIComponent(normalizeNotionId(input.user_id))}`;
-    const res = await notionFetch(ctx.fetch, "getUser", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "GET",
     });
     return res.json();

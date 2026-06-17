@@ -15,13 +15,13 @@ export const NOTION_VERSION = "2025-09-03";
  * Make an authed Notion request. `fetch` is the connection-injected
  * `ctx.fetch` (or a `ctx.connections.<slot>` fetch); the resolver chain has
  * already attached the bearer token. Adds `Notion-Version` (+ `Content-Type`
- * for bodies), throws a `ConnectorHttpError` on non-2xx (via `throwForStatus`,
- * labelled with the tool name), and returns the raw Response so the caller can
- * `.json()` it into the tool's output shape.
+ * for bodies), throws a `ConnectorHttpError` on non-2xx (via `throwForStatus`),
+ * and returns the raw Response so the caller can `.json()` it into the tool's
+ * output shape. The error's call chain points back at the calling script's
+ * `run()`, so no per-call label is needed.
  */
 export async function notionFetch(
   fetch: typeof globalThis.fetch,
-  toolLabel: string,
   url: string,
   init: RequestInit = {},
 ): Promise<Response> {
@@ -31,6 +31,6 @@ export async function notionFetch(
     headers.set("Content-Type", "application/json");
   }
   const res = await fetch(url, { ...init, headers });
-  await throwForStatus(res, `Notion ${toolLabel}`);
+  await throwForStatus(res);
   return res;
 }

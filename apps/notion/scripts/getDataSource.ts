@@ -11,27 +11,31 @@ const inputSchema = z
     data_source_id: z
       .string()
       .describe(
-        "The data source id (UUID). Get it from getDatabase (data_sources[].id) or search (filter data_source).",
+        "The data source id (a UUID with or without dashes, or a pasted Notion URL). Get it from getDatabase (data_sources[].id) or search (filter data_source).",
       ),
   })
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "data_source".'),
-    id: z.string().describe("The data source id (UUID)."),
+    object: z.literal("data_source"),
+    id: z.string().describe("The data source id."),
     name: z.string().describe("The data source name.").optional(),
     properties: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe(
-        "The property schema, keyed by property name. Each value defines the property's type, id, and options (e.g. select choices).",
+        "The property schema, keyed by property name. Each value defines the property's type, id, and options (e.g. select choices). See references/notion-properties.md.",
       ),
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -61,7 +65,7 @@ const definition = defineTool({
   connection: "notion",
   run: async (input, ctx) => {
     const url = `https://api.notion.com/v1/data_sources/${encodeURIComponent(normalizeNotionId(input.data_source_id))}`;
-    const res = await notionFetch(ctx.fetch, "getDataSource", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "GET",
     });
     return res.json();

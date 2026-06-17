@@ -11,16 +11,16 @@ const inputSchema = z
     database_id: z
       .string()
       .describe(
-        "The database container id (UUID). NOT a data source id. Resolve via search.",
+        "The database container id (a UUID with or without dashes, or a pasted Notion URL). NOT a data source id. Resolve via search.",
       ),
   })
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "database".'),
-    id: z.string().describe("The database id (UUID)."),
+    object: z.literal("database"),
+    id: z.string().describe("The database id."),
     title: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe("The database title as a rich-text array.")
       .optional(),
     data_sources: z
@@ -36,10 +36,14 @@ const outputSchema = z
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -69,7 +73,7 @@ const definition = defineTool({
   connection: "notion",
   run: async (input, ctx) => {
     const url = `https://api.notion.com/v1/databases/${encodeURIComponent(normalizeNotionId(input.database_id))}`;
-    const res = await notionFetch(ctx.fetch, "getDatabase", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "GET",
     });
     return res.json();

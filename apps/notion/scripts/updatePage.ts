@@ -5,6 +5,7 @@ import { z } from "zod";
 import { connectionResolvers } from "../connections.ts";
 import { notionFetch } from "../lib/notionFetch.ts";
 import { normalizeNotionId } from "../lib/notionId.ts";
+import { coverInput, iconInput } from "../lib/notionSchemas.ts";
 
 const inputSchema = z
   .object({
@@ -14,7 +15,7 @@ const inputSchema = z
         "The page id (UUID, with or without dashes). Resolve a title to an id via search.",
       ),
     properties: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe(
         "Property values keyed by property NAME. Each value's shape depends on its type (e.g. title, rich_text, select, date). Discover valid keys/types via getDataSource. See references/notion-properties.md.",
       )
@@ -39,22 +40,14 @@ const inputSchema = z
       .boolean()
       .describe("Set true to archive (move to trash), false to restore.")
       .optional(),
-    icon: z
-      .record(z.string(), z.any())
-      .describe(
-        'Page icon, e.g. { type "emoji", emoji "📄" } or an external file.',
-      )
-      .optional(),
-    cover: z
-      .record(z.string(), z.any())
-      .describe("Page cover image (external file object).")
-      .optional(),
+    icon: iconInput.optional(),
+    cover: coverInput.optional(),
   })
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "page".'),
-    id: z.string().describe("The page id (UUID)."),
+    object: z.literal("page"),
+    id: z.string().describe("The page id."),
     url: z.string().describe("The page URL in the Notion app."),
     created_time: z.string().datetime({ offset: true }).optional(),
     last_edited_time: z.string().datetime({ offset: true }).optional(),
@@ -65,10 +58,14 @@ const outputSchema = z
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -77,13 +74,13 @@ const outputSchema = z
       })
       .describe("The container this object belongs to."),
     properties: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe(
         "Property values keyed by property name. Shapes are type-specific (title, rich_text, select, date, relation, etc.).",
       )
       .optional(),
-    icon: z.record(z.string(), z.any()).nullable().optional(),
-    cover: z.record(z.string(), z.any()).nullable().optional(),
+    icon: z.record(z.string(), z.json()).nullable().optional(),
+    cover: z.record(z.string(), z.json()).nullable().optional(),
   })
   .describe("A Notion page (a standalone page or a row in a data source).");
 
@@ -109,7 +106,7 @@ const definition = defineTool({
     if (input.in_trash !== undefined) body["in_trash"] = input.in_trash;
     if (input.icon !== undefined) body["icon"] = input.icon;
     if (input.cover !== undefined) body["cover"] = input.cover;
-    const res = await notionFetch(ctx.fetch, "updatePage", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "PATCH",
       body: JSON.stringify(body),
     });

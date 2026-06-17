@@ -23,22 +23,25 @@ const inputSchema = z
   })
   .strict();
 const outputSchema = z.object({
-  object: z.string().describe('Always "list".'),
+  object: z.literal("list"),
   results: z.array(
     z
       .object({
-        object: z.string().describe('Always "user".'),
-        id: z.string().describe("The user id (UUID)."),
-        type: z.string().describe('"person" or "bot".').optional(),
+        object: z.literal("user"),
+        id: z.string().describe("The user id."),
+        type: z
+          .enum(["person", "bot"])
+          .describe('"person" or "bot".')
+          .optional(),
         name: z.string().describe("The user's display name.").optional(),
         avatar_url: z.union([z.string(), z.null()]).optional(),
         person: z
-          .any()
-          .describe("Nested object — shape passes through.")
+          .record(z.string(), z.json())
+          .describe('Present when type is person; e.g. { "email": "…" }.')
           .optional(),
         bot: z
-          .any()
-          .describe("Nested object — shape passes through.")
+          .record(z.string(), z.json())
+          .describe("Present when type is bot; bot metadata.")
           .optional(),
       })
       .describe("A Notion user (a person or a bot)."),
@@ -67,7 +70,7 @@ const definition = defineTool({
     if (input.start_cursor !== undefined) {
       url.searchParams.set("start_cursor", String(input.start_cursor));
     }
-    const res = await notionFetch(ctx.fetch, "listUsers", url.toString(), {
+    const res = await notionFetch(ctx.fetch, url.toString(), {
       method: "GET",
     });
     return res.json();

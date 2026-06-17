@@ -5,28 +5,23 @@ import { z } from "zod";
 import { connectionResolvers } from "../connections.ts";
 import { notionFetch } from "../lib/notionFetch.ts";
 import { normalizeNotionId } from "../lib/notionId.ts";
+import { coverInput, iconInput } from "../lib/notionSchemas.ts";
 
 const inputSchema = z
   .object({
     database_id: z
       .string()
       .describe(
-        "The database container id (UUID). NOT a data source id. Resolve via search.",
+        "The database container id (a UUID with or without dashes, or a pasted Notion URL). NOT a data source id. Resolve via search.",
       ),
     title: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe(
-        'New database title as a rich-text array, e.g. [{ text { content "Projects" } }].',
+        'New database title as a rich-text array, e.g. [{ "text": { "content": "Projects" } }].',
       )
       .optional(),
-    icon: z
-      .record(z.string(), z.any())
-      .describe('Database icon, e.g. { type "emoji", emoji "📊" }.')
-      .optional(),
-    cover: z
-      .record(z.string(), z.any())
-      .describe("Database cover image (external file object).")
-      .optional(),
+    icon: iconInput.optional(),
+    cover: coverInput.optional(),
     is_inline: z
       .boolean()
       .describe(
@@ -41,10 +36,10 @@ const inputSchema = z
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "database".'),
-    id: z.string().describe("The database id (UUID)."),
+    object: z.literal("database"),
+    id: z.string().describe("The database id."),
     title: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe("The database title as a rich-text array.")
       .optional(),
     data_sources: z
@@ -60,10 +55,14 @@ const outputSchema = z
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -99,7 +98,7 @@ const definition = defineTool({
     if (input.cover !== undefined) body["cover"] = input.cover;
     if (input.is_inline !== undefined) body["is_inline"] = input.is_inline;
     if (input.in_trash !== undefined) body["in_trash"] = input.in_trash;
-    const res = await notionFetch(ctx.fetch, "updateDatabase", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "PATCH",
       body: JSON.stringify(body),
     });

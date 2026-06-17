@@ -17,8 +17,8 @@ const inputSchema = z
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "block".'),
-    id: z.string().describe("The block id (UUID)."),
+    object: z.literal("block"),
+    id: z.string().describe("The block id."),
     type: z
       .string()
       .describe("The block type (e.g. paragraph, heading_1, to_do)."),
@@ -51,7 +51,7 @@ const definition = defineTool({
   connection: "notion",
   run: async (input, ctx) => {
     const url = `https://api.notion.com/v1/blocks/${encodeURIComponent(normalizeNotionId(input.block_id))}`;
-    const res = await notionFetch(ctx.fetch, "getBlock", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "GET",
     });
     return res.json();

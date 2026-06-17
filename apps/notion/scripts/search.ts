@@ -47,9 +47,9 @@ const inputSchema = z
   })
   .strict();
 const outputSchema = z.object({
-  object: z.string().describe('Always "list".'),
+  object: z.literal("list"),
   results: z
-    .array(z.record(z.string(), z.any()))
+    .array(z.record(z.string(), z.json()))
     .describe("Matching pages and data sources."),
   next_cursor: z
     .union([
@@ -92,7 +92,7 @@ const definition = defineTool({
     if (input.start_cursor !== undefined)
       body["start_cursor"] = input.start_cursor;
     body["page_size"] = input.page_size ?? 10;
-    const res = await notionFetch(ctx.fetch, "search", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "POST",
       body: JSON.stringify(body),
     });

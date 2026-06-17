@@ -4,37 +4,37 @@ import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
 import { notionFetch } from "../lib/notionFetch.ts";
+import { iconInput } from "../lib/notionSchemas.ts";
 
 const inputSchema = z
   .object({
     parent: z
       .object({ type: z.literal("page_id").optional(), page_id: z.string() })
       .strict()
-      .describe('The parent page. Shape { type "page_id", page_id "<uuid>" }.'),
-    title: z
-      .array(z.record(z.string(), z.any()))
       .describe(
-        'Database title as a rich-text array, e.g. [{ text { content "Projects" } }].',
+        'The parent page. Shape { "type": "page_id", "page_id": "<uuid>" }.',
+      ),
+    title: z
+      .array(z.record(z.string(), z.json()))
+      .describe(
+        'Database title as a rich-text array, e.g. [{ "text": { "content": "Projects" } }].',
       )
       .optional(),
     initial_data_source: z
-      .record(z.string(), z.any())
+      .record(z.string(), z.json())
       .describe(
-        'The first data source\'s schema. Shape { properties { "<Name>" { <type-config> } } } and must include exactly one title property. See references/notion-properties.md.',
+        'The first data source\'s schema. Shape { "properties": { "<Name>": { <type-config> } } } and must include exactly one title property. See references/notion-properties.md.',
       )
       .optional(),
-    icon: z
-      .record(z.string(), z.any())
-      .describe('Database icon, e.g. { type "emoji", emoji "📊" }.')
-      .optional(),
+    icon: iconInput.optional(),
   })
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('Always "database".'),
-    id: z.string().describe("The database id (UUID)."),
+    object: z.literal("database"),
+    id: z.string().describe("The database id."),
     title: z
-      .array(z.record(z.string(), z.any()))
+      .array(z.record(z.string(), z.json()))
       .describe("The database title as a rich-text array.")
       .optional(),
     data_sources: z
@@ -50,10 +50,14 @@ const outputSchema = z
     parent: z
       .object({
         type: z
-          .string()
-          .describe(
-            "One of data_source_id, page_id, database_id, block_id, or workspace.",
-          )
+          .enum([
+            "data_source_id",
+            "page_id",
+            "database_id",
+            "block_id",
+            "workspace",
+          ])
+          .describe("The kind of container this object belongs to.")
           .optional(),
         data_source_id: z.string().optional(),
         page_id: z.string().optional(),
@@ -89,7 +93,7 @@ const definition = defineTool({
     if (input.initial_data_source !== undefined)
       body["initial_data_source"] = input.initial_data_source;
     if (input.icon !== undefined) body["icon"] = input.icon;
-    const res = await notionFetch(ctx.fetch, "createDatabase", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "POST",
       body: JSON.stringify(body),
     });

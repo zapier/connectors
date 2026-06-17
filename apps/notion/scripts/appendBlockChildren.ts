@@ -23,7 +23,7 @@ const inputSchema = z
           ),
       )
       .describe(
-        'Block objects to append (max 100 per call, 2 levels of nesting). E.g. a paragraph { type "paragraph", paragraph { rich_text [...] } }. See references/notion-blocks.md.',
+        'Block objects to append (max 100 per call, 2 levels of nesting). E.g. a paragraph { "type": "paragraph", "paragraph": { "rich_text": [...] } }. See references/notion-blocks.md.',
       ),
     after: z
       .string()
@@ -34,12 +34,12 @@ const inputSchema = z
   })
   .strict();
 const outputSchema = z.object({
-  object: z.string().describe('Always "list".'),
+  object: z.literal("list"),
   results: z.array(
     z
       .object({
-        object: z.string().describe('Always "block".'),
-        id: z.string().describe("The block id (UUID)."),
+        object: z.literal("block"),
+        id: z.string().describe("The block id."),
         type: z
           .string()
           .describe("The block type (e.g. paragraph, heading_1, to_do)."),
@@ -79,7 +79,7 @@ const definition = defineTool({
     const body: Record<string, unknown> = {};
     if (input.children !== undefined) body["children"] = input.children;
     if (input.after !== undefined) body["after"] = input.after;
-    const res = await notionFetch(ctx.fetch, "appendBlockChildren", url, {
+    const res = await notionFetch(ctx.fetch, url, {
       method: "PATCH",
       body: JSON.stringify(body),
     });

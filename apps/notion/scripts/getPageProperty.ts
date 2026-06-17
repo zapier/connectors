@@ -33,7 +33,7 @@ const inputSchema = z
   .strict();
 const outputSchema = z
   .object({
-    object: z.string().describe('"property_item" or "list".'),
+    object: z.enum(["property_item", "list"]),
     type: z
       .string()
       .describe("The property type (e.g. relation, select, date).")
@@ -67,14 +67,9 @@ const definition = defineTool({
     if (input.start_cursor !== undefined) {
       url.searchParams.set("start_cursor", String(input.start_cursor));
     }
-    const res = await notionFetch(
-      ctx.fetch,
-      "getPageProperty",
-      url.toString(),
-      {
-        method: "GET",
-      },
-    );
+    const res = await notionFetch(ctx.fetch, url.toString(), {
+      method: "GET",
+    });
     return res.json();
   },
 });
