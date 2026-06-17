@@ -15,7 +15,7 @@ const inputSchema = z
     question: z.string().describe("Poll question, 1–300 characters."),
     options: z
       .array(z.string())
-      .describe("Answer options, 2–12 items, each 1–100 characters."),
+      .describe("Answer options, 1–12 items, each 1–100 characters."),
     type: z
       .enum(["regular", "quiz"])
       .describe("Poll type. Default regular. A quiz has one correct answer.")
@@ -48,7 +48,7 @@ const inputSchema = z
     open_period: z
       .number()
       .int()
-      .describe("Seconds the poll stays open after creation, 5–600.")
+      .describe("Seconds the poll stays open after creation, 5–2628000.")
       .optional(),
     is_closed: z
       .boolean()

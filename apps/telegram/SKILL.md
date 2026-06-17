@@ -124,4 +124,6 @@ When no shipped script matches the use case, read this `SKILL.md`, the `referenc
 
 ## API quirks worth knowing
 
-<!-- references-table: filled by generate-references -->
+| Reference                                                                | When to load                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [references/telegram-api-gotchas.md](references/telegram-api-gotchas.md) | Before sending formatted text (HTML vs MarkdownV2 escaping), uploading/downloading files (URL size limits, `getFile` 1-hour links), copying vs forwarding, deleting/pinning messages, building polls, or handling the `ok:false`/`error_code`/`retry_after`/`migrate_to_chat_id` error envelope and rate limits. |

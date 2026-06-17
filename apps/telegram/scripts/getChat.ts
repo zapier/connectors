@@ -11,11 +11,7 @@ import {
 
 const inputSchema = z
   .object({
-    chat_id: z
-      .string()
-      .describe(
-        "Chat to look up — numeric id or @username. Works for public usernames the bot has not joined.",
-      ),
+    chat_id: z.string().describe("Chat to look up — numeric id or @username."),
   })
   .strict();
 
