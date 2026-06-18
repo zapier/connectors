@@ -1,5 +1,16 @@
 # @zapier/notion-connector
 
+## 0.1.0-experimental.18
+
+### Patch Changes
+
+- 31ac606: Rename the `throwForStatus` helper to `throwIfNotOk`.
+
+  The new name reflects what the helper actually does — it throws a `ConnectorHttpError` when `res.ok` is false (a non-2xx response) and returns the `Response` untouched otherwise — rather than echoing the `zapier-platform` CLI's `response.throwForStatus()` idiom it was originally named after. The signature is unchanged: `throwIfNotOk(res, message?)`. The Notion connector is updated to import and call `throwIfNotOk`.
+
+- Updated dependencies [31ac606]
+  - @zapier/connectors-sdk@0.1.0-experimental.26
+
 ## 0.1.0-experimental.17
 
 ### Minor Changes
