@@ -1,6 +1,9 @@
 {
   "name": "@zapier/google-calendar-connector",
-  "private": true,
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Agent-callable Google Calendar tools — create, update, move, search, and delete events, manage calendars, check free/busy availability, resolve event colors, and manage calendar sharing. Use when the user mentions Google Calendar or wants to schedule, find, reschedule, or share events and calendars — including requests that do not name Google Calendar explicitly, e.g. \"put a meeting on my calendar Tuesday 3pm\" or \"am I free Friday afternoon\".",
   "license": "Elastic-2.0",
   "type": "module",
@@ -60,8 +63,5 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
-  },
-  "publishConfig": {
-    "access": "restricted"
   }
 }
