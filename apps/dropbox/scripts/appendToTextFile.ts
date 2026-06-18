@@ -11,6 +11,7 @@ import {
   NAMESPACE_ID_DESCRIBE,
   pathRootHeader,
   readDropbox,
+  readDropboxError,
   tagged,
   throwIfDropboxError,
 } from "../lib/dropbox.ts";
@@ -93,20 +94,11 @@ const definition = defineTool({
       existing = new TextDecoder("utf-8").decode(await dlRes.arrayBuffer());
     } else {
       // Not-found is the create path; any other error is real.
-      let summary = "";
-      try {
-        const body = JSON.parse(await metaRes.text()) as {
-          error_summary?: unknown;
-        };
-        if (typeof body.error_summary === "string")
-          summary = body.error_summary;
-      } catch {
-        // leave summary empty
-      }
+      const { body, summary } = await readDropboxError(metaRes);
       if (summary.startsWith("path/not_found")) {
         wasCreated = true;
       } else {
-        throw new DropboxApiError("appendToTextFile", metaRes.status, summary);
+        throw DropboxApiError.fromResponse("appendToTextFile", metaRes, body);
       }
     }
 

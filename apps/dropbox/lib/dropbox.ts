@@ -11,6 +11,10 @@
 // Also home to the shared response schemas (Entry, SharedLink, FileRequest) returned
 // by 3+ tools, so the agent sees the same shape regardless of which tool returned it.
 
+import {
+  ConnectorHttpError,
+  type ConnectorHttpErrorOptions,
+} from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 export const API_BASE = "https://api.dropboxapi.com";
@@ -191,22 +195,115 @@ export function apiArgHeader(args: Record<string, unknown>): string {
 
 // ───────────────────────── Errors ─────────────────────────
 
-/**
- * A Dropbox API error. Carries the `error_summary` prefix so callers can detect
- * soft-success cases (e.g. createSharedLink's `shared_link_already_exists`) without
- * re-parsing the body.
- */
-export class DropboxApiError extends Error {
+export interface DropboxApiErrorOptions extends ConnectorHttpErrorOptions {
   tool: string;
-  status: number;
-  summary: string;
-  constructor(tool: string, status: number, summary: string) {
-    super(buildErrorMessage(tool, status, summary));
-    this.name = "DropboxApiError";
-    this.tool = tool;
-    this.status = status;
-    this.summary = summary;
+  /** The Dropbox `error_summary` prefix, when the body carried one (else ""). */
+  summary?: string;
+}
+
+/**
+ * A Dropbox API error. Extends the SDK's `ConnectorHttpError` so agents and CLI
+ * consumers see the full response that caused it — status, headers, and body —
+ * not just a derived one-line message. This is what makes non-Dropbox failures
+ * legible: when the error isn't Dropbox's own (no `error_summary`), e.g. a Zapier
+ * relay/proxy rejection that puts `DOMAIN_FILTER_MISMATCH` in the `x-relay-error-code`
+ * header or a plain-text body, the old behavior collapsed it to "unknown error";
+ * now the header and body ride along on `error.response`.
+ *
+ * Still carries the `error_summary` prefix as `summary` so callers can detect
+ * soft-success cases (e.g. createSharedLink's `shared_link_already_exists`).
+ */
+export class DropboxApiError extends ConnectorHttpError {
+  readonly tool: string;
+  readonly summary: string;
+
+  constructor(message: string, options: DropboxApiErrorOptions) {
+    super(message, options);
+    this.tool = options.tool;
+    this.summary = options.summary ?? "";
+    // The base narrows `name` to the literal "ConnectorHttpError", so a field
+    // override won't typecheck — set it directly (matches the `name` an error
+    // subclass is expected to carry; surfaces in toString() and the stack).
+    Object.defineProperty(this, "name", {
+      value: "DropboxApiError",
+      configurable: true,
+    });
   }
+
+  /** Dropbox HTTP status — alias for `response.status`. */
+  get status(): number {
+    return this.response.status;
+  }
+
+  /**
+   * Build a `DropboxApiError` from a failed response whose body has already been
+   * read (use {@link readDropboxError}). Extracts the Dropbox `error_summary` for
+   * the actionable hint + soft-success detection, and carries the full response
+   * (status, headers, body) verbatim so nothing is lost — including non-Dropbox
+   * relay/proxy errors that carry their detail in headers or a plain-text body.
+   */
+  static fromResponse(
+    tool: string,
+    res: { status: number; statusText?: string; headers?: Headers },
+    body: unknown,
+  ): DropboxApiError {
+    const summary = extractErrorSummary(body);
+    return new DropboxApiError(buildErrorMessage(tool, res.status, summary), {
+      tool,
+      summary,
+      response: {
+        status: res.status,
+        statusText: res.statusText ?? "",
+        headers: headersToRecord(res.headers),
+        body,
+      },
+    });
+  }
+}
+
+function extractErrorSummary(body: unknown): string {
+  if (body && typeof body === "object" && "error_summary" in body) {
+    const value = (body as { error_summary?: unknown }).error_summary;
+    if (typeof value === "string") return value;
+  }
+  return "";
+}
+
+function headersToRecord(headers: Headers | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  headers?.forEach((value, key) => {
+    out[key] = value;
+  });
+  return out;
+}
+
+/**
+ * Read a failed response's body exactly once, parsing JSON when possible and
+ * falling back to raw text (relay/proxy errors are often plain text) or
+ * `undefined` when the body can't be read. Returns the parsed body and its
+ * Dropbox `error_summary` prefix (when present) for soft-success branching.
+ */
+export async function readDropboxError(res: {
+  text: () => Promise<string>;
+}): Promise<{ body: unknown; summary: string }> {
+  let text: string | undefined;
+  try {
+    text = await res.text();
+  } catch {
+    text = undefined;
+  }
+  let body: unknown;
+  if (text === undefined || text === "") {
+    body = text;
+  } else {
+    try {
+      // JSON for Dropbox's own errors; raw text for relay/proxy plain-text errors.
+      body = JSON.parse(text) as unknown;
+    } catch {
+      body = text;
+    }
+  }
+  return { body, summary: extractErrorSummary(body) };
 }
 
 // error_summary prefix → actionable, agent-facing hint. Checked as a prefix match.
@@ -271,21 +368,23 @@ function buildErrorMessage(
 /**
  * Throw a mapped `DropboxApiError` (with the error_summary and an actionable hint) on a
  * non-2xx status; no-op on success. Use directly on content endpoints (download/upload),
- * where the success body is raw bytes or empty and must be read by the caller.
+ * where the success body is raw bytes or empty and must be read by the caller. The thrown
+ * error carries the full response (status, headers, body) so non-Dropbox relay/proxy
+ * failures stay legible instead of collapsing to "unknown error".
  */
 export async function throwIfDropboxError(
   tool: string,
-  res: { ok: boolean; status: number; text: () => Promise<string> },
+  res: {
+    ok: boolean;
+    status: number;
+    statusText?: string;
+    headers?: Headers;
+    text: () => Promise<string>;
+  },
 ): Promise<void> {
   if (res.ok) return;
-  let summary = "";
-  try {
-    const body = JSON.parse(await res.text()) as { error_summary?: unknown };
-    if (typeof body.error_summary === "string") summary = body.error_summary;
-  } catch {
-    // non-JSON error body — leave summary empty; the status still informs the agent.
-  }
-  throw new DropboxApiError(tool, res.status, summary);
+  const { body } = await readDropboxError(res);
+  throw DropboxApiError.fromResponse(tool, res, body);
 }
 
 /**
