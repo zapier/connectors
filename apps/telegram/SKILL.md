@@ -78,6 +78,8 @@ If no connection is passed the script fails with an actionable error listing the
 
 ## Using this skill
 
+**If these tools are already available to you as callable tools, use them directly.** When your runtime has loaded this connector as tools (e.g. MCP tools named `telegram_<tool>` / `mcp__telegram__<tool>`, or function-calling tools), **call the tool directly with its JSON input** — that is the primary path. Auth is already wired into the loaded tool: do **not** shell out to the CLI, do **not** set or ask the user for `TELEGRAM_BOT_TOKEN`, and do **not** pass a `--connection` flag. The CLI / script-execution methods below (§§0–2) are only for **standalone terminal use** when these tools are _not_ already exposed to you; reach for them only if you have no loaded `telegram` tool to call.
+
 ### 0. Pre-flight
 
 Run the bundled pre-flight check **once** at the start of a session, then run scripts directly:

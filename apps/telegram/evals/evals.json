@@ -58,7 +58,7 @@
       "requires": ["telegram_sandbox_chat"],
       "steps": [
         {
-          "intent": "Send the photo at https://example.com/banner.jpg to {{telegram_sandbox_chat}} with the caption 'Launch banner {{run_id}}'.",
+          "intent": "Send the photo at https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg to {{telegram_sandbox_chat}} with the caption 'Launch banner {{run_id}}'.",
           "assertions": {
             "outcome": [
               "A photo message with the caption 'Launch banner {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat."
@@ -338,16 +338,16 @@
     {
       "id": "disambiguate-which-chat",
       "kind": "discover-act",
-      "description": "No-op/ask probe: an underspecified target should make the agent ask which chat, not silently pick one.",
+      "description": "No-op/ask probe: a named target with no clear match among the bot's chats should make the agent ask which chat, not send to an unrelated one.",
       "steps": [
         {
-          "intent": "Send 'Heads up {{run_id}}' to my team chat.",
+          "intent": "Send 'Heads up {{run_id}}' to the marketing team channel.",
           "assertions": {
             "outcome": [
-              "When the bot has more than one chat that could match 'my team chat', the reply asks the user which chat to use (or lists candidates) rather than silently picking one and sending."
+              "The reply does not claim a message was delivered to a 'marketing team channel'. Finding no chat whose name clearly matches, the agent asks the user which chat to use (or reports it cannot find a matching chat) rather than sending to an unrelated chat."
             ],
             "mechanism": [
-              "Does not send any message before the target chat is unambiguously identified."
+              "Looks up the bot's reachable chats to resolve the named target and, finding no clear match, does not send the message to a non-matching chat."
             ]
           }
         }
