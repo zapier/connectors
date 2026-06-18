@@ -83,7 +83,7 @@ describe("getCurrentAccount: run", () => {
     expect(result.team_name).toBeUndefined();
   });
 
-  it("sends a literal null JSON body", async () => {
+  it("POSTs with no body and no JSON content-type (no-arg endpoint)", async () => {
     const calls: Array<{ init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       _url: string,
@@ -99,7 +99,11 @@ describe("getCurrentAccount: run", () => {
 
     await getCurrentAccountDefinition.run({}, { fetch: fakeFetch });
 
-    expect(calls[0]?.init?.body).toBe("null");
+    expect(calls[0]?.init?.method).toBe("POST");
+    expect(calls[0]?.init?.body).toBeUndefined();
+    const headers = (calls[0]?.init?.headers ?? {}) as Record<string, string>;
+    const contentType = headers["Content-Type"] ?? headers["content-type"];
+    expect(contentType).toBeUndefined();
   });
 
   it("throws a tagged error on a non-OK response", async () => {

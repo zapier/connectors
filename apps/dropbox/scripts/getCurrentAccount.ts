@@ -51,11 +51,8 @@ const definition = defineTool({
   },
   connection: "dropbox",
   run: async (_input, ctx) => {
-    // This endpoint requires a literal null JSON body.
     const res = await ctx.fetch(`${API_BASE}/2/users/get_current_account`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "null",
     });
     // The wire returns a FullAccount; flatten the nested name/account_type/team/
     // root_info shapes (all outside the JQ transform subset) into the agent surface.
