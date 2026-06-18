@@ -1,6 +1,9 @@
 {
   "name": "@zapier/telegram-connector",
-  "private": true,
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Agent-callable Telegram bot tools — send messages, media, locations, contacts, and polls; edit, delete, forward, copy, and pin messages; resolve chats, members, and files. Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content.",
   "license": "Elastic-2.0",
   "type": "module",
