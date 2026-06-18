@@ -1,6 +1,6 @@
 {
   "name": "@zapier/notion-connector",
-  "version": "0.1.0-experimental.17",
+  "version": "0.1.0-experimental.18",
   "publishConfig": {
     "access": "public"
   },
@@ -32,7 +32,7 @@
     "prepare": "node cli.js build || bun cli.js build || true"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.1.0-experimental.20",
+    "@zapier/connectors-sdk": "^0.1.0-experimental.26",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
