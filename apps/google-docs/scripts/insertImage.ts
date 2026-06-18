@@ -20,7 +20,7 @@ const inputSchema = z
     imageUrl: z
       .string()
       .describe(
-        "Publicly accessible image URL. Google fetches it server-side anonymously, so it must not require auth. PNG/JPEG/GIF only, <50MB, <=25 megapixels, URL <=2kB. Drive uc?export=view links no longer work — use a public CDN URL or drive.google.com/thumbnail?id=...",
+        "Publicly accessible image URL — Google fetches it server-side at insertion time, so it must not require authentication. PNG, JPEG, or GIF only; under 50MB; at most 25 megapixels; URL at most 2kB.",
       ),
     index: z
       .number()

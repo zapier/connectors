@@ -95,23 +95,6 @@ describe("exportDocument: run", () => {
     expect(result.content).toBe("# Heading\n\nBody");
   });
 
-  it("maps html to text/html", async () => {
-    const calls: Array<{ url: string }> = [];
-    const fakeFetch: typeof globalThis.fetch = (async (url: string) => {
-      calls.push({ url });
-      return textResponse("<h1>Heading</h1>");
-    }) as typeof globalThis.fetch;
-
-    await exportDocumentDefinition.run(
-      { documentId: "doc-1", format: "html" },
-      { fetch: fakeFetch },
-    );
-
-    expect(new URL(calls[0]!.url).searchParams.get("mimeType")).toBe(
-      "text/html",
-    );
-  });
-
   it("throws a plain Error on 403 (export size limit exceeded)", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(

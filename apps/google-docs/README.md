@@ -1,6 +1,6 @@
 # @zapier/google-docs-connector
 
-Agent-callable Google Docs tools wrapping the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for find / export / copy-template / folder operations: create documents (blank, from text/Markdown, or from a template), read structured content and tabs, export as text/Markdown/HTML, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character formatting, insert and replace inline images, and set page style. 14 tools. Auth is a single Google OAuth 2.0 access token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
+Agent-callable Google Docs tools wrapping the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for find / export / copy-template / folder operations: create documents (blank, from text/Markdown, or from a template), read structured content and tabs, export as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character formatting, insert and replace inline images, and set page style. 14 tools. Auth is a single Google OAuth 2.0 access token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
@@ -30,7 +30,7 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | `createDocument`             | Create a new document, optionally with initial text/Markdown and in a folder.     |
 | `createDocumentFromTemplate` | Copy a template document and fill its `{{placeholder}}` tokens.                   |
 | `getDocument`                | Read a document's structured content, tabs, and edit indices.                     |
-| `exportDocument`             | Export a document as plain text, Markdown, or HTML.                               |
+| `exportDocument`             | Export a document as plain text or Markdown.                                      |
 | `findDocuments`              | Find Google Docs documents by name and/or folder (the id-resolution entry point). |
 | `appendText`                 | Append text (optionally Markdown) to the end of a document.                       |
 | `insertText`                 | Insert text at a specific index.                                                  |
