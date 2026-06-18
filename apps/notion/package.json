@@ -2,7 +2,7 @@
   "name": "@zapier/notion-connector",
   "version": "0.1.0-experimental.17",
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
   "license": "Elastic-2.0",
