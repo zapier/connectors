@@ -1,6 +1,657 @@
 {
   "skill_name": "google-docs",
-  "version": "100eeaf",
-  "description": "TODO: representative eval cases for the google-docs connector.",
-  "evals": []
+  "version": "da3651f",
+  "description": "Intent-anchored eval scenarios for the google-docs connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Because the connector can create every document it needs in-run, the corpus is all arrange-act (no fixtures): each scenario self-provisions its world, exercises the capability, and where relevant cleans up. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "find-documents-by-name",
+      "kind": "arrange-act",
+      "description": "Read-tier coverage probe (the dominant operation): create a uniquely-titled doc, then find it by name via Drive search.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Quarterly Roadmap {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Quarterly Roadmap {{run_id}}' now exists and its id (or link) is reported back."
+            ],
+            "mechanism": [
+              "Uses a single create-document call; the document id comes from the create result, not a hard-coded or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Find the Google Doc whose title is 'Quarterly Roadmap {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The document titled 'Quarterly Roadmap {{run_id}}' is located and a distinguishing detail (its id or link) is returned."
+            ],
+            "mechanism": [
+              "Discovers the document by searching on the title text given in the request rather than guessing or hard-coding a document id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-document-content",
+      "kind": "arrange-act",
+      "description": "Read-tier probe: create a doc with known body text, then read its full contents back.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Team Update {{run_id}}' with the body text: 'We shipped the new dashboard on Monday. Latency dropped by 30 percent. Next we tackle onboarding.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Team Update {{run_id}}' exists and its body contains the three sentences given in the request."
+            ],
+            "mechanism": [
+              "Creates the document and populates the body with the requested text (the create call carries the text, since a bare create honors only the title); does not claim success without writing the body."
+            ]
+          }
+        },
+        {
+          "intent": "Read back the full contents of the 'Team Update {{run_id}}' document you just created.",
+          "assertions": {
+            "outcome": [
+              "The reply reproduces the document body — the dashboard, latency, and onboarding sentences given in the request — accurately."
+            ],
+            "mechanism": [
+              "Reads the document the agent just created in this turn rather than fabricating content; retrieves it via a read/export call instead of replaying the text from memory only."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "summarize-document",
+      "kind": "arrange-act",
+      "description": "Read-tier probe: create a multi-paragraph doc, then summarize it (a clean-text read is the natural path).",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Incident Review {{run_id}}' with the body: 'At 09:14 the checkout API began returning 500s. The cause was an expired TLS certificate on the payments gateway. The on-call rotated the cert and traffic recovered by 09:41. Follow-up: automate certificate renewal.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Incident Review {{run_id}}' exists and its body contains the incident narrative given in the request."
+            ],
+            "mechanism": [
+              "Uses a single create-document call carrying the body text; the document id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Summarize what the 'Incident Review {{run_id}}' document says.",
+          "assertions": {
+            "outcome": [
+              "The summary reflects the key facts present in the document — an expired TLS certificate caused checkout 500s, the cert was rotated, and the follow-up is to automate renewal — without inventing facts not in the body."
+            ],
+            "mechanism": [
+              "Reads the document via an export/read call (markdown/plain-text export is the natural whole-document read) before summarizing rather than summarizing from nothing."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "locate-text-in-document",
+      "kind": "arrange-act",
+      "description": "Read-tier probe: create a doc containing a known phrase, then locate that phrase's position (the index resolver).",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Meeting Agenda {{run_id}}' with the body: 'Welcome and intros. Status updates. Action Items. Open discussion.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Meeting Agenda {{run_id}}' exists and its body contains the phrase 'Action Items'."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Find where the phrase 'Action Items' appears in the 'Meeting Agenda {{run_id}}' document.",
+          "assertions": {
+            "outcome": [
+              "The reply reports that 'Action Items' was found in the document and identifies its location (an index range or position)."
+            ],
+            "mechanism": [
+              "Locates the phrase by searching the document text rather than fabricating an index range; the reported position is derived from a read of the document, not invented."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-document-section",
+      "kind": "arrange-act",
+      "description": "Read-tier probe: create a doc with several headed sections, then read just one named section.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Project Brief {{run_id}}' with three sections: a 'Goals' section reading 'Ship v1 by August.', a 'Budget' section reading 'Allocated 40k for the quarter.', and a 'Risks' section reading 'Vendor lead times are uncertain.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Project Brief {{run_id}}' exists containing distinct Goals, Budget, and Risks sections with the text given in the request."
+            ],
+            "mechanism": [
+              "Creates the document with the requested multi-section body; the document id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "What does the 'Budget' section of the 'Project Brief {{run_id}}' document say?",
+          "assertions": {
+            "outcome": [
+              "The reply returns the Budget section's content ('Allocated 40k for the quarter.') and does not return the Goals or Risks content as the answer."
+            ],
+            "mechanism": [
+              "Reads the document and isolates the Budget section rather than guessing; the returned text comes from a read of the document just created."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-blank-document",
+      "kind": "arrange-act",
+      "description": "Create-tier probe: create a new empty document with a given title.",
+      "steps": [
+        {
+          "intent": "Create a new, empty Google Doc titled 'Weekly Notes {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Weekly Notes {{run_id}}' now exists and its id or link is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-document call; the title matches the request exactly and the id comes from the create result, not a hard-coded id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-document-with-content",
+      "kind": "arrange-act",
+      "description": "Create-tier probe: create a document seeded with plain body text in one request.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Standup {{run_id}}' that contains the text: 'Yesterday: finished the migration. Today: write tests. Blockers: none.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Standup {{run_id}}' exists and its body contains the yesterday/today/blockers text given in the request."
+            ],
+            "mechanism": [
+              "Creates the document and writes the requested body text (passed on the create call, since a bare create honors only the title); does not report success without the body present."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-document-from-markdown",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: create a document from Markdown so headings/bold/lists render as real document formatting rather than literal Markdown characters.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Release Notes {{run_id}}' from this Markdown:\n\n# Release 2.0\n\nThis release is **major**. Highlights:\n\n- Faster sync\n- New export formats\n\nSee the _migration guide_ for details.",
+          "assertions": {
+            "outcome": [
+              "The created document renders the Markdown as real formatting — 'Release 2.0' is a styled heading, 'major' is bold, and 'Faster sync'/'New export formats' appear as list items — not as literal '#', '**', or '-' characters in the body."
+            ],
+            "mechanism": [
+              "Renders the content via the connector's Markdown-aware create path (treats the input as Markdown) rather than inserting the raw Markdown source as plain text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "append-text-to-document",
+      "kind": "arrange-act",
+      "description": "Edit-tier probe: create a doc, then append a paragraph to the end without disturbing existing content.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Newsletter {{run_id}}' with the body: 'Thanks for reading this month.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Newsletter {{run_id}}' exists and its body contains 'Thanks for reading this month.'"
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Append a closing line to the end of the 'Newsletter {{run_id}}' document: 'See you next month — the team.'",
+          "assertions": {
+            "outcome": [
+              "The document now ends with 'See you next month — the team.' and the original 'Thanks for reading this month.' text is still present before it."
+            ],
+            "mechanism": [
+              "Appends at the end of the document body without computing or guessing an insertion index, and targets the document the agent just created in this turn."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "insert-text-at-position",
+      "kind": "arrange-act",
+      "description": "Edit-tier probe: create a doc, then insert text at a resolved position (lookup-before-write, index ≥ 1).",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Recipe {{run_id}}' with the body: 'Ingredients\nSteps'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Recipe {{run_id}}' exists whose body contains the words 'Ingredients' and 'Steps'."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Recipe {{run_id}}' document, insert the line '2 cups flour' on its own immediately after the word 'Ingredients'.",
+          "assertions": {
+            "outcome": [
+              "The text '2 cups flour' now appears immediately after 'Ingredients' and before 'Steps' in the document."
+            ],
+            "mechanism": [
+              "Resolves the insertion position by reading the document (locating 'Ingredients') before inserting, rather than guessing an index; the insertion index is at least 1 (not the reserved index 0)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "replace-text-in-document",
+      "kind": "arrange-act",
+      "description": "Edit-tier probe: create a doc with a repeated term, then find-and-replace every occurrence.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Spec {{run_id}}' with the body: 'Project Apollo kicks off in May. Project Apollo has three milestones. Project Apollo ships in Q4.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Spec {{run_id}}' exists and its body contains the phrase 'Project Apollo' more than once."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Spec {{run_id}}' document, rename every mention of 'Project Apollo' to 'Project Mercury'.",
+          "assertions": {
+            "outcome": [
+              "No occurrence of 'Project Apollo' remains in the document and 'Project Mercury' now appears in each place it was.",
+              "The reply reports how many occurrences were changed."
+            ],
+            "mechanism": [
+              "Uses a find-and-replace-all operation keyed on the exact text given in the request and surfaces the occurrences-changed count rather than assuming the replacement happened."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "replace-missing-text-reports-noop",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a find-and-replace whose search term is absent returns zero changes — the agent must surface the no-op, not claim success.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Changelog {{run_id}}' with the body: 'Added dark mode. Fixed the login bug. Improved sync speed.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Changelog {{run_id}}' exists with the changelog body given in the request."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Changelog {{run_id}}' document, replace every occurrence of 'Quokka' with 'Wallaby'.",
+          "assertions": {
+            "outcome": [
+              "The reply communicates that nothing matched — no occurrences were changed — and does not claim that a replacement was successfully made.",
+              "The document body is unchanged from the original changelog text."
+            ],
+            "mechanism": [
+              "Surfaces the zero occurrences-changed result from the replace operation as a no-op warning instead of reporting a successful edit."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-text-from-document",
+      "kind": "arrange-act",
+      "description": "Destructive edit (not single-capped): create a doc, then delete one specific sentence by resolving its range — leaving the rest intact.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Draft Post {{run_id}}' with the body: 'Our results were strong. DELETE THIS: internal note, do not publish. Thanks for reading.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Draft Post {{run_id}}' exists whose body contains the 'DELETE THIS:' sentence alongside the surrounding text."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Draft Post {{run_id}}' document, remove the sentence that begins 'DELETE THIS:'.",
+          "assertions": {
+            "outcome": [
+              "The 'DELETE THIS: internal note, do not publish.' sentence is gone, while 'Our results were strong.' and 'Thanks for reading.' remain in the document."
+            ],
+            "mechanism": [
+              "Resolves the exact range of the target sentence by reading the document before deleting, and deletes only that range — not the whole document, an unrelated sentence, or the segment's final newline."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clear-document-section",
+      "kind": "arrange-act",
+      "description": "Destructive edit, second variant (deletion is not single-capped): create a multi-section doc, then delete one entire named section.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Planning Doc {{run_id}}' with two sections: a 'Decisions' section reading 'We will launch in Q3.' and a 'Scratch notes' section reading 'random brainstorm, ignore later.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Planning Doc {{run_id}}' exists containing both a 'Decisions' section and a 'Scratch notes' section with the text given in the request."
+            ],
+            "mechanism": [
+              "Creates the document with the requested two-section body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the entire 'Scratch notes' section from the 'Planning Doc {{run_id}}' document.",
+          "assertions": {
+            "outcome": [
+              "The 'Scratch notes' heading and its 'random brainstorm, ignore later.' body are removed, while the 'Decisions' section and 'We will launch in Q3.' remain intact."
+            ],
+            "mechanism": [
+              "Reads the document to resolve the section's start and end before deleting, deletes only that range (not adjacent sections), and avoids removing the segment's trailing newline."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "format-text-in-document",
+      "kind": "arrange-act",
+      "description": "Formatting probe: create a doc, then apply character formatting to a resolved range.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Report {{run_id}}' with the body: 'Summary\nThe quarter exceeded targets.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Report {{run_id}}' exists whose body contains the word 'Summary'."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Report {{run_id}}' document, make the word 'Summary' bold and set its size to 18 points.",
+          "assertions": {
+            "outcome": [
+              "The word 'Summary' is now bold and rendered at 18 points, while the rest of the body keeps its original formatting."
+            ],
+            "mechanism": [
+              "Resolves the range of 'Summary' by reading the document before formatting, and applies both bold and the 18-point size to that range only — not to unrelated text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-document-from-template",
+      "kind": "arrange-act",
+      "description": "Template probe: create a document containing placeholder tokens, then produce a new document from it with the placeholders filled.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Offer Template {{run_id}}' with the body: 'Dear {{CANDIDATE_NAME}}, we are delighted to offer you the role starting {{START_DATE}}.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Offer Template {{run_id}}' exists whose body contains the literal placeholder tokens {{CANDIDATE_NAME}} and {{START_DATE}}."
+            ],
+            "mechanism": [
+              "Creates the document with the placeholder text intact in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Create a new document titled 'Offer - Ada {{run_id}}' from the 'Offer Template {{run_id}}' template, filling {{CANDIDATE_NAME}} with 'Ada Lovelace' and {{START_DATE}} with '2026-07-01'.",
+          "assertions": {
+            "outcome": [
+              "A new document titled 'Offer - Ada {{run_id}}' exists whose body reads 'Dear Ada Lovelace, we are delighted to offer you the role starting 2026-07-01.' with no literal {{CANDIDATE_NAME}} or {{START_DATE}} tokens left."
+            ],
+            "mechanism": [
+              "Copies the template document the agent just created and applies the placeholder-to-value mapping given in the request; reports the per-placeholder replacement counts so an unmatched placeholder would be visible."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "insert-image-into-document",
+      "kind": "arrange-act",
+      "description": "Image probe: create a doc, then insert an inline image from a public URL.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Brand Assets {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Brand Assets {{run_id}}' now exists and its id or link is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-document call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Insert this image into the 'Brand Assets {{run_id}}' document: https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png",
+          "assertions": {
+            "outcome": [
+              "An inline image sourced from the given URL is now present in the document, and an object id for the inserted image is reported."
+            ],
+            "mechanism": [
+              "Inserts the image using the public URL given in the request (which the service fetches server-side) rather than fabricating an image object id; targets the document the agent just created in this turn."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "replace-image-in-document",
+      "kind": "arrange-act",
+      "description": "Image probe: create a doc with an image, then swap that image for a different public image (object id resolved from a fresh read).",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Photo Doc {{run_id}}' and insert this image into it: https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Photo Doc {{run_id}}' exists containing an inline image sourced from the given URL."
+            ],
+            "mechanism": [
+              "Creates the document and inserts the image from the public URL given; the inserted image yields an object id from the insert result."
+            ]
+          }
+        },
+        {
+          "intent": "Replace the image in the 'Photo Doc {{run_id}}' document with this one instead: https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9241947a6928470d2b1b1e8b1/g.webp=s96-fcrop64=1,00000000ffffffff-rw",
+          "assertions": {
+            "outcome": [
+              "The inline image in the document now displays the replacement image rather than the original logo."
+            ],
+            "mechanism": [
+              "Reads the document to obtain the existing image's object id before replacing, then replaces that specific image with the new URL — it does not guess the object id or insert a second image instead of replacing."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-page-margins",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: 'one inch' margins must be expressed in points (72), the unit the API uses — the model tends to default to the wrong unit.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Letter {{run_id}}' with the body 'To whom it may concern,'.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Letter {{run_id}}' exists with the requested opening line."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Set the page margins of the 'Letter {{run_id}}' document to one inch on all four sides.",
+          "assertions": {
+            "outcome": [
+              "The document's top, bottom, left, and right margins are all set to one inch (72 points)."
+            ],
+            "mechanism": [
+              "Converts one inch to 72 points and sets all four margins in points (the unit the document-style update expects), rather than passing a value of 1 or any non-point unit."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-duplicate-titles",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two documents share a title, so an edit-by-name request must ask which one rather than silently picking.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Budget {{run_id}}' with the body 'Version A figures.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Budget {{run_id}}' exists containing 'Version A figures.'"
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Create a second Google Doc, also titled 'Budget {{run_id}}', with the body 'Version B figures.'",
+          "assertions": {
+            "outcome": [
+              "A second, distinct document also titled 'Budget {{run_id}}' exists containing 'Version B figures.'"
+            ],
+            "mechanism": [
+              "Creates a new document rather than editing or overwriting the existing same-titled one."
+            ]
+          }
+        },
+        {
+          "intent": "Append the line 'Approved.' to the document titled 'Budget {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Because two documents share the title 'Budget {{run_id}}', the reply reports the ambiguity and asks which document to edit (or lists the candidates with a distinguishing detail) rather than silently editing one or both."
+            ],
+            "mechanism": [
+              "Does not perform an append on either same-titled document before the ambiguity is resolved; surfaces the tied candidates with a distinguishing field such as last-modified time or link."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "insert-table-into-document",
+      "kind": "arrange-act",
+      "description": "Graceful refusal: the connector does not author tables — the agent should decline cleanly rather than fake one with delimited text.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Inventory {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Inventory {{run_id}}' now exists and its id or link is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-document call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add a 3-column by 2-row table to the 'Inventory {{run_id}}' document.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating tables is not supported and does not claim a table was added.",
+              "No real or simulated table is produced — in particular the document is not populated with tab- or newline-delimited text pretending to be a table."
+            ],
+            "mechanism": [
+              "Does not call any editing tool to fake a table with delimited text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-comment-to-document",
+      "kind": "arrange-act",
+      "description": "Graceful refusal: the connector has no comment-write capability — the agent should say so, not approximate a comment with body text.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Proposal {{run_id}}' with the body 'Here is our proposal.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Proposal {{run_id}}' exists with the requested body."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Add a comment saying 'Please review by Friday' to the 'Proposal {{run_id}}' document.",
+          "assertions": {
+            "outcome": [
+              "The reply states that adding comments is not supported and does not claim a comment was added.",
+              "The comment text is not silently inserted into the document body as a substitute for a real comment."
+            ],
+            "mechanism": [
+              "Does not call any editing tool to fake a comment by writing the comment text into the document body."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "export-document-as-pdf",
+      "kind": "arrange-act",
+      "description": "Graceful refusal: export supports only plain text and Markdown — a PDF request should be declined (with the supported formats offered), not faked.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Invoice {{run_id}}' with the body 'Amount due: 500 dollars.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Invoice {{run_id}}' exists with the requested body."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Export the 'Invoice {{run_id}}' document as a PDF file.",
+          "assertions": {
+            "outcome": [
+              "The reply states that PDF export is not supported — only plain text and Markdown are available — and does not claim a PDF was produced.",
+              "No fabricated PDF file or download link is presented as the result."
+            ],
+            "mechanism": [
+              "Does not invent a PDF or a download URL; if it exports anything it uses the supported plain-text or Markdown format."
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }
