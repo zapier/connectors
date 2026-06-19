@@ -139,4 +139,7 @@ If no connection is passed the script fails with an actionable error telling you
 
 ## API quirks worth knowing
 
-<!-- references-table: filled by generate-references -->
+| Reference file                                                                           | When to load                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`references/google-sheets-api-gotchas.md`](references/google-sheets-api-gotchas.md)     | Before any call that might fail (error recovery, rate-limit retry, batchUpdate atomicity), when working with row deletion or append logic, or when encountering 400/403/404/429 errors.          |
+| [`references/google-sheets-a1-and-values.md`](references/google-sheets-a1-and-values.md) | Before reading or writing cell values — especially when choosing RAW vs USER_ENTERED, interpreting serial-number dates, handling ragged rows, or constructing A1 ranges with sheet-name quoting. |
