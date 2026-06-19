@@ -1,58 +1,56 @@
 #!/usr/bin/env node
+// Authored by the implementation agent: the agent surface takes a worksheet TITLE
+// (PLAN §3b — the agent never has to know the numeric gid), so run() resolves the title
+// to a sheetId before the copyTo call. That title->gid pre-step makes it a composition,
+// not a raw single-call scaffold.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
 import { SHEETS_BASE } from "../lib/constants.ts";
+import { resolveSheetId } from "../lib/headers.ts";
 import { googleSheetsFetch } from "../lib/sheetsFetch.ts";
 import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
 
 const inputSchema = z
   .object({
-    spreadsheetId: z
+    spreadsheet: z
       .string()
       .describe(
-        "Spreadsheet id (the /d/<id>/ segment of a Sheets URL). A full Sheets URL is also accepted and normalized to its id.",
+        "Source spreadsheet id, or a full Google Sheets URL (the connector extracts the id).",
       ),
-    sheetId: z
-      .number()
-      .int()
-      .describe(
-        "Numeric id (gid) of the source worksheet to copy. Get it from listWorksheets (sheet_id).",
-      ),
-    destinationSpreadsheetId: z
+    worksheet: z
       .string()
       .describe(
-        "Spreadsheet id to copy the worksheet into. Can equal the source to duplicate within the same spreadsheet.",
+        "Title of the source worksheet (tab) to copy, e.g. Sheet1. Resolved to its numeric id for you.",
+      ),
+    destination_spreadsheet: z
+      .string()
+      .describe(
+        "Destination spreadsheet id or URL to copy the worksheet into. Can equal the source to duplicate within the same spreadsheet.",
       ),
   })
   .strict();
+
 const outputSchema = z.object({
-  sheetId: z
+  sheet_id: z
     .number()
-    .int()
     .describe(
-      "Numeric worksheet id (gid) — stable for the life of the worksheet; used where a tool needs the worksheet by id.",
+      "Numeric id (gid) of the newly created worksheet in the destination.",
     ),
-  title: z.string().describe("Worksheet (tab) title."),
+  title: z
+    .string()
+    .describe("Title of the new worksheet (e.g. 'Copy of Sheet1')."),
   index: z
     .number()
-    .int()
-    .describe("0-based position of the worksheet among the tabs.")
-    .optional(),
-  gridProperties: z
-    .object({
-      rowCount: z.number().int().optional(),
-      columnCount: z.number().int().optional(),
-    })
-    .optional(),
+    .describe("0-based position of the new worksheet among the tabs."),
 });
 
 const definition = defineTool({
   name: "copyWorksheet",
   title: "Copy Worksheet",
   description:
-    "Copy one worksheet into another spreadsheet (or the same one). Returns the new worksheet's properties. Resolve sheetId from a worksheet title via getSpreadsheet/listWorksheets.",
+    "Copy a worksheet into another spreadsheet (or duplicate it within the same one). Pass the source worksheet by title; returns the new worksheet's id, title, and position.",
   inputSchema,
   outputSchema,
   annotations: {
@@ -63,17 +61,34 @@ const definition = defineTool({
   },
   connection: "google-sheets",
   run: async (input, ctx) => {
-    const url = `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheetId))}/sheets/${encodeURIComponent(input.sheetId)}:copyTo`;
-    const body: Record<string, unknown> = {};
-    if (input.destinationSpreadsheetId !== undefined)
-      body["destinationSpreadsheetId"] = normalizeSpreadsheetId(
-        input.destinationSpreadsheetId,
-      );
-    const res = await googleSheetsFetch(ctx.fetch, url, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    return res.json();
+    const spreadsheetId = normalizeSpreadsheetId(input.spreadsheet);
+    const sheetId = await resolveSheetId(
+      ctx.fetch,
+      spreadsheetId,
+      input.worksheet,
+    );
+    const res = await googleSheetsFetch(
+      ctx.fetch,
+      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(spreadsheetId)}/sheets/${sheetId}:copyTo`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          destinationSpreadsheetId: normalizeSpreadsheetId(
+            input.destination_spreadsheet,
+          ),
+        }),
+      },
+    );
+    const props = (await res.json()) as {
+      sheetId?: number;
+      title?: string;
+      index?: number;
+    };
+    return {
+      sheet_id: props.sheetId ?? 0,
+      title: props.title ?? "",
+      index: props.index ?? 0,
+    };
   },
 });
 

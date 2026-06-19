@@ -38,7 +38,7 @@ describe("getValues: run", () => {
     }) as typeof globalThis.fetch;
 
     const input = getValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
     });
     const { data: result } = await getValues.run(input, { fetch: fakeFetch });
@@ -62,7 +62,7 @@ describe("getValues: run", () => {
     }) as typeof globalThis.fetch;
 
     const input = getValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
     });
     await getValues.run(input, { fetch: fakeFetch });
@@ -79,7 +79,7 @@ describe("getValues: run", () => {
         { status: 429 },
       )) as typeof globalThis.fetch;
     const input = getValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
     });
     const err = await getValues

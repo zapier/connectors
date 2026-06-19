@@ -56,7 +56,9 @@ const inputSchema = z
       .describe("Worksheet (tab) title to search, e.g. Sheet1."),
     column: z
       .string()
-      .describe('Header label of the column to match, e.g. "Email".'),
+      .describe(
+        'Header label of the column to match, e.g. "Email". Header labels are matched case-sensitively (the value match is case-insensitive).',
+      ),
     value: z
       .string()
       .describe(

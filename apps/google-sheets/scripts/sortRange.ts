@@ -74,11 +74,24 @@ const definition = defineTool({
     );
     const range = a1ToGridRange(sheetId, input.range);
 
-    const sortSpecs = input.sort_specs.map((spec) => ({
+    const sortSpecs = input.sort_specs.map((spec) => {
       // Google's sortRange dimensionIndex is the absolute sheet column index.
-      dimensionIndex: columnLetterToIndex(spec.column),
-      sortOrder: spec.order,
-    }));
+      const dimensionIndex = columnLetterToIndex(spec.column);
+      // Validate the sort column falls within the range's columns (the API otherwise
+      // 400s with a less-clear message). Only check when the range has column bounds
+      // (a whole-row range like "1:1" has none).
+      if (
+        range.startColumnIndex !== undefined &&
+        range.endColumnIndex !== undefined &&
+        (dimensionIndex < range.startColumnIndex ||
+          dimensionIndex >= range.endColumnIndex)
+      ) {
+        throw new Error(
+          `Sort column "${spec.column}" is outside the range "${input.range}". The sort column must lie within the range's columns.`,
+        );
+      }
+      return { dimensionIndex, sortOrder: spec.order };
+    });
 
     await googleSheetsFetch(
       ctx.fetch,

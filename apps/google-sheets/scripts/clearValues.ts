@@ -9,24 +9,21 @@ import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
 
 const inputSchema = z
   .object({
-    spreadsheetId: z
+    spreadsheet: z
       .string()
       .describe(
-        "Spreadsheet id (the /d/<id>/ segment of a Sheets URL). A full Sheets URL is also accepted and normalized to its id.",
+        "Spreadsheet id, or a full Google Sheets URL (the connector extracts the id).",
       ),
     range: z
       .string()
       .describe(
-        "A1 range, sheet-qualified and quoted — e.g. 'Sheet1'!A1:D10, 'Sheet1'!A:A, 'Sheet1'!1:1. An unqualified range targets the first visible sheet.",
+        "A1 range to clear, sheet-qualified and quoted — e.g. 'Sheet1'!A1:D10, 'Sheet1'!A:A. Always qualify the worksheet — an unqualified range targets the first visible sheet.",
       ),
   })
   .strict();
 const outputSchema = z.object({
-  spreadsheetId: z.string().optional(),
-  clearedRange: z
-    .string()
-    .describe("The A1 range whose values were cleared.")
-    .optional(),
+  spreadsheetId: z.string().describe("The spreadsheet id."),
+  clearedRange: z.string().describe("The A1 range whose values were cleared."),
 });
 
 const definition = defineTool({
@@ -44,7 +41,7 @@ const definition = defineTool({
   },
   connection: "google-sheets",
   run: async (input, ctx) => {
-    const url = `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheetId))}/values/${encodeURIComponent(input.range)}:clear`;
+    const url = `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheet))}/values/${encodeURIComponent(input.range)}:clear`;
     const res = await googleSheetsFetch(ctx.fetch, url, {
       method: "POST",
       body: JSON.stringify({}),

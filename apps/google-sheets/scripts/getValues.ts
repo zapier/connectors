@@ -4,20 +4,21 @@ import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
 import { SHEETS_BASE } from "../lib/constants.ts";
+import { cellValueSchema } from "../lib/schemas.ts";
 import { googleSheetsFetch } from "../lib/sheetsFetch.ts";
 import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
 
 const inputSchema = z
   .object({
-    spreadsheetId: z
+    spreadsheet: z
       .string()
       .describe(
-        "Spreadsheet id (the /d/<id>/ segment of a Sheets URL). A full Sheets URL is also accepted and normalized to its id.",
+        "Spreadsheet id, or a full Google Sheets URL (the connector extracts the id).",
       ),
     range: z
       .string()
       .describe(
-        "A1 range, sheet-qualified and quoted — e.g. 'Sheet1'!A1:D10, 'Sheet1'!A:A, 'Sheet1'!1:1. An unqualified range targets the first visible sheet.",
+        "A1 range, sheet-qualified and quoted — e.g. 'Sheet1'!A1:D10, 'Sheet1'!A:A, 'Sheet1'!1:1. This tool does not auto-prepend a worksheet name, so always qualify the range yourself — an unqualified range targets the first visible sheet.",
       ),
     majorDimension: z
       .enum(["ROWS", "COLUMNS"])
@@ -43,7 +44,7 @@ const outputSchema = z.object({
   range: z.string().describe("The A1 range the values cover.").optional(),
   majorDimension: z.enum(["ROWS", "COLUMNS"]).optional(),
   values: z
-    .array(z.array(z.any()))
+    .array(z.array(cellValueSchema))
     .describe(
       "2-D array of cell values. Trailing empty cells/rows are omitted, so rows may have different lengths.",
     )
@@ -66,7 +67,7 @@ const definition = defineTool({
   connection: "google-sheets",
   run: async (input, ctx) => {
     const url = new URL(
-      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheetId))}/values/${encodeURIComponent(input.range)}`,
+      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheet))}/values/${encodeURIComponent(input.range)}`,
     );
     url.searchParams.set("majorDimension", input.majorDimension);
     url.searchParams.set("valueRenderOption", input.valueRenderOption);

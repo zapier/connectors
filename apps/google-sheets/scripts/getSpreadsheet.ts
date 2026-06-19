@@ -9,10 +9,10 @@ import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
 
 const inputSchema = z
   .object({
-    spreadsheetId: z
+    spreadsheet: z
       .string()
       .describe(
-        "Spreadsheet id (the /d/<id>/ segment of a Sheets URL). A full Sheets URL is also accepted and normalized to its id.",
+        "Spreadsheet id, or a full Google Sheets URL (the connector extracts the id).",
       ),
     includeGridData: z
       .boolean()
@@ -43,8 +43,20 @@ const outputSchema = z.object({
     .array(
       z.object({
         properties: z
-          .any()
-          .describe("Nested SheetProperties object — shape passes through.")
+          .object({
+            sheetId: z
+              .number()
+              .describe("Numeric worksheet id (gid).")
+              .optional(),
+            title: z.string().describe("Worksheet (tab) title.").optional(),
+            index: z
+              .number()
+              .describe("0-based position of the worksheet.")
+              .optional(),
+          })
+          .describe(
+            "Worksheet properties. For a focused worksheet list use listWorksheets.",
+          )
           .optional(),
       }),
     )
@@ -68,7 +80,7 @@ const definition = defineTool({
   connection: "google-sheets",
   run: async (input, ctx) => {
     const url = new URL(
-      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheetId))}`,
+      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheet))}`,
     );
     if (input.includeGridData !== undefined) {
       url.searchParams.set("includeGridData", String(input.includeGridData));

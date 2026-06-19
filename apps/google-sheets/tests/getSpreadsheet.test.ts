@@ -37,7 +37,7 @@ describe("getSpreadsheet: run", () => {
       return jsonResponse(CANNED);
     }) as typeof globalThis.fetch;
 
-    const input = getSpreadsheet.inputSchema.parse({ spreadsheetId: "1AbC" });
+    const input = getSpreadsheet.inputSchema.parse({ spreadsheet: "1AbC" });
     const { data: result } = await getSpreadsheet.run(input, {
       fetch: fakeFetch,
     });
@@ -57,7 +57,7 @@ describe("getSpreadsheet: run", () => {
     }) as typeof globalThis.fetch;
 
     const input = getSpreadsheet.inputSchema.parse({
-      spreadsheetId: "https://docs.google.com/spreadsheets/d/1AbC/edit#gid=0",
+      spreadsheet: "https://docs.google.com/spreadsheets/d/1AbC/edit#gid=0",
     });
     await getSpreadsheet.run(input, { fetch: fakeFetch });
 
@@ -71,7 +71,7 @@ describe("getSpreadsheet: run", () => {
         { error: { code: 404, status: "NOT_FOUND", message: "missing" } },
         { status: 404 },
       )) as typeof globalThis.fetch;
-    const input = getSpreadsheet.inputSchema.parse({ spreadsheetId: "1AbC" });
+    const input = getSpreadsheet.inputSchema.parse({ spreadsheet: "1AbC" });
     const err = await getSpreadsheet
       .run(input, { fetch: fakeFetch })
       .catch((e: unknown) => e);

@@ -58,7 +58,8 @@ const definition = defineTool({
   annotations: {
     readOnlyHint: false,
     destructiveHint: false,
-    idempotentHint: false,
+    // Writing fixed values to fixed row numbers is idempotent, matching updateRow/updateValues.
+    idempotentHint: true,
     openWorldHint: true,
   },
   connection: "google-sheets",

@@ -19,35 +19,44 @@ function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   } as unknown as Response;
 }
 
-const CANNED = { sheetId: 123, title: "Copy of Sheet1", index: 1 };
+const RESOLVE = { sheets: [{ properties: { sheetId: 42, title: "Sheet1" } }] };
+const COPIED = { sheetId: 123, title: "Copy of Sheet1", index: 1 };
 
 describe("copyWorksheet: run", () => {
-  it("POSTs to :copyTo with the destination in the body", async () => {
+  it("resolves the worksheet title to a gid then POSTs to :copyTo", async () => {
     const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
     const fakeFetch: typeof globalThis.fetch = (async (
       url: string,
       init?: RequestInit,
     ) => {
       calls.push({ url, init });
-      return jsonResponse(CANNED);
+      if (!url.includes(":copyTo")) return jsonResponse(RESOLVE);
+      return jsonResponse(COPIED);
     }) as typeof globalThis.fetch;
 
     const input = copyWorksheet.inputSchema.parse({
-      spreadsheetId: "1AbC",
-      sheetId: 0,
-      destinationSpreadsheetId: "1Dest",
+      spreadsheet: "1AbC",
+      worksheet: "Sheet1",
+      destination_spreadsheet: "1Dest",
     });
     const { data: result } = await copyWorksheet.run(input, {
       fetch: fakeFetch,
     });
 
-    const { url, init } = calls[0]!;
-    expect(url).toContain("https://sheets.googleapis.com/v4/");
-    expect(url).toContain("/spreadsheets/1AbC/sheets/0:copyTo");
-    expect(init?.method).toBe("POST");
-    expect(JSON.parse(init?.body as string)).toEqual({
+    // First call resolves the title -> gid.
+    expect(calls[0]!.url).toContain("/spreadsheets/1AbC");
+    expect(calls[0]!.url).toContain("fields=sheets.properties");
+
+    // Second call copies the resolved gid (42) to the destination.
+    const copy = calls[1]!;
+    expect(copy.url).toContain("https://sheets.googleapis.com/v4/");
+    expect(copy.url).toContain("/spreadsheets/1AbC/sheets/42:copyTo");
+    expect(copy.init?.method).toBe("POST");
+    expect(JSON.parse(copy.init?.body as string)).toEqual({
       destinationSpreadsheetId: "1Dest",
     });
+
+    expect(result.sheet_id).toBe(123);
     expect(copyWorksheet.outputSchema.safeParse(result).success).toBe(true);
   });
 
@@ -58,21 +67,22 @@ describe("copyWorksheet: run", () => {
       init?: RequestInit,
     ) => {
       calls.push({ url, init });
-      return jsonResponse(CANNED);
+      if (!url.includes(":copyTo")) return jsonResponse(RESOLVE);
+      return jsonResponse(COPIED);
     }) as typeof globalThis.fetch;
 
     const input = copyWorksheet.inputSchema.parse({
-      spreadsheetId: "https://docs.google.com/spreadsheets/d/1AbC/edit",
-      sheetId: 0,
-      destinationSpreadsheetId:
+      spreadsheet: "https://docs.google.com/spreadsheets/d/1AbC/edit",
+      worksheet: "Sheet1",
+      destination_spreadsheet:
         "https://docs.google.com/spreadsheets/d/1Dest/edit#gid=5",
     });
     await copyWorksheet.run(input, { fetch: fakeFetch });
 
-    const { url, init } = calls[0]!;
-    expect(url).toContain("/spreadsheets/1AbC/sheets/0:copyTo");
-    expect(url).not.toContain("docs.google.com");
-    expect(JSON.parse(init?.body as string)).toEqual({
+    const copy = calls[1]!;
+    expect(copy.url).toContain("/spreadsheets/1AbC/sheets/42:copyTo");
+    expect(copy.url).not.toContain("docs.google.com");
+    expect(JSON.parse(copy.init?.body as string)).toEqual({
       destinationSpreadsheetId: "1Dest",
     });
   });
@@ -90,9 +100,9 @@ describe("copyWorksheet: run", () => {
         { status: 403 },
       )) as typeof globalThis.fetch;
     const input = copyWorksheet.inputSchema.parse({
-      spreadsheetId: "1AbC",
-      sheetId: 0,
-      destinationSpreadsheetId: "1Dest",
+      spreadsheet: "1AbC",
+      worksheet: "Sheet1",
+      destination_spreadsheet: "1Dest",
     });
     const err = await copyWorksheet
       .run(input, { fetch: fakeFetch })

@@ -4,25 +4,28 @@ import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
 import { SHEETS_BASE } from "../lib/constants.ts";
+import { cellValueSchema } from "../lib/schemas.ts";
 import { googleSheetsFetch } from "../lib/sheetsFetch.ts";
 import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
 
 const inputSchema = z
   .object({
-    spreadsheetId: z
+    spreadsheet: z
       .string()
       .describe(
-        "Spreadsheet id (the /d/<id>/ segment of a Sheets URL). A full Sheets URL is also accepted and normalized to its id.",
+        "Spreadsheet id, or a full Google Sheets URL (the connector extracts the id).",
       ),
     range: z
       .string()
-      .describe("A1 range the values cover (should match the path range)."),
+      .describe(
+        "A1 range to write, sheet-qualified and quoted (e.g. 'Sheet1'!A1:C3). Always qualify the worksheet — an unqualified range targets the first visible sheet.",
+      ),
     majorDimension: z
       .enum(["ROWS", "COLUMNS"])
       .describe("Orientation of the values array — ROWS (default) or COLUMNS.")
       .default("ROWS"),
     values: z
-      .array(z.array(z.any()))
+      .array(z.array(cellValueSchema))
       .describe("2-D array of cell values to write (rows of cells)."),
     valueInputOption: z
       .enum(["USER_ENTERED", "RAW"])
@@ -53,14 +56,16 @@ const definition = defineTool({
   outputSchema,
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    // Overwrites whatever is currently in the target range — flagged destructive
+    // so the host can confirm before clobbering existing cells (PLAN §3j).
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: true,
   },
   connection: "google-sheets",
   run: async (input, ctx) => {
     const url = new URL(
-      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheetId))}/values/${encodeURIComponent(input.range)}`,
+      `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(normalizeSpreadsheetId(input.spreadsheet))}/values/${encodeURIComponent(input.range)}`,
     );
     if (input.valueInputOption !== undefined) {
       url.searchParams.set("valueInputOption", String(input.valueInputOption));

@@ -15,9 +15,18 @@ import {
   recordToAppendCells,
   resolveSheetId,
 } from "../lib/headers.ts";
-import { recordInputSchema } from "../lib/schemas.ts";
+import { recordInputSchema, recordOutputSchema } from "../lib/schemas.ts";
 import { googleSheetsFetch } from "../lib/sheetsFetch.ts";
 import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
+
+/** Stringify every value so the echoed record matches the read tools' string shape. */
+function toStringRecord(
+  values: Record<string, unknown>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(values).map(([k, v]) => [k, String(v)]),
+  );
+}
 
 const inputSchema = z
   .object({
@@ -47,7 +56,7 @@ const outputSchema = z.object({
   row_number: z
     .number()
     .describe("The 1-based row number the new row landed on."),
-  values: recordInputSchema.describe("The row values that were written."),
+  values: recordOutputSchema.describe("The row values that were written."),
 });
 
 const definition = defineTool({
@@ -107,7 +116,7 @@ const definition = defineTool({
         method: "PUT",
         body: JSON.stringify({ values: [cells] }),
       });
-      return { row_number: 2, values: input.values };
+      return { row_number: 2, values: toStringRecord(input.values) };
     }
 
     const appendUrl = `${SHEETS_BASE}/spreadsheets/${encodeURIComponent(spreadsheetId)}/values/${encodeURIComponent(`${quoteSheetName(input.worksheet)}!A1`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
@@ -119,7 +128,7 @@ const definition = defineTool({
     const updatedRange = data.updates?.updatedRange ?? "";
     return {
       row_number: parseFirstRowNumber(updatedRange),
-      values: input.values,
+      values: toStringRecord(input.values),
     };
   },
 });

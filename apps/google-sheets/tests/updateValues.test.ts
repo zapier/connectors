@@ -37,7 +37,7 @@ describe("updateValues: run", () => {
     }) as typeof globalThis.fetch;
 
     const input = updateValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
       values: [
         ["a", "b"],
@@ -71,7 +71,7 @@ describe("updateValues: run", () => {
     }) as typeof globalThis.fetch;
 
     const input = updateValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1",
       values: [["x"]],
     });
@@ -93,7 +93,7 @@ describe("updateValues: run", () => {
         { status: 400 },
       )) as typeof globalThis.fetch;
     const input = updateValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
       values: [["a"]],
     });

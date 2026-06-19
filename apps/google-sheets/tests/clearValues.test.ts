@@ -34,7 +34,7 @@ describe("clearValues: run", () => {
     }) as typeof globalThis.fetch;
 
     const input = clearValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
     });
     const { data: result } = await clearValues.run(input, { fetch: fakeFetch });
@@ -61,7 +61,7 @@ describe("clearValues: run", () => {
         { status: 403 },
       )) as typeof globalThis.fetch;
     const input = clearValues.inputSchema.parse({
-      spreadsheetId: "1AbC",
+      spreadsheet: "1AbC",
       range: "Sheet1!A1:B2",
     });
     const err = await clearValues
