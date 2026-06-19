@@ -1,5 +1,609 @@
 {
   "skill_name": "google-sheets",
-  "description": "TODO: representative eval cases for the google-sheets connector.",
-  "evals": []
+  "description": "Intent-anchored eval scenarios for the Google Sheets connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Google Sheets is ambient/self-provisioning — the connector can create its own spreadsheet — so scenarios are arrange-act: each cold-starts by creating a {{run_id}}-namespaced throwaway spreadsheet and then acts on it, never touching pre-existing user data. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/efficiency, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "log-a-row",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a spreadsheet with headers, append a row of data as a record, then read it back — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet titled 'Expenses {{run_id}}' with the column headers Date, Amount, and Category.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet titled 'Expenses {{run_id}}' now exists with the headers Date, Amount, and Category in the first row, and its id (or URL) is reported."
+            ],
+            "mechanism": [
+              "Creates the spreadsheet and obtains its id from the create result, not a hard-coded or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Add a row to that spreadsheet: Date 2026-06-18, Amount 42.50, Category Office.",
+          "assertions": {
+            "outcome": [
+              "A row with Date 2026-06-18, Amount 42.50, and Category Office is appended to the spreadsheet just created, and the row number it landed on is reported."
+            ],
+            "mechanism": [
+              "Appends the row to the spreadsheet created earlier in this session; maps the values to the Date/Amount/Category headers rather than guessing cell positions."
+            ]
+          }
+        },
+        {
+          "intent": "Read the rows back from that spreadsheet and show me what's there.",
+          "assertions": {
+            "outcome": [
+              "The returned data includes the row with Date 2026-06-18, Amount 42.50, and Category Office, keyed by the column headers."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "log-multiple-rows",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a sheet then append several rows in one batch.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet titled 'Leads {{run_id}}' with headers Name and Email.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Leads {{run_id}}' with headers Name and Email now exists and its id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Add these three contacts to it: Sam / sam@example.com, Alex / alex@example.com, Jordan / jordan@example.com.",
+          "assertions": {
+            "outcome": [
+              "Three rows — Sam/sam@example.com, Alex/alex@example.com, Jordan/jordan@example.com — are appended to the spreadsheet just created."
+            ],
+            "mechanism": [
+              "Adds the three rows efficiently (a single batched append) rather than one call per row."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-row-by-lookup-no-clobber",
+      "kind": "arrange-act",
+      "description": "Signature scenario: find a row by a key column and update one field — the other fields must be preserved (no-clobber partial update).",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet titled 'Projects {{run_id}}' with headers Project, Owner, Status, then add the row: Project 'Apollo', Owner 'Dana', Status 'Open'.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Projects {{run_id}}' exists with a row where Project is 'Apollo', Owner is 'Dana', and Status is 'Open'."
+            ]
+          }
+        },
+        {
+          "intent": "Find the row where Project is 'Apollo'.",
+          "assertions": {
+            "outcome": [
+              "The 'Apollo' row is located and its values (Owner 'Dana', Status 'Open') and row number are reported."
+            ],
+            "mechanism": [
+              "Resolves the row by matching the Project column value 'Apollo' rather than guessing a row number."
+            ]
+          }
+        },
+        {
+          "intent": "Set that project's Status to 'Done'.",
+          "assertions": {
+            "outcome": [
+              "The 'Apollo' row now has Status 'Done', and its Owner is still 'Dana' and Project still 'Apollo' — the other columns were not blanked or changed."
+            ],
+            "mechanism": [
+              "Updates only the Status column of the resolved row; does not rewrite or clear the Project or Owner columns."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "lookup-row-by-value",
+      "kind": "arrange-act",
+      "description": "Coverage probe: look up a single record by a column value.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Customers {{run_id}}' with headers Name and Plan, and add rows: Sam/Pro, Alex/Free, Jordan/Pro.",
+          "assertions": {
+            "outcome": [
+              "A 'Customers {{run_id}}' spreadsheet exists with the three Name/Plan rows."
+            ]
+          }
+        },
+        {
+          "intent": "Look up the customer whose Name is 'Alex'.",
+          "assertions": {
+            "outcome": [
+              "The lookup returns Alex's row with Plan 'Free' and its row number."
+            ],
+            "mechanism": [
+              "Matches the Name column for 'Alex'; returns the first match without inventing data."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-rows-matching-value",
+      "kind": "arrange-act",
+      "description": "Coverage probe: find ALL rows matching a column value (multi-match).",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Orders {{run_id}}' with headers Customer and Status, and add: Sam/Shipped, Alex/Pending, Jordan/Shipped, Pat/Pending.",
+          "assertions": {
+            "outcome": [
+              "An 'Orders {{run_id}}' spreadsheet exists with the four Customer/Status rows."
+            ]
+          }
+        },
+        {
+          "intent": "Find every order with Status 'Pending'.",
+          "assertions": {
+            "outcome": [
+              "Both 'Pending' rows (Alex and Pat) are returned; the 'Shipped' rows are not."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-window-of-rows",
+      "kind": "arrange-act",
+      "description": "Coverage probe: read a bounded window of rows as records.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Inventory {{run_id}}' with headers Item and Qty, and add rows: Pens/10, Paper/50, Staples/5.",
+          "assertions": {
+            "outcome": [
+              "An 'Inventory {{run_id}}' spreadsheet exists with the three Item/Qty rows."
+            ]
+          }
+        },
+        {
+          "intent": "List the rows in that spreadsheet.",
+          "assertions": {
+            "outcome": [
+              "The three rows (Pens/10, Paper/50, Staples/5) are returned as records keyed by Item and Qty."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clear-rows-keep-structure",
+      "kind": "arrange-act",
+      "description": "Coverage probe: clear a row's contents while keeping the row in place (distinct from delete).",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Roster {{run_id}}' with headers Name and Seat, and add: Sam/A1, Alex/A2, Jordan/A3.",
+          "assertions": {
+            "outcome": [
+              "A 'Roster {{run_id}}' spreadsheet exists with the three rows."
+            ]
+          }
+        },
+        {
+          "intent": "Clear the contents of the second data row (Alex's row), but keep the row in place.",
+          "assertions": {
+            "outcome": [
+              "Alex's row is now empty, while Sam's row and Jordan's row keep their original values and row positions (nothing shifted up)."
+            ],
+            "mechanism": [
+              "Clears the row contents rather than deleting the row (no rows below shift up)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-rows-and-shift",
+      "kind": "arrange-act",
+      "description": "Coverage probe: delete rows (a destructive op that shifts rows up).",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Tasks {{run_id}}' with header Task, and add rows: First, Second, Third, Fourth.",
+          "assertions": {
+            "outcome": [
+              "A 'Tasks {{run_id}}' spreadsheet exists with four task rows in order."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the row containing 'Second'.",
+          "assertions": {
+            "outcome": [
+              "The 'Second' row is removed and the remaining rows are First, Third, Fourth (the rows below shifted up)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-a-formula",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: write a formula that the sheet evaluates (USER_ENTERED), then read the computed result.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Totals {{run_id}}', put the numbers 2, 3, and 4 in cells A1, A2, A3 of Sheet1, then put a formula in A4 that sums A1:A3.",
+          "assertions": {
+            "outcome": [
+              "Cell A4 of the 'Totals {{run_id}}' spreadsheet evaluates to 9 (the formula was interpreted, not stored as literal text)."
+            ],
+            "mechanism": [
+              "Writes the values/formula with the user-entered input option so the formula is parsed, not stored verbatim."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "write-id-as-literal-text",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: store an identifier with a leading zero so it is NOT coerced to a number — the silent precision/leading-zero footgun.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Codes {{run_id}}', then store the product code 00789 in cell A1 of Sheet1 exactly as written so the leading zeros are preserved.",
+          "assertions": {
+            "outcome": [
+              "Reading cell A1 of 'Codes {{run_id}}' back returns '00789' with its leading zeros intact — not 789."
+            ],
+            "mechanism": [
+              "Writes the value with the raw input option (so it isn't parsed into the number 789)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-cell-range",
+      "kind": "arrange-act",
+      "description": "Coverage probe: read a specific A1 range of raw cells.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Grid {{run_id}}', write a b c across A1:C1 and d e f across A2:C2 of Sheet1.",
+          "assertions": {
+            "outcome": [
+              "A 'Grid {{run_id}}' spreadsheet exists with a,b,c in row 1 and d,e,f in row 2."
+            ]
+          }
+        },
+        {
+          "intent": "Read the range A1:C2 from Sheet1 and show me the values.",
+          "assertions": {
+            "outcome": [
+              "The values returned for A1:C2 are the two rows [a,b,c] and [d,e,f]."
+            ],
+            "mechanism": [
+              "Reads the sheet-qualified A1 range; does not fabricate the cell values."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-worksheet",
+      "kind": "arrange-act",
+      "description": "Coverage probe: add a new worksheet (tab) to an existing spreadsheet.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet titled 'Workbook {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Workbook {{run_id}}' now exists and its id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Add a new worksheet named 'Summary' to that spreadsheet.",
+          "assertions": {
+            "outcome": [
+              "The spreadsheet just created now has a worksheet (tab) named 'Summary', and its sheet id is reported."
+            ],
+            "mechanism": [
+              "Adds the worksheet to the spreadsheet created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-worksheets",
+      "kind": "arrange-act",
+      "description": "Coverage probe: enumerate the worksheets (tabs) of a spreadsheet.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Multi {{run_id}}' with two worksheets named 'Jan' and 'Feb'.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Multi {{run_id}}' exists with worksheets named 'Jan' and 'Feb'."
+            ]
+          }
+        },
+        {
+          "intent": "List the worksheets in that spreadsheet.",
+          "assertions": {
+            "outcome": [
+              "The returned list includes both the 'Jan' and 'Feb' worksheets."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-worksheet",
+      "kind": "arrange-act",
+      "description": "Coverage probe: rename a worksheet.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Rename {{run_id}}' with a worksheet named 'Sheet1'.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Rename {{run_id}}' with a worksheet 'Sheet1' now exists."
+            ]
+          }
+        },
+        {
+          "intent": "Rename the 'Sheet1' worksheet to 'Data'.",
+          "assertions": {
+            "outcome": [
+              "The worksheet formerly named 'Sheet1' in that spreadsheet is now named 'Data'."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-worksheet",
+      "kind": "arrange-act",
+      "description": "Coverage probe: delete a worksheet (destructive).",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Cleanup {{run_id}}' with two worksheets 'Keep' and 'Remove'.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Cleanup {{run_id}}' exists with worksheets 'Keep' and 'Remove'."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Remove' worksheet.",
+          "assertions": {
+            "outcome": [
+              "The 'Remove' worksheet no longer exists in that spreadsheet, while 'Keep' remains."
+            ],
+            "mechanism": [
+              "Deletes the 'Remove' worksheet specifically; does not delete 'Keep'."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-column",
+      "kind": "arrange-act",
+      "description": "Coverage probe: insert a new column with a header.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Cols {{run_id}}' with headers Name and Email.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Cols {{run_id}}' with headers Name and Email now exists."
+            ]
+          }
+        },
+        {
+          "intent": "Add a new column with the header 'Phone' at the end.",
+          "assertions": {
+            "outcome": [
+              "The worksheet now has a 'Phone' column header in addition to Name and Email."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy-worksheet-to-another-spreadsheet",
+      "kind": "arrange-act",
+      "description": "Coverage probe: copy a worksheet from one spreadsheet into another.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Source {{run_id}}' with a worksheet 'Sheet1' containing the header Widget and a row 'Gizmo'.",
+          "assertions": {
+            "outcome": [
+              "A 'Source {{run_id}}' spreadsheet exists with a 'Sheet1' worksheet holding the Widget header and a 'Gizmo' row."
+            ]
+          }
+        },
+        {
+          "intent": "Create another spreadsheet titled 'Destination {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A second spreadsheet 'Destination {{run_id}}' now exists and its id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Copy the 'Sheet1' worksheet from the source spreadsheet into the destination spreadsheet.",
+          "assertions": {
+            "outcome": [
+              "The destination spreadsheet now contains a copy of the source 'Sheet1' worksheet (with the Widget header and Gizmo row)."
+            ],
+            "mechanism": [
+              "Copies from the source spreadsheet into the destination spreadsheet created earlier in this session; does not confuse the two."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "format-range-as-currency",
+      "kind": "arrange-act",
+      "description": "Coverage probe: apply currency number-formatting to a column.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Money {{run_id}}', put the numbers 10, 20, 30 in A1:A3 of Sheet1.",
+          "assertions": {
+            "outcome": [
+              "A 'Money {{run_id}}' spreadsheet exists with 10, 20, 30 in A1:A3."
+            ]
+          }
+        },
+        {
+          "intent": "Format the range A1:A3 as currency.",
+          "assertions": {
+            "outcome": [
+              "The format operation succeeds and reports that A1:A3 was formatted as currency."
+            ],
+            "mechanism": [
+              "Applies a currency number format to the A1:A3 range; does not alter the underlying numeric values."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sort-a-range",
+      "kind": "arrange-act",
+      "description": "Coverage probe: sort a range of data rows by a column.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Sortme {{run_id}}' with header Score and the data rows 30, 10, 20 (in that order) under it on Sheet1.",
+          "assertions": {
+            "outcome": [
+              "A 'Sortme {{run_id}}' spreadsheet exists with Score values 30, 10, 20 in that order beneath the header."
+            ]
+          }
+        },
+        {
+          "intent": "Sort the data rows by Score in ascending order.",
+          "assertions": {
+            "outcome": [
+              "After sorting, the Score data rows read 10, 20, 30 in ascending order."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-dropdown-validation",
+      "kind": "arrange-act",
+      "description": "Coverage probe: add a dropdown (one-of-list) data-validation rule to a column.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'Validate {{run_id}}' with header Status on Sheet1.",
+          "assertions": {
+            "outcome": [
+              "A 'Validate {{run_id}}' spreadsheet with a Status header now exists."
+            ]
+          }
+        },
+        {
+          "intent": "Add a dropdown to cells A2:A100 restricting entries to 'To do', 'In progress', or 'Done'.",
+          "assertions": {
+            "outcome": [
+              "A dropdown data-validation rule offering 'To do', 'In progress', and 'Done' is applied to A2:A100."
+            ],
+            "mechanism": [
+              "Sets a one-of-list validation rule with exactly those three options on the A2:A100 range."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-spreadsheet-by-name",
+      "kind": "arrange-act",
+      "description": "Coverage probe: discover a spreadsheet by name (Drive-backed listing). Needs Drive read access on the connection.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet titled 'Quarterly Budget {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Quarterly Budget {{run_id}}' now exists and its id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Find the spreadsheet named 'Quarterly Budget {{run_id}}' by searching by name.",
+          "assertions": {
+            "outcome": [
+              "The 'Quarterly Budget {{run_id}}' spreadsheet is found by name and its id (or URL) is returned."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "operate-on-pasted-url",
+      "kind": "arrange-act",
+      "description": "Coverage probe: accept a full Google Sheets URL in place of an id (the accept-URL-or-ID ergonomic).",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet titled 'Linked {{run_id}}' and tell me its full URL.",
+          "assertions": {
+            "outcome": [
+              "A spreadsheet 'Linked {{run_id}}' exists and its full Google Sheets URL is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Using that full URL, get the spreadsheet's details and list its worksheets.",
+          "assertions": {
+            "outcome": [
+              "The spreadsheet's metadata and worksheet list are returned when given the full URL — the URL was accepted and resolved to the right spreadsheet."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-tied-rows",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two rows tie on the name the user references; the agent should ask which one rather than silently picking.",
+      "steps": [
+        {
+          "intent": "Create a spreadsheet 'People {{run_id}}' with headers Name and Role, and add two rows: 'Sam'/'Engineer' and 'Sam'/'Designer'.",
+          "assertions": {
+            "outcome": [
+              "A 'People {{run_id}}' spreadsheet exists with two rows both named 'Sam' (one Engineer, one Designer)."
+            ]
+          }
+        },
+        {
+          "intent": "Update Sam's Role to 'Manager'.",
+          "assertions": {
+            "outcome": [
+              "The reply notes that more than one row matches 'Sam' and asks which one to update, rather than silently updating one (or both)."
+            ],
+            "mechanism": [
+              "Does not perform a blind update against an arbitrarily-chosen 'Sam' row when the match is ambiguous."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-create-chart",
+      "kind": "act-only",
+      "description": "Graceful refusal: charts are out of scope; the agent should decline rather than fake success.",
+      "steps": [
+        {
+          "intent": "Create a bar chart visualizing the data in my spreadsheet.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating a chart is not supported by this connector and does not claim a chart was created."
+            ],
+            "mechanism": [
+              "Does not call a mutating tool in an attempt to fake chart creation."
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }
