@@ -24,29 +24,29 @@ Tools for a Telegram bot, against the [Telegram Bot API](https://core.telegram.o
 
 ## Scripts
 
-| Script                                                                 | Tool name               | Connections         | Description                                                     |
-| ---------------------------------------------------------------------- | ----------------------- | ------------------- | --------------------------------------------------------------- |
-| [`scripts/sendMessage.ts`](scripts/sendMessage.ts)                     | `sendMessage`           | Single (`telegram`) | Send a text message to a chat.                                  |
-| [`scripts/sendPhoto.ts`](scripts/sendPhoto.ts)                         | `sendPhoto`             | Single (`telegram`) | Send a photo by URL or file_id.                                 |
-| [`scripts/sendDocument.ts`](scripts/sendDocument.ts)                   | `sendDocument`          | Single (`telegram`) | Send a file/document by URL or file_id.                         |
-| [`scripts/sendVideo.ts`](scripts/sendVideo.ts)                         | `sendVideo`             | Single (`telegram`) | Send a video by URL or file_id.                                 |
-| [`scripts/sendAudio.ts`](scripts/sendAudio.ts)                         | `sendAudio`             | Single (`telegram`) | Send an audio file (music) by URL or file_id.                   |
-| [`scripts/sendLocation.ts`](scripts/sendLocation.ts)                   | `sendLocation`          | Single (`telegram`) | Send a point on the map.                                        |
-| [`scripts/sendContact.ts`](scripts/sendContact.ts)                     | `sendContact`           | Single (`telegram`) | Send a phone contact.                                           |
-| [`scripts/sendPoll.ts`](scripts/sendPoll.ts)                           | `sendPoll`              | Single (`telegram`) | Send a poll or quiz.                                            |
-| [`scripts/editMessageText.ts`](scripts/editMessageText.ts)             | `editMessageText`       | Single (`telegram`) | Edit the text of a message the bot sent.                        |
-| [`scripts/deleteMessage.ts`](scripts/deleteMessage.ts)                 | `deleteMessage`         | Single (`telegram`) | Delete a message from a chat.                                   |
-| [`scripts/forwardMessage.ts`](scripts/forwardMessage.ts)               | `forwardMessage`        | Single (`telegram`) | Forward a message, keeping attribution.                         |
-| [`scripts/copyMessage.ts`](scripts/copyMessage.ts)                     | `copyMessage`           | Single (`telegram`) | Copy a message's content without attribution.                   |
-| [`scripts/pinChatMessage.ts`](scripts/pinChatMessage.ts)               | `pinChatMessage`        | Single (`telegram`) | Pin a message in a chat.                                        |
-| [`scripts/unpinChatMessage.ts`](scripts/unpinChatMessage.ts)           | `unpinChatMessage`      | Single (`telegram`) | Unpin a message (or the most recent pin).                       |
-| [`scripts/getMe.ts`](scripts/getMe.ts)                                 | `getMe`                 | Single (`telegram`) | Get the bot's identity and verify the token.                    |
-| [`scripts/getChat.ts`](scripts/getChat.ts)                             | `getChat`               | Single (`telegram`) | Get info about a chat by id or @username.                       |
-| [`scripts/listRecentChats.ts`](scripts/listRecentChats.ts)             | `listRecentChats`       | Single (`telegram`) | List chats the bot recently interacted with (chat_id resolver). |
-| [`scripts/getChatMember.ts`](scripts/getChatMember.ts)                 | `getChatMember`         | Single (`telegram`) | Get a member's status and role in a chat.                       |
-| [`scripts/getChatAdministrators.ts`](scripts/getChatAdministrators.ts) | `getChatAdministrators` | Single (`telegram`) | List a chat's administrators.                                   |
-| [`scripts/getChatMemberCount.ts`](scripts/getChatMemberCount.ts)       | `getChatMemberCount`    | Single (`telegram`) | Get the number of members in a chat.                            |
-| [`scripts/getFile.ts`](scripts/getFile.ts)                             | `getFile`               | Single (`telegram`) | Get a file's metadata and download path.                        |
+| Script                                                                 | Default export          | Tool name               | Connections         | Description                                                     | Has dependent fields? |
+| ---------------------------------------------------------------------- | ----------------------- | ----------------------- | ------------------- | --------------------------------------------------------------- | --------------------- |
+| [`scripts/sendMessage.ts`](scripts/sendMessage.ts)                     | `sendMessage`           | `sendMessage`           | Single (`telegram`) | Send a text message to a chat.                                  | No                    |
+| [`scripts/sendPhoto.ts`](scripts/sendPhoto.ts)                         | `sendPhoto`             | `sendPhoto`             | Single (`telegram`) | Send a photo by URL or file_id.                                 | No                    |
+| [`scripts/sendDocument.ts`](scripts/sendDocument.ts)                   | `sendDocument`          | `sendDocument`          | Single (`telegram`) | Send a file/document by URL or file_id.                         | No                    |
+| [`scripts/sendVideo.ts`](scripts/sendVideo.ts)                         | `sendVideo`             | `sendVideo`             | Single (`telegram`) | Send a video by URL or file_id.                                 | No                    |
+| [`scripts/sendAudio.ts`](scripts/sendAudio.ts)                         | `sendAudio`             | `sendAudio`             | Single (`telegram`) | Send an audio file (music) by URL or file_id.                   | No                    |
+| [`scripts/sendLocation.ts`](scripts/sendLocation.ts)                   | `sendLocation`          | `sendLocation`          | Single (`telegram`) | Send a point on the map.                                        | No                    |
+| [`scripts/sendContact.ts`](scripts/sendContact.ts)                     | `sendContact`           | `sendContact`           | Single (`telegram`) | Send a phone contact.                                           | No                    |
+| [`scripts/sendPoll.ts`](scripts/sendPoll.ts)                           | `sendPoll`              | `sendPoll`              | Single (`telegram`) | Send a poll or quiz.                                            | No                    |
+| [`scripts/editMessageText.ts`](scripts/editMessageText.ts)             | `editMessageText`       | `editMessageText`       | Single (`telegram`) | Edit the text of a message the bot sent.                        | No                    |
+| [`scripts/deleteMessage.ts`](scripts/deleteMessage.ts)                 | `deleteMessage`         | `deleteMessage`         | Single (`telegram`) | Delete a message from a chat.                                   | No                    |
+| [`scripts/forwardMessage.ts`](scripts/forwardMessage.ts)               | `forwardMessage`        | `forwardMessage`        | Single (`telegram`) | Forward a message, keeping attribution.                         | No                    |
+| [`scripts/copyMessage.ts`](scripts/copyMessage.ts)                     | `copyMessage`           | `copyMessage`           | Single (`telegram`) | Copy a message's content without attribution.                   | No                    |
+| [`scripts/pinChatMessage.ts`](scripts/pinChatMessage.ts)               | `pinChatMessage`        | `pinChatMessage`        | Single (`telegram`) | Pin a message in a chat.                                        | No                    |
+| [`scripts/unpinChatMessage.ts`](scripts/unpinChatMessage.ts)           | `unpinChatMessage`      | `unpinChatMessage`      | Single (`telegram`) | Unpin a message (or the most recent pin).                       | No                    |
+| [`scripts/getMe.ts`](scripts/getMe.ts)                                 | `getMe`                 | `getMe`                 | Single (`telegram`) | Get the bot's identity and verify the token.                    | No                    |
+| [`scripts/getChat.ts`](scripts/getChat.ts)                             | `getChat`               | `getChat`               | Single (`telegram`) | Get info about a chat by id or @username.                       | No                    |
+| [`scripts/listRecentChats.ts`](scripts/listRecentChats.ts)             | `listRecentChats`       | `listRecentChats`       | Single (`telegram`) | List chats the bot recently interacted with (chat_id resolver). | No                    |
+| [`scripts/getChatMember.ts`](scripts/getChatMember.ts)                 | `getChatMember`         | `getChatMember`         | Single (`telegram`) | Get a member's status and role in a chat.                       | No                    |
+| [`scripts/getChatAdministrators.ts`](scripts/getChatAdministrators.ts) | `getChatAdministrators` | `getChatAdministrators` | Single (`telegram`) | List a chat's administrators.                                   | No                    |
+| [`scripts/getChatMemberCount.ts`](scripts/getChatMemberCount.ts)       | `getChatMemberCount`    | `getChatMemberCount`    | Single (`telegram`) | Get the number of members in a chat.                            | No                    |
+| [`scripts/getFile.ts`](scripts/getFile.ts)                             | `getFile`               | `getFile`               | Single (`telegram`) | Get a file's metadata and download path.                        | No                    |
 
 Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract. **Always learn a script's input contract before calling it** — run `--help` (see [Using this skill](#using-this-skill)) or read the script's `inputSchema`. Guessing field names or types just produces a `ZodError` and wastes a round-trip.
 
