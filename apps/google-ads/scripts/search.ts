@@ -20,7 +20,7 @@ const inputSchema = z
     pageToken: z
       .string()
       .describe(
-        "Cursor from a prior response's nextPageToken; omit for the first page.",
+        "Cursor from a prior response's next_page_token; omit for the first page.",
       )
       .optional(),
     loginCustomerId: z
@@ -36,11 +36,11 @@ const outputSchema = z.object({
   results: z
     .array(z.record(z.string(), z.json()))
     .describe("Rows; each row's fields mirror the SELECT clause of the query."),
-  nextPageToken: z
+  next_page_token: z
     .string()
     .describe("Pass as pageToken to fetch the next page; absent when no more.")
     .optional(),
-  fieldMask: z
+  field_mask: z
     .string()
     .describe("The selected fields, echoed back.")
     .optional(),
@@ -60,14 +60,18 @@ const definition = defineTool({
     openWorldHint: true,
   },
   connection: "google-ads",
-  run: async (input, ctx) =>
-    searchGaql(ctx.fetch, {
+  run: async (input, ctx) => {
+    const { results, nextPageToken, fieldMask } = await searchGaql(ctx.fetch, {
       customerId: input.customerId,
       query: input.query,
       pageToken: input.pageToken,
       loginCustomerId: input.loginCustomerId,
       toolName: "search",
-    }),
+    });
+    // Normalize the cursor/field-mask keys to snake_case so the page cursor is
+    // the same `next_page_token` across every read tool in the connector.
+    return { results, next_page_token: nextPageToken, field_mask: fieldMask };
+  },
 });
 
 export default definition;

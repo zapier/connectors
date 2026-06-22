@@ -61,7 +61,7 @@ to `customers/{customerId}/googleAds:search`.
   `"fieldMask": "adGroupCriterion.keyword.text,adGroupCriterion.status"` in the reference's
   sample response)
   ([Search reference](https://developers.google.com/google-ads/api/rest/common/search)). The
-  `resource_name` of the main resource is always returned even if unselected (GAQL structure).
+  `resource_name` of the main resource is returned even when it isn't explicitly selected.
 - **Dates.** Use `segments.date DURING <PRESET>` for preset ranges
   (`"segments.date DURING LAST_30_DAYS"`, `"segments.date DURING LAST_7_DAYS"`; other presets:
   TODAY, YESTERDAY, LAST_14_DAYS, THIS_MONTH, LAST_MONTH, THIS_WEEK_SUN_TODAY,
@@ -160,8 +160,8 @@ Writes go to `customers/{customerId}/{resource}:mutate` (e.g. `campaigns`, `camp
   campaign at any time and all settings and history are preserved"
   ([enable, pause, or remove a campaign](https://support.google.com/google-ads/answer/2404259?hl=en)).
   `setCampaignStatus` to `REMOVED` cannot be undone — prefer `PAUSED` to stop a campaign you may
-  want back. Removed records still appear in reports; filter them with `status != 'REMOVED'`
-  (the list tools default to this).
+  want back. This connector's list tools default to filtering out `REMOVED` records
+  (`status != 'REMOVED'`); use `search` with an explicit status if you need to include them.
 
 ## Conversion tracking
 

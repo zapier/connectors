@@ -73,7 +73,7 @@ describe("search: run", () => {
     );
     expect(outputSchema.safeParse(result).success).toBe(true);
     expect(result.results).toHaveLength(1);
-    expect(result.nextPageToken).toBe("PAGE2");
+    expect(result.next_page_token).toBe("PAGE2");
   });
 
   it("maps a GAQL query error to an actionable message", async () => {
