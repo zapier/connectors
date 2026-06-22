@@ -12,6 +12,8 @@ metadata:
 
 # Google Calendar
 
+_Independent, unofficial connector for Google Calendar. Not affiliated with, endorsed by, or sponsored by Google Calendar. "Google Calendar" is a trademark of its owner, used only to identify the service this connector works with._
+
 Tools for managing Google Calendar — create, read, update, move, and delete events; search a calendar; list and create calendars; check free/busy availability; resolve the event-color palette; and manage calendar sharing (ACL). Wraps the [Google Calendar API v3](https://developers.google.com/workspace/calendar/api/v3/reference) (`https://www.googleapis.com/calendar/v3/`). Authentication is OAuth 2.0 over a single connection — capability is gated by scope and by each calendar's access role, not by token type.
 
 ## When to use this connector

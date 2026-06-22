@@ -1,5 +1,7 @@
 # @zapier/google-calendar-connector
 
+_Independent, unofficial connector for Google Calendar. Not affiliated with, endorsed by, or sponsored by Google Calendar. "Google Calendar" is a trademark of its owner, used only to identify the service this connector works with._
+
 Agent-callable [Google Calendar](https://developers.google.com/workspace/calendar/api/v3/reference) tools. Create, read, update, move, and delete events; search a calendar; list and create calendars; check free/busy availability; resolve the event-color palette; and manage calendar sharing (ACL) — all over the Google Calendar API v3. Authentication is OAuth 2.0 over a single connection; capability is gated by scope and by each calendar's access role, not by token type. Use it when an agent needs to schedule, find, reschedule, or share calendar events and availability.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
@@ -107,3 +109,17 @@ Swap `GOOGLE_CALENDAR_ZAPIER_CONNECTION_ID` for `GOOGLE_CALENDAR_ACCESS_TOKEN` i
 - [Google Calendar API v3 reference](https://developers.google.com/workspace/calendar/api/v3/reference) — vendor API docs
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-calendar)
+
+## Legal
+
+**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Google Calendar's API, services, data, schemas, documentation, or other materials, which remain the property of Google Calendar. Your use of Google Calendar's API is governed by your own agreement with Google Calendar.
+
+**Trademarks and affiliation.** Google Calendar and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Google Calendar.
+
+**Your responsibility.** This connector calls Google Calendar's API using credentials you supply. You are responsible for holding a valid Google Calendar account, for complying with Google Calendar's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
+
+**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Google Calendar product. Zapier is not responsible for changes Google Calendar makes to its API or for any consequence of your use of Google Calendar's API. See the repository LICENSE for the full disclaimer.
+
+**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
+
+Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
