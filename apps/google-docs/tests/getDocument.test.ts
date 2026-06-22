@@ -135,10 +135,9 @@ describe("getDocument: run", () => {
     expect(result.title).toBe("My Doc");
     expect(result.revisionId).toBe("rev-99");
 
-    // Flattened text includes the table cell text.
-    expect(result.text).toBe("Introduction\nBody text.\n\nCell text\n");
-    expect(result.text).toContain("Cell text");
-
+    // getDocument returns structure + indices only — no whole-document text
+    // rendering (reading is exportDocument's job; table cell text like
+    // "Cell text" is surfaced via findText / exportDocument, not here).
     // Top-level content elements carry positions, tabId, and type.
     expect(result.content).toHaveLength(3);
     expect(result.content[0]).toMatchObject({

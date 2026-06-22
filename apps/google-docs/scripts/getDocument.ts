@@ -6,18 +6,18 @@ import { connectionResolvers } from "../connections.ts";
 import { DOCS_BASE, GET_DOCUMENT_CHAR_BUDGET } from "../lib/constants.ts";
 import {
   collectTabs,
-  flattenDocumentText,
   walkElements,
   type WireDocument,
 } from "../lib/docWalker.ts";
 import { googleDocsFetch } from "../lib/googleDocsFetch.ts";
 
 // The Docs API returns the entire document as a deep tree with no wire
-// pagination or range parameter. run() reshapes it: a flattened readable `text`
-// rendering AND `content[]` with each element's startIndex/endIndex so the agent
-// can compute edit positions. Always reads with includeTabsContent=true (the API
-// otherwise silently returns only tab 1) and a fixed `fields` mask to cut
-// payload at the source.
+// pagination or range parameter. run() reshapes it into `content[]`: top-level
+// structural elements with each element's startIndex/endIndex so the agent can
+// compute edit positions. This is the structure/index tool, not a reading tool —
+// it returns no whole-document text rendering; for reading use exportDocument.
+// Always reads with includeTabsContent=true (the API otherwise silently returns
+// only tab 1) and a fixed `fields` mask to cut payload at the source.
 
 const inputSchema = z
   .object({
@@ -59,11 +59,6 @@ const outputSchema = z.object({
     .string()
     .describe("Current revision id; changes on every edit.")
     .optional(),
-  text: z
-    .string()
-    .describe(
-      "The whole document flattened to readable text (run() walks paragraphs, tables, and all tabs). For clean Markdown without structure, use exportDocument.",
-    ),
   tabs: z
     .array(
       z.object({
@@ -117,7 +112,7 @@ const definition = defineTool({
   name: "getDocument",
   title: "Get Document",
   description:
-    "Read a document's structured content — flattened readable text plus the index positions needed for editing — across all tabs. Use this when you need to edit at a position; for plain reading prefer exportDocument(markdown). Resolve a title to a documentId with findDocuments first.",
+    "Read a document's structure and the index positions needed for editing, across all tabs. Use this when you need to edit at a position; for plain reading or summarizing a whole document, use exportDocument(markdown). Resolve a title to a documentId with findDocuments first.",
   inputSchema,
   outputSchema,
   annotations: {
@@ -181,7 +176,6 @@ const definition = defineTool({
       documentId: doc.documentId ?? input.documentId,
       title: doc.title ?? "",
       revisionId: doc.revisionId,
-      text: flattenDocumentText(doc),
       tabs,
       content,
       inlineObjects: doc.inlineObjects ?? {},
