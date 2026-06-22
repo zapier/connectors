@@ -1,9 +1,6 @@
 {
   "name": "@zapier/google-ads-connector",
-  "version": "0.0.0",
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "description": "Agent-callable Google Ads tools — search campaigns, ad groups, and ads via GAQL, build performance reports, manage campaign status and budgets, and set up conversion tracking. Use when the user mentions Google Ads or wants to read or manage advertising campaigns, budgets, or reporting — even if they don't name Google Ads explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
