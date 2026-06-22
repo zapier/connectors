@@ -431,7 +431,7 @@
           "intent": "Copy the 'Sheet1' worksheet from the source spreadsheet into the destination spreadsheet.",
           "assertions": {
             "outcome": [
-              "The destination spreadsheet now contains a copy of the source 'Sheet1' worksheet (with the Widget header and Gizmo row)."
+              "The destination spreadsheet now contains an additional worksheet copied from the source 'Sheet1', and the result reports the new worksheet's title and id."
             ],
             "mechanism": [
               "Copies from the source spreadsheet into the destination spreadsheet created earlier in this session; does not confuse the two."
