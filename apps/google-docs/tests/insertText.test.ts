@@ -23,7 +23,10 @@ interface Call {
 }
 
 interface InsertTextRequest {
-  insertText?: { text?: string; location?: { index?: number; tabId?: string } };
+  insertText?: {
+    text?: string;
+    location?: { index?: number; tabId?: string; segmentId?: string };
+  };
 }
 
 describe("insertText: inputSchema", () => {
@@ -91,6 +94,27 @@ describe("insertText: run", () => {
       requests: InsertTextRequest[];
     };
     expect(body.requests[0]?.insertText?.location?.tabId).toBe("t.2");
+  });
+
+  it("threads segmentId into location (write into a header/footer/footnote)", async () => {
+    const calls: Call[] = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ url, init });
+      return jsonResponse({ replies: [{}] });
+    }) as typeof globalThis.fetch;
+
+    await insertTextDefinition.run(
+      { documentId: "d1", text: "hi", index: 1, segmentId: "kix.h1" },
+      { fetch: fakeFetch },
+    );
+
+    const body = JSON.parse(String(calls[0]?.init?.body)) as {
+      requests: InsertTextRequest[];
+    };
+    expect(body.requests[0]?.insertText?.location?.segmentId).toBe("kix.h1");
   });
 
   it("throws when index < 1 without calling fetch", async () => {

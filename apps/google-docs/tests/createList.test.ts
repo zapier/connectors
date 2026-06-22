@@ -153,7 +153,13 @@ describe("createList: run (nested levels)", () => {
   it("levels [0,1]: reads the doc, inserts a leading tab for the nested paragraph (descending), then bullets the tab-expanded range", async () => {
     const calls: Call[] = [];
     await createListDefinition.run(
-      { documentId: "d1", startIndex: 1, endIndex: 11, levels: [0, 1] },
+      {
+        documentId: "d1",
+        startIndex: 1,
+        endIndex: 11,
+        style: "bullet",
+        levels: [0, 1],
+      },
       { fetch: fetchWith(calls, WIRE_DOC) },
     );
 
@@ -176,7 +182,13 @@ describe("createList: run (nested levels)", () => {
     const calls: Call[] = [];
     const err = await createListDefinition
       .run(
-        { documentId: "d1", startIndex: 1, endIndex: 11, levels: [0, 1, 2] },
+        {
+          documentId: "d1",
+          startIndex: 1,
+          endIndex: 11,
+          style: "bullet",
+          levels: [0, 1, 2],
+        },
         { fetch: fetchWith(calls, WIRE_DOC) },
       )
       .catch((e: unknown) => e);

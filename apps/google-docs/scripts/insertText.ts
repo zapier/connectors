@@ -29,6 +29,12 @@ const inputSchema = z
         "Optional target tab id (from getDocument). Omit for a single-tab document.",
       )
       .optional(),
+    segmentId: z
+      .string()
+      .describe(
+        "Optional segment to write into — a headerId / footerId / footnoteId from createHeader / createFooter / createFootnote (or getDocument's segments). Omit to target the document body. Each segment has its own index space.",
+      )
+      .optional(),
   })
   .strict();
 
@@ -59,7 +65,7 @@ const definition = defineTool({
         {
           insertText: {
             text: input.text,
-            location: locationOf(input.index, input.tabId),
+            location: locationOf(input.index, input.tabId, input.segmentId),
           },
         },
       ],

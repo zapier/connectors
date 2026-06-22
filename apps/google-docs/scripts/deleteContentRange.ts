@@ -34,6 +34,12 @@ const inputSchema = z
         "Optional target tab id (from getDocument). Omit for a single-tab document.",
       )
       .optional(),
+    segmentId: z
+      .string()
+      .describe(
+        "Optional segment the range is in — a headerId / footerId / footnoteId from createHeader / createFooter / createFootnote (or getDocument's segments). Omit for the document body.",
+      )
+      .optional(),
   })
   .strict();
 
@@ -58,7 +64,12 @@ const definition = defineTool({
       [
         {
           deleteContentRange: {
-            range: rangeOf(input.startIndex, input.endIndex, input.tabId),
+            range: rangeOf(
+              input.startIndex,
+              input.endIndex,
+              input.tabId,
+              input.segmentId,
+            ),
           },
         },
       ],

@@ -11,7 +11,7 @@ metadata:
 
 # Google Docs
 
-Tools for working with Google Docs against the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content, and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for the find / export / copy-template / folder operations the Docs API doesn't provide. 14 tools: create documents (blank, from text/Markdown, or from a template), read a document's structured content and tabs, export it as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character formatting, insert and replace inline images, and set page/margin/background style.
+Tools for working with Google Docs against the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content, and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for the find / export / copy-template / folder operations the Docs API doesn't provide. 22 tools: create documents (blank, from text/Markdown, or from a template), read a document's structured content and tabs, export it as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character and paragraph formatting, make bulleted/numbered lists, insert and edit tables, create headers / footers / footnotes, insert and replace inline images, and set page/margin/background style.
 
 ## When to use this connector
 
@@ -19,6 +19,7 @@ Tools for working with Google Docs against the [Google Docs API v1](https://deve
 - An agent needs to **read** a document — its structured content + edit indices (`getDocument`), clean text/Markdown (`exportDocument`), or to find documents by name (`findDocuments`) and locate text (`findText`).
 - An agent needs to **edit text** — append, insert at a position, find-and-replace, or delete a range.
 - An agent needs to **format or restyle** — apply character formatting; make bulleted or numbered lists (`createList`); set paragraph style — headings, alignment, line spacing, indentation (`formatParagraph`); insert/replace inline images; or set page size / margins / background.
+- An agent needs to **structure the document** — insert a table and fill its cells (`insertTable`), add/remove table rows or columns (`modifyTable`), or create a header, footer, or footnote (`createHeader` / `createFooter` / `createFootnote`) and write into it via `insertText`'s `segmentId`.
 
 ## Scripts
 
@@ -43,6 +44,11 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/insertImage.ts`](scripts/insertImage.ts)                               | `insertImage`                | `google-docs` | Insert an inline image from a public URL.                                     |
 | [`scripts/replaceImage.ts`](scripts/replaceImage.ts)                             | `replaceImage`               | `google-docs` | Replace an existing inline image with a new one.                              |
 | [`scripts/updateDocumentStyle.ts`](scripts/updateDocumentStyle.ts)               | `updateDocumentStyle`        | `google-docs` | Set page size, margins, or background color.                                  |
+| [`scripts/insertTable.ts`](scripts/insertTable.ts)                               | `insertTable`                | `google-docs` | Insert a rows×columns table, optionally seeded with cell contents.            |
+| [`scripts/modifyTable.ts`](scripts/modifyTable.ts)                               | `modifyTable`                | `google-docs` | Add or remove a table row or column at a reference cell.                      |
+| [`scripts/createHeader.ts`](scripts/createHeader.ts)                             | `createHeader`               | `google-docs` | Create the default header; returns its segmentId for insertText.              |
+| [`scripts/createFooter.ts`](scripts/createFooter.ts)                             | `createFooter`               | `google-docs` | Create the default footer; returns its segmentId for insertText.              |
+| [`scripts/createFootnote.ts`](scripts/createFootnote.ts)                         | `createFootnote`             | `google-docs` | Insert a footnote reference; returns its segmentId for insertText.            |
 
 **Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/google-docs-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag(s) and available resolvers.
 
@@ -71,7 +77,6 @@ This also applies to index positions: indices from `getDocument` / `findText` go
 
 **Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
 
-- **Author tables, headers, footers, or footnotes.** Reads include them, but there is no tool to create them yet. Don't simulate a table by inserting tab/newline-delimited text. (Bulleted/numbered lists and paragraph styling _are_ supported — `createList`, `removeListFormatting`, `formatParagraph`.)
 - **Upload a binary file and convert it to a Doc**, or round-trip pasted HTML. Use a Drive connector for binary uploads; compose content natively here.
 - **Manage comments or accept/reject suggestions.** `getDocument` can read suggested edits via `suggestionsViewMode`, but there is no write tool for comments or suggestions.
 - **Export to PDF, DOCX, or HTML as inline content.** `exportDocument` returns plain text or Markdown only; PDF, DOCX, and HTML need a Drive download link (Drive only offers HTML as a zipped Web Page bundle, not inline `text/html`).

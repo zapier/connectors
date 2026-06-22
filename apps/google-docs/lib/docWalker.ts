@@ -40,6 +40,9 @@ interface WireTab {
   documentTab?: {
     body?: { content?: WireStructuralElement[] };
     inlineObjects?: Record<string, unknown>;
+    headers?: Record<string, unknown>;
+    footers?: Record<string, unknown>;
+    footnotes?: Record<string, unknown>;
   };
   childTabs?: WireTab[];
 }
@@ -50,6 +53,9 @@ export interface WireDocument {
   body?: { content?: WireStructuralElement[] };
   tabs?: WireTab[];
   inlineObjects?: Record<string, unknown>;
+  headers?: Record<string, unknown>;
+  footers?: Record<string, unknown>;
+  footnotes?: Record<string, unknown>;
 }
 
 export type ElementType =
@@ -166,6 +172,106 @@ export function collectInlineObjects(
   };
   for (const tab of doc.tabs) visit(tab);
   return out;
+}
+
+/** A cell within a walked table: its logical position + text-insertion index. */
+export interface WalkedTableCell {
+  rowIndex: number;
+  columnIndex: number;
+  /** Index of the cell's first paragraph — where InsertText puts cell content. */
+  startIndex: number;
+}
+
+/** A top-level table: its position, dimensions, tab, and cell insertion points. */
+export interface WalkedTable {
+  /** The table's start index — the tableStartLocation for table-cell requests. */
+  startIndex: number;
+  endIndex: number;
+  tabId: string;
+  rows: number;
+  columns: number;
+  cells: WalkedTableCell[];
+}
+
+/**
+ * Collect top-level tables across all tabs, with each cell's insertion index.
+ * Used by insertTable (to fill cells after creating the table) and getDocument
+ * (to expose table dimensions + the tableStartLocation modifyTable needs). Cell
+ * text-insertion index is the first structural element inside the cell.
+ */
+export function collectTables(doc: WireDocument): WalkedTable[] {
+  const out: WalkedTable[] = [];
+  for (const tab of collectTabs(doc)) {
+    for (const el of tab.content) {
+      if (!el.table?.tableRows) continue;
+      const rows = el.table.tableRows;
+      const cells: WalkedTableCell[] = [];
+      rows.forEach((row, rowIndex) => {
+        (row.tableCells ?? []).forEach((cell, columnIndex) => {
+          const first = cell.content?.[0];
+          if (typeof first?.startIndex === "number") {
+            cells.push({ rowIndex, columnIndex, startIndex: first.startIndex });
+          }
+        });
+      });
+      out.push({
+        startIndex: el.startIndex ?? 0,
+        endIndex: el.endIndex ?? 0,
+        tabId: tab.tabId,
+        rows: rows.length,
+        columns: rows[0]?.tableCells?.length ?? 0,
+        cells,
+      });
+    }
+  }
+  return out;
+}
+
+/** Header / footer / footnote segment ids present in the document. */
+export interface DocumentSegments {
+  headerIds: string[];
+  footerIds: string[];
+  footnoteIds: string[];
+}
+
+/**
+ * Collect every header/footer/footnote segment id (the keys of those maps),
+ * across all tabs. These are the `segmentId` values the positional tools target
+ * to write into a header/footer/footnote.
+ */
+export function collectSegments(doc: WireDocument): DocumentSegments {
+  const headers = new Set<string>();
+  const footers = new Set<string>();
+  const footnotes = new Set<string>();
+  const add = (
+    h?: Record<string, unknown>,
+    f?: Record<string, unknown>,
+    fn?: Record<string, unknown>,
+  ): void => {
+    Object.keys(h ?? {}).forEach((id) => headers.add(id));
+    Object.keys(f ?? {}).forEach((id) => footers.add(id));
+    Object.keys(fn ?? {}).forEach((id) => footnotes.add(id));
+  };
+
+  if (!doc.tabs || doc.tabs.length === 0) {
+    add(doc.headers, doc.footers, doc.footnotes);
+  } else {
+    const visit = (tab: WireTab): void => {
+      add(
+        tab.documentTab?.headers,
+        tab.documentTab?.footers,
+        tab.documentTab?.footnotes,
+      );
+      for (const child of tab.childTabs ?? []) visit(child);
+    };
+    for (const tab of doc.tabs) visit(tab);
+  }
+
+  return {
+    headerIds: [...headers],
+    footerIds: [...footers],
+    footnoteIds: [...footnotes],
+  };
 }
 
 /** Flattened readable text for the whole document (all tabs, tables included). */

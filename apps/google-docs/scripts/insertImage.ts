@@ -43,6 +43,12 @@ const inputSchema = z
         "Optional target tab id (from getDocument). Omit for a single-tab document.",
       )
       .optional(),
+    segmentId: z
+      .string()
+      .describe(
+        "Optional segment to insert into — a headerId / footerId / footnoteId from createHeader / createFooter / createFootnote (or getDocument's segments). Omit for the document body.",
+      )
+      .optional(),
   })
   .strict();
 
@@ -83,9 +89,16 @@ const definition = defineTool({
 
     const insertInlineImage: Record<string, unknown> = { uri: input.imageUrl };
     if (input.index !== undefined) {
-      insertInlineImage.location = locationOf(input.index, input.tabId);
+      insertInlineImage.location = locationOf(
+        input.index,
+        input.tabId,
+        input.segmentId,
+      );
     } else {
-      insertInlineImage.endOfSegmentLocation = endOfSegment(input.tabId);
+      insertInlineImage.endOfSegmentLocation = endOfSegment(
+        input.tabId,
+        input.segmentId,
+      );
     }
     if (input.width !== undefined || input.height !== undefined) {
       const objectSize: Record<string, unknown> = {};

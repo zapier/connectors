@@ -6,6 +6,8 @@ import { connectionResolvers } from "../connections.ts";
 import { DOCS_BASE } from "../lib/constants.ts";
 import {
   collectInlineObjects,
+  collectSegments,
+  collectTables,
   collectTabs,
   walkElements,
   type WireDocument,
@@ -92,15 +94,33 @@ const outputSchema = z.object({
         text: z
           .string()
           .describe("The element's text (empty for non-paragraph elements)."),
+        table: z
+          .object({
+            rows: z.number().int().describe("Number of rows."),
+            columns: z.number().int().describe("Number of columns."),
+          })
+          .describe(
+            "Present only for table elements. Pass this element's startIndex as modifyTable's tableStartIndex; rows/columns bound the valid rowIndex/columnIndex.",
+          )
+          .optional(),
       }),
     )
     .describe(
-      "Structural elements with positions, for index-based edits (insertText/formatText/deleteContentRange).",
+      "Structural elements with positions, for index-based edits (insertText/formatText/deleteContentRange) and table edits (modifyTable).",
     ),
   inlineObjects: z
     .record(z.string(), z.json())
     .describe(
       "Map of inline-object id to its properties. An image's object id (the imageObjectId for replaceImage) is the key here.",
+    ),
+  segments: z
+    .object({
+      headerIds: z.array(z.string()).describe("Header segment ids."),
+      footerIds: z.array(z.string()).describe("Footer segment ids."),
+      footnoteIds: z.array(z.string()).describe("Footnote segment ids."),
+    })
+    .describe(
+      "Header/footer/footnote segment ids — pass one as segmentId to insertText / formatText to write into that segment.",
     ),
 });
 
@@ -126,7 +146,7 @@ const definition = defineTool({
     url.searchParams.set("includeTabsContent", "true");
     url.searchParams.set(
       "fields",
-      "documentId,title,revisionId,tabs/tabProperties,tabs/documentTab/inlineObjects,tabs/documentTab/body/content,tabs/childTabs",
+      "documentId,title,revisionId,tabs/tabProperties,tabs/documentTab/inlineObjects,tabs/documentTab/headers,tabs/documentTab/footers,tabs/documentTab/footnotes,tabs/documentTab/body/content,tabs/childTabs",
     );
     if (input.suggestionsViewMode !== undefined) {
       url.searchParams.set("suggestionsViewMode", input.suggestionsViewMode);
@@ -154,6 +174,20 @@ const definition = defineTool({
       );
     }
 
+    // Attach table dimensions so modifyTable has the tableStartIndex (the table
+    // element's startIndex) plus valid row/column bounds.
+    const tableDims = new Map(
+      collectTables(doc).map((t) => [
+        `${t.tabId}:${t.startIndex}`,
+        { rows: t.rows, columns: t.columns },
+      ]),
+    );
+    const content = elements.map((el) =>
+      el.type === "table"
+        ? { ...el, table: tableDims.get(`${el.tabId}:${el.startIndex}`) }
+        : el,
+    );
+
     // No client-side cap: return every structural element the API returned
     // (optionally scoped by the range read above). documents.get can't paginate,
     // so large whole-document reads go through exportDocument (bounded by Drive's
@@ -163,8 +197,9 @@ const definition = defineTool({
       title: doc.title ?? "",
       revisionId: doc.revisionId,
       tabs,
-      content: elements,
+      content,
       inlineObjects: collectInlineObjects(doc),
+      segments: collectSegments(doc),
     };
   },
 });

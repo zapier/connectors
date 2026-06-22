@@ -44,6 +44,11 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | `insertImage`                | Insert an inline image from a public URL.                                         |
 | `replaceImage`               | Replace an existing inline image with a new one.                                  |
 | `updateDocumentStyle`        | Set page size, margins, or background color.                                      |
+| `insertTable`                | Insert a rows×columns table, optionally seeded with cell contents.                |
+| `modifyTable`                | Add or remove a table row or column at a reference cell.                          |
+| `createHeader`               | Create the default header; returns its segmentId for insertText.                  |
+| `createFooter`               | Create the default footer; returns its segmentId for insertText.                  |
+| `createFootnote`             | Insert a footnote reference; returns its segmentId for insertText.                |
 
 Run `npx @zapier/google-docs-connector run <toolName> --help` to see any tool's exact input contract + which auth env vars are set.
 
