@@ -98,4 +98,6 @@ When `PREFLIGHT_RUNNER` is `bun`, use `bunx` instead of `npx` — match the pack
 
 ## API quirks worth knowing
 
-See [references/google-ads-api-gotchas.md](references/google-ads-api-gotchas.md).
+| Reference                                                                    | Load when                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [references/google-ads-api-gotchas.md](references/google-ads-api-gotchas.md) | Before composing a GAQL query, working with money fields (micros), setting campaign status, or interpreting a Google Ads API error — the cross-cutting behaviors (auth headers, account hierarchy, GAQL, micros, mutate semantics, errors, rate limits, conversion tracking, versioning). |
