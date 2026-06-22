@@ -5,6 +5,7 @@ license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
   title: Google Ads
+  source: https://github.com/zapier/connectors/blob/main/apps/google-ads/SKILL.md
   api-docs: https://developers.google.com/google-ads/api/rest/overview
   zapier-app-key: GoogleAdsCLIAPI
 ---
