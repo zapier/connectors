@@ -28,3 +28,8 @@ export function trelloFormBody(
 export const trelloFormHeaders = {
   "Content-Type": "application/x-www-form-urlencoded",
 };
+
+/** Case-insensitive substring match for find-* tools. */
+export function nameContains(name: string, query: string): boolean {
+  return name.toLowerCase().includes(query.toLowerCase());
+}

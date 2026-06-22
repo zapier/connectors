@@ -3,6 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
+import { nameContains, TRELLO_BASE, trelloError } from "../lib/trello.ts";
 
 const inputSchema = z.object({ id: z.string(), name: z.string() }).strict();
 const itemSchema = z.array(
@@ -32,21 +33,14 @@ const definition = defineTool({
   },
   connection: "trello",
   run: async (input, ctx) => {
-    const url = new URL(
-      `https://api.trello.com/1/_agent/checklists/${encodeURIComponent(input.id)}/checkItems/find`,
+    const url = `${TRELLO_BASE}/checklists/${encodeURIComponent(input.id)}/checkItems`;
+    const res = await ctx.fetch(url, { method: "GET" });
+    if (!res.ok) await trelloError("findChecklistItem", res);
+    const checkItems = (await res.json()) as Array<{ name?: string }>;
+    const items = (Array.isArray(checkItems) ? checkItems : []).filter((item) =>
+      nameContains(item.name ?? "", input.name),
     );
-    if (input.name !== undefined) {
-      url.searchParams.set("name", String(input.name));
-    }
-    const res = await ctx.fetch(url.toString(), {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Trello findChecklistItem ${res.status}: ${errBody}`);
-    }
-    const data = await res.json();
-    return { items: data };
+    return { items };
   },
 });
 

@@ -43,8 +43,9 @@ describe("findList: run", () => {
     const { data: result } = await findList.run(input, { fetch: fakeFetch });
 
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
-    expect(calls[0]!.url).toContain("/_agent/boards/");
-    expect(calls[0]!.url).toContain("/lists/find");
+    expect(calls[0]!.url).toContain("/boards/");
+    expect(calls[0]!.url).toContain("/lists");
+    expect(result.items).toHaveLength(1);
     expect(findList.outputSchema.safeParse(result).success).toBe(true);
   });
 });

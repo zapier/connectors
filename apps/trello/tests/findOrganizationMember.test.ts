@@ -43,7 +43,7 @@ describe("findOrganizationMember: run", () => {
     });
 
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
-    expect(calls[0]!.url).toContain("/_agent/search/members");
+    expect(calls[0]!.url).toContain("/search/members");
     expect(findOrganizationMember.outputSchema.safeParse(result).success).toBe(
       true,
     );

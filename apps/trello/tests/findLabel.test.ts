@@ -43,8 +43,9 @@ describe("findLabel: run", () => {
     const { data: result } = await findLabel.run(input, { fetch: fakeFetch });
 
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
-    expect(calls[0]!.url).toContain("/_agent/boards/");
-    expect(calls[0]!.url).toContain("/labels/find");
+    expect(calls[0]!.url).toContain("/boards/");
+    expect(calls[0]!.url).toContain("/labels");
+    expect(result.items).toHaveLength(1);
     expect(findLabel.outputSchema.safeParse(result).success).toBe(true);
   });
 });

@@ -32,7 +32,7 @@ describe("findBoard: run", () => {
       const urlStr =
         typeof url === "string" ? url : url instanceof URL ? url.href : url.url;
       calls.push({ url: urlStr, init });
-      return jsonResponse(CANNED);
+      return jsonResponse({ boards: CANNED });
     }) as typeof globalThis.fetch;
 
     const input = findBoard.inputSchema.parse({
@@ -41,7 +41,8 @@ describe("findBoard: run", () => {
     const { data: result } = await findBoard.run(input, { fetch: fakeFetch });
 
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
-    expect(calls[0]!.url).toContain("/_agent/search/boards");
+    expect(calls[0]!.url).toContain("/search");
+    expect(calls[0]!.url).toContain("modelTypes=boards");
     expect(findBoard.outputSchema.safeParse(result).success).toBe(true);
   });
 });

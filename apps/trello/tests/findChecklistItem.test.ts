@@ -45,8 +45,9 @@ describe("findChecklistItem: run", () => {
     });
 
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
-    expect(calls[0]!.url).toContain("/_agent/checklists/");
-    expect(calls[0]!.url).toContain("/checkItems/find");
+    expect(calls[0]!.url).toContain("/checklists/");
+    expect(calls[0]!.url).toContain("/checkItems");
+    expect(result.items).toHaveLength(1);
     expect(findChecklistItem.outputSchema.safeParse(result).success).toBe(true);
   });
 });

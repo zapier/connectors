@@ -3,6 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
+import { TRELLO_BASE, trelloError } from "../lib/trello.ts";
 
 const inputSchema = z
   .object({ query: z.string(), organizationId: z.string().optional() })
@@ -29,8 +30,7 @@ const outputSchema = z.object({ items: itemSchema });
 const definition = defineTool({
   name: "findOrganizationMember",
   title: "Find Organization Member",
-  description:
-    "Find members in a workspace. Wire GET /search with modelTypes=members.",
+  description: "Find members via GET /search/members/.",
   inputSchema,
   outputSchema,
   annotations: {
@@ -41,24 +41,16 @@ const definition = defineTool({
   },
   connection: "trello",
   run: async (input, ctx) => {
-    const url = new URL(`https://api.trello.com/1/_agent/search/members`);
-    if (input.query !== undefined) {
-      url.searchParams.set("query", String(input.query));
-    }
+    const url = new URL(`${TRELLO_BASE}/search/members/`);
+    url.searchParams.set("query", input.query);
+    url.searchParams.set("limit", "50");
     if (input.organizationId !== undefined) {
-      url.searchParams.set("organizationId", String(input.organizationId));
+      url.searchParams.set("idOrganization", input.organizationId);
     }
-    const res = await ctx.fetch(url.toString(), {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(
-        `Trello findOrganizationMember ${res.status}: ${errBody}`,
-      );
-    }
+    const res = await ctx.fetch(url.toString(), { method: "GET" });
+    if (!res.ok) await trelloError("findOrganizationMember", res);
     const data = await res.json();
-    return { items: data };
+    return { items: Array.isArray(data) ? data : [] };
   },
 });
 

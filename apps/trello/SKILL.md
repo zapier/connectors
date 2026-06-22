@@ -128,6 +128,12 @@ When no shipped script matches, read this `SKILL.md`, the [`references/`](refere
 
 See [references/trello-api-gotchas.md](references/trello-api-gotchas.md).
 
+## Reference files
+
+| File                                                                 | When to load                                                                                                          |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| [references/trello-api-gotchas.md](references/trello-api-gotchas.md) | Before search-heavy flows, rate-limit-sensitive loops, or any write that needs id resolution (lists, boards, labels). |
+
 ## Eval cases
 
-See [`evals/evals.json`](evals/evals.json) (populated by a later phase).
+See [`evals/evals.json`](evals/evals.json) — 16 intent-anchored scenarios (arrange-act, act-only, disambiguation, graceful refusals).

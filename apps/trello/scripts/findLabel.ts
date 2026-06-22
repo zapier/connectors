@@ -3,6 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
+import { nameContains, TRELLO_BASE, trelloError } from "../lib/trello.ts";
 
 const inputSchema = z
   .object({
@@ -37,21 +38,14 @@ const definition = defineTool({
   },
   connection: "trello",
   run: async (input, ctx) => {
-    const url = new URL(
-      `https://api.trello.com/1/_agent/boards/${encodeURIComponent(input.id)}/labels/find`,
+    const url = `${TRELLO_BASE}/boards/${encodeURIComponent(input.id)}/labels`;
+    const res = await ctx.fetch(url, { method: "GET" });
+    if (!res.ok) await trelloError("findLabel", res);
+    const labels = (await res.json()) as Array<{ name?: string | null }>;
+    const items = (Array.isArray(labels) ? labels : []).filter((label) =>
+      nameContains(label.name ?? "", input.name),
     );
-    if (input.name !== undefined) {
-      url.searchParams.set("name", String(input.name));
-    }
-    const res = await ctx.fetch(url.toString(), {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Trello findLabel ${res.status}: ${errBody}`);
-    }
-    const data = await res.json();
-    return { items: data };
+    return { items };
   },
 });
 
