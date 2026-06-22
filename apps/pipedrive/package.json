@@ -1,6 +1,6 @@
 {
   "name": "@zapier/pipedrive-connector",
-  "version": "0.0.0",
+  "version": "0.1.0-experimental.0",
   "publishConfig": {
     "access": "public"
   },
