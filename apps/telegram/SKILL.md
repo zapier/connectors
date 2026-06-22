@@ -4,6 +4,7 @@ description: Agent-callable Telegram bot tools — send messages, media, locatio
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
+  title: Telegram
   source: https://github.com/zapier/connectors/blob/main/apps/telegram/SKILL.md
   zapier-app-key: TelegramCLIAPI
   api-docs: https://core.telegram.org/bots/api
