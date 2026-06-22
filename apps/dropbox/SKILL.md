@@ -4,12 +4,15 @@ description: Agent-callable Dropbox tools — upload, organize, find, and share 
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
+  title: Dropbox
   source: https://github.com/zapier/connectors/blob/main/apps/dropbox/SKILL.md
   zapier-app-key: DropBoxCLIAPI
   api-docs: https://www.dropbox.com/developers/documentation/http/documentation
 ---
 
 # Dropbox
+
+_Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by, or sponsored by Dropbox. "Dropbox" is a trademark of its owner, used only to identify the service this connector works with._
 
 Tools for working with files and folders in Dropbox — upload and write files, organize (move/copy/delete/create folders), navigate and search, read file contents, create and modify shared links, manage shared-folder membership, and create file requests. Wraps the [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) (`https://api.dropboxapi.com/2/<namespace>/<method>`, with uploads/downloads on `https://content.dropboxapi.com`). Read-only tools are clearly marked; write tools return clean file/folder metadata rather than silently attaching links or contents.
 

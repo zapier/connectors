@@ -1,5 +1,7 @@
 # @zapier/dropbox-connector
 
+_Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by, or sponsored by Dropbox. "Dropbox" is a trademark of its owner, used only to identify the service this connector works with._
+
 Agent-callable Dropbox tools — upload, organize, find, and share files and folders. This connector wraps the [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) with 21 tools spanning file writes (upload, create/append text), organization (move, copy, delete, create folders), navigation and search, inline content reading, shared links, shared-folder membership, and file requests. Auth is a single Dropbox OAuth2 connection — capability is gated by the scopes granted at connect time, and the recommended Zapier-managed path rotates the short-lived access token for you.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
@@ -113,3 +115,17 @@ Reach for this connector when an agent needs to manage Dropbox files and folders
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) — durable per-app API knowledge
 - [Source](https://github.com/zapier/connectors/tree/main/apps/dropbox)
+
+## Legal
+
+**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Dropbox's API, services, data, schemas, documentation, or other materials, which remain the property of Dropbox. Your use of Dropbox's API is governed by your own agreement with Dropbox.
+
+**Trademarks and affiliation.** Dropbox and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Dropbox.
+
+**Your responsibility.** This connector calls Dropbox's API using credentials you supply. You are responsible for holding a valid Dropbox account, for complying with Dropbox's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
+
+**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Dropbox product. Zapier is not responsible for changes Dropbox makes to its API or for any consequence of your use of Dropbox's API. See the repository LICENSE for the full disclaimer.
+
+**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
+
+Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
