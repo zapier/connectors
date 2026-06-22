@@ -4,6 +4,7 @@ description: Agent-callable Google Calendar tools — create, update, move, sear
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
+  title: Google Calendar
   source: https://github.com/zapier/connectors/blob/main/apps/google-calendar/SKILL.md
   zapier-app-key: GoogleCalendarCLIAPI
   api-docs: https://developers.google.com/workspace/calendar/api/v3/reference

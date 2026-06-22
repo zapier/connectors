@@ -25,7 +25,8 @@
     "SKILL.md",
     "README.md",
     "LICENSE",
-    "references/"
+    "references/",
+    "NOTICE.md"
   ],
   "scripts": {
     "build": "tsup",
