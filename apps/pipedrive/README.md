@@ -6,8 +6,6 @@ _Independent, unofficial connector for Pipedrive. Not affiliated with, endorsed 
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
-This package is experimental and published for internal testing; APIs may change between minor versions without notice.
-
 ## Install
 
 ```bash
@@ -118,7 +116,6 @@ Swap `PIPEDRIVE_ZAPIER_CONNECTION_ID` for `PIPEDRIVE_TOKEN` if you don't have a 
 - [`SKILL.md`](SKILL.md) - agent-runtime guidance: when to reach for each tool, auth tradeoffs, finding a Zapier connection ID.
 - [Pipedrive API quirks and custom fields](references/pipedrive-api-gotchas.md).
 - [Pipedrive REST API reference](https://developers.pipedrive.com/docs/api/v1).
-- [Contributing](https://github.com/zapier/connectors/blob/main/CONTRIBUTING.md).
 
 ## Legal
 
