@@ -1,0 +1,68 @@
+{
+  "name": "@zapier/google-calendar-connector",
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Agent-callable Google Calendar tools — create, update, move, search, and delete events, manage calendars, check free/busy availability, resolve event colors, and manage calendar sharing. Use when the user mentions Google Calendar or wants to schedule, find, reschedule, or share events and calendars — including requests that do not name Google Calendar explicitly, e.g. \"put a meeting on my calendar Tuesday 3pm\" or \"am I free Friday afternoon\".",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/google-calendar-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "preflight.sh",
+    "SKILL.md",
+    "README.md",
+    "LICENSE",
+    "references/",
+    "NOTICE.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepare": "node cli.js build || bun cli.js build || true"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.1.0-experimental.28",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk": ">=0.59.0 <1.0.0"
+  },
+  "keywords": [
+    "google-calendar",
+    "calendar",
+    "events",
+    "scheduling",
+    "meetings",
+    "availability",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/google-calendar"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

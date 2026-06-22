@@ -1,0 +1,413 @@
+{
+  "skill_name": "telegram",
+  "version": "09a4ad3",
+  "description": "Intent-anchored eval scenarios for the telegram connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Telegram bots cannot create chats or cold-DM a user, so most scenarios act on an operator-provisioned sandbox chat the bot already belongs to (arrange-act builds a message inside it; discover-act resolves a chat via recent updates). Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created content. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "telegram_sandbox_chat",
+      "description": "A Telegram group or supergroup the eval bot belongs to (ideally as an admin, so it can pin and read administrators). A bot cannot create a chat or message a user first, so a human must add the bot to the group; set EVAL_TELEGRAM_SANDBOX_CHAT to that chat's id or @username.",
+      "env": "EVAL_TELEGRAM_SANDBOX_CHAT",
+      "default": "@telegram_eval_sandbox",
+      "expects": "A Telegram group or supergroup that the eval bot is a member of and can send, edit, delete, and pin its own messages in, and read membership of. Identified by the resolved value of this fixture as a chat_id — a numeric id (supergroups are -100-prefixed, e.g. -1001234567890) or a public @username. For pinning to work the bot must have the can_pin_messages admin right; for administrator/member reads the chat must be a group/supergroup (a private chat has no administrators). To verify: call getChat with the id and confirm it resolves to a group/supergroup the bot can see; getMe confirms the bot identity; optionally send then delete a probe message to confirm write access. Because a bot cannot start a chat, this fixture can only be provisioned by a human adding the bot to the group.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "send-message-to-chat",
+      "kind": "act-only",
+      "description": "Single-capability probe: post a plain text message to a named ambient chat.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Send the message 'Standup reminder {{run_id}}' to the chat {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A message with the text 'Standup reminder {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat and its message id is reported."
+            ],
+            "mechanism": [
+              "Sends to the chat id given in the request with a single send-message call; does not attempt to create a chat or invent a different chat id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-formatted-message",
+      "kind": "act-only",
+      "description": "Guidance-dependent: post an update with a bold heading and a link; the naive standard-Markdown path renders as literal markup, the correct path renders formatting.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Post this update to {{telegram_sandbox_chat}}: a bold heading reading 'Release {{run_id}}', then a new line with a link labeled 'changelog' pointing to https://example.com/changelog.",
+          "assertions": {
+            "outcome": [
+              "The message delivered to {{telegram_sandbox_chat}} shows 'Release {{run_id}}' as bold text and 'changelog' as a clickable link — not as literal markup characters (e.g. not a literal '**Release**' or '[changelog](...)')."
+            ],
+            "mechanism": [
+              "Sends with parse_mode set to HTML (or MarkdownV2 with the reserved characters properly escaped), rather than passing raw standard Markdown as plain text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-photo-by-url",
+      "kind": "act-only",
+      "description": "Single-capability probe: send a photo from a public image URL with a caption.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Send the photo at https://upload.wikimedia.org/wikipedia/commons/a/a9/Example.jpg to {{telegram_sandbox_chat}} with the caption 'Launch banner {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A photo message with the caption 'Launch banner {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat."
+            ],
+            "mechanism": [
+              "Passes the image URL (or a Telegram file_id) as the photo in a single send-photo call; does not attempt to read or upload a local file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-poll",
+      "kind": "act-only",
+      "description": "Single-capability probe: create a poll with a question and several options.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Create a poll in {{telegram_sandbox_chat}} asking 'Lunch spot {{run_id}}?' with the options Tacos, Sushi, and Salad.",
+          "assertions": {
+            "outcome": [
+              "A poll asking 'Lunch spot {{run_id}}?' with the three options Tacos, Sushi, and Salad now exists in the {{telegram_sandbox_chat}} chat."
+            ],
+            "mechanism": [
+              "Sends the three options as a list/array of strings to a single send-poll call; does not concatenate them into one option."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-location",
+      "kind": "act-only",
+      "description": "Single-capability probe: share a point on the map.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Share the location of the Eiffel Tower (latitude 48.8584, longitude 2.2945) in {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A location at approximately latitude 48.8584, longitude 2.2945 is shared in the {{telegram_sandbox_chat}} chat."
+            ],
+            "mechanism": [
+              "Passes the latitude and longitude as numeric coordinates to a single send-location call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-sent-message",
+      "kind": "arrange-act",
+      "description": "Coverage probe: post a message, then edit its text — one chained session.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Send the message 'Deploy starting {{run_id}}' to {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A message reading 'Deploy starting {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat and its message id is reported."
+            ],
+            "mechanism": [
+              "Uses a single send-message call; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Update that message to read 'Deploy complete {{run_id}}' instead.",
+          "assertions": {
+            "outcome": [
+              "A message in the {{telegram_sandbox_chat}} chat now reads 'Deploy complete {{run_id}}'."
+            ],
+            "mechanism": [
+              "Edits the existing message by its message id (an edit-message call), rather than sending a new message; does not fabricate a message id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-sent-message",
+      "kind": "arrange-act",
+      "description": "Coverage probe: post a message, then delete it — one chained session.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Send the message 'Oops wrong channel {{run_id}}' to {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A message reading 'Oops wrong channel {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat and its message id is reported."
+            ],
+            "mechanism": [
+              "Uses a single send-message call; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the message you just sent.",
+          "assertions": {
+            "outcome": [
+              "The message is removed from the {{telegram_sandbox_chat}} chat (deletion is confirmed)."
+            ],
+            "mechanism": [
+              "Calls delete-message with the concrete message id from the send earlier in this session; does not delete an unrelated message or fabricate an id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "pin-and-unpin-message",
+      "kind": "arrange-act",
+      "description": "Coverage probe: post a message, pin it, then unpin it — one chained session.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Send the message 'Read me first {{run_id}}' to {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A message reading 'Read me first {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat and its message id is reported."
+            ],
+            "mechanism": [
+              "Uses a single send-message call; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Pin that message in the chat.",
+          "assertions": {
+            "outcome": [
+              "The message is pinned in the {{telegram_sandbox_chat}} chat (the pin is confirmed)."
+            ],
+            "mechanism": [
+              "Calls pin-chat-message with the message id from the send earlier in this session."
+            ]
+          }
+        },
+        {
+          "intent": "Now unpin it.",
+          "assertions": {
+            "outcome": [
+              "The message is no longer pinned in the {{telegram_sandbox_chat}} chat."
+            ],
+            "mechanism": [
+              "Calls unpin-chat-message targeting the same message rather than fabricating a different id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "forward-message",
+      "kind": "arrange-act",
+      "description": "Coverage probe: post a message, then forward it (keeping attribution) — one chained session.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Send the message 'Quarterly numbers {{run_id}}' to {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A message reading 'Quarterly numbers {{run_id}}' is delivered to the {{telegram_sandbox_chat}} chat and its message id is reported."
+            ],
+            "mechanism": [
+              "Uses a single send-message call; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Forward that message again into {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "A forwarded copy of the 'Quarterly numbers {{run_id}}' message appears in the {{telegram_sandbox_chat}} chat."
+            ],
+            "mechanism": [
+              "Uses a forward-message call referencing the source chat and the message id, rather than composing a brand-new message with the same text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-bot-identity",
+      "kind": "act-only",
+      "description": "Single read with no fixture: confirm which bot the connection controls / that the connection works.",
+      "steps": [
+        {
+          "intent": "Which Telegram bot does this connection control? Confirm the connection is working.",
+          "assertions": {
+            "outcome": [
+              "The reply identifies the bot (its username and/or display name) and indicates the connection/token is valid."
+            ],
+            "mechanism": [
+              "Resolves the bot identity from a get-me call rather than asking the user or guessing a name."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-recent-chat-and-message",
+      "kind": "discover-act",
+      "description": "Head-to-head: discover a chat the bot has recently interacted with, then post to it — exercises chat_id resolution.",
+      "steps": [
+        {
+          "intent": "List the chats this bot has recently interacted with.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the chats the bot has recently interacted with (their ids/types/names), or clearly states there are none if the recent-updates feed is empty."
+            ],
+            "mechanism": [
+              "Reads the recent chats from the connector rather than inventing chat ids or asking the user to supply one."
+            ]
+          }
+        },
+        {
+          "intent": "Send 'Checking in {{run_id}}' to one of those recent chats.",
+          "assertions": {
+            "outcome": [
+              "A message 'Checking in {{run_id}}' is delivered to one of the chats from the recent-chats list (or, if there were none, the agent says so rather than messaging a fabricated chat)."
+            ],
+            "mechanism": [
+              "Uses a chat id taken from the recent-chats result, not a hard-coded or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-chat-info",
+      "kind": "act-only",
+      "description": "Single read: fetch details about a named chat.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Get the details of the {{telegram_sandbox_chat}} chat — its type, title, and id.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the {{telegram_sandbox_chat}} chat's type, title, and id."
+            ],
+            "mechanism": [
+              "Resolves the chat with a single get-chat call using the id/username given in the request."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "inspect-chat-members",
+      "kind": "discover-act",
+      "description": "Head-to-head: report a chat's member count and who its administrators are.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "How many members are in {{telegram_sandbox_chat}}?",
+          "assertions": {
+            "outcome": [
+              "The reply reports a member count for the {{telegram_sandbox_chat}} chat."
+            ],
+            "mechanism": [
+              "Reads the count from a member-count call on the chat id given in the request."
+            ]
+          }
+        },
+        {
+          "intent": "Who are the administrators of that chat?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the administrators of the {{telegram_sandbox_chat}} chat (their names and/or usernames)."
+            ],
+            "mechanism": [
+              "Reads the administrators from a get-administrators call on the same chat; does not fabricate users."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-which-chat",
+      "kind": "discover-act",
+      "description": "No-op/ask probe: a named target with no clear match among the bot's chats should make the agent ask which chat, not send to an unrelated one.",
+      "steps": [
+        {
+          "intent": "Send 'Heads up {{run_id}}' to the marketing team channel.",
+          "assertions": {
+            "outcome": [
+              "The reply does not claim a message was delivered to a 'marketing team channel'. Finding no chat whose name clearly matches, the agent asks the user which chat to use (or reports it cannot find a matching chat) rather than sending to an unrelated chat."
+            ],
+            "mechanism": [
+              "Looks up the bot's reachable chats to resolve the named target and, finding no clear match, does not send the message to a non-matching chat."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-group-refusal",
+      "kind": "act-only",
+      "description": "Graceful refusal: a Telegram bot cannot create a group/chat; the agent should say so rather than fabricate success.",
+      "steps": [
+        {
+          "intent": "Create a new Telegram group called 'Eval Team {{run_id}}' and add my teammates.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating a Telegram group/chat is not something this connector (or a bot) can do, and does not claim a group was created."
+            ],
+            "mechanism": [
+              "Does not call any tool that fabricates a group-creation result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ban-member-refusal",
+      "kind": "act-only",
+      "description": "Graceful refusal: member moderation (banning) is not in this connector's surface; the agent should decline cleanly. Roadmap signal for the deferred admin group.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Ban the user @spammer123 from {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "The reply states that banning or removing members is not supported by this connector, and does not claim the user was banned."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool in an attempt to ban or restrict the member."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload-local-file-refusal",
+      "kind": "act-only",
+      "description": "Graceful refusal / reframe: the connector sends files by URL or file_id, not from local disk; the agent should ask for a URL rather than fabricate an upload.",
+      "requires": ["telegram_sandbox_chat"],
+      "steps": [
+        {
+          "intent": "Upload my local file report.pdf (it's saved on my computer) to {{telegram_sandbox_chat}}.",
+          "assertions": {
+            "outcome": [
+              "The reply explains it can send a file by public URL or an existing Telegram file_id but cannot read a local-disk path, and asks for a URL (or file_id) — it does not claim the local file was uploaded."
+            ],
+            "mechanism": [
+              "Does not call a send tool with the local filesystem path as if it were a URL or file_id."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

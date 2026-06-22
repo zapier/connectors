@@ -1,0 +1,519 @@
+{
+  "skill_name": "google-calendar",
+  "version": "5f2a9fd",
+  "description": "Intent-anchored eval scenarios for the google-calendar connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's capability profile. The connected user's primary calendar is ambient, so scenarios self-provision events/calendars with {{run_id}} namespacing and need no fixtures. Outcome assertions describe world/reply facts backend-agnostically and grade all arms; mechanism assertions check tool-call hygiene and grade our-arm-only. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "schedule-meeting",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a timed one-hour meeting, then cancel it — a create/delete liveness chain run as one session.",
+      "steps": [
+        {
+          "intent": "Schedule a meeting titled 'Project sync {{run_id}}' on my calendar next Tuesday from 3:00pm to 4:00pm.",
+          "assertions": {
+            "outcome": [
+              "A one-hour event titled 'Project sync {{run_id}}' now exists on the calendar next Tuesday, starting at 3:00pm and ending at 4:00pm, and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the event with a single create call; the start and end carry a UTC offset or an explicit time zone (not a bare local time), and the event id comes from the create result rather than an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Cancel the 'Project sync {{run_id}}' meeting you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Project sync {{run_id}}' event no longer exists on the calendar."
+            ],
+            "mechanism": [
+              "Deletes the event created earlier in this session by its id; does not delete an unrelated event."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quick-add-event",
+      "kind": "arrange-act",
+      "description": "Single-action probe: create an event from a simple text string (the quick-add path).",
+      "steps": [
+        {
+          "intent": "Quickly add to my calendar: 'Coffee with Alex {{run_id}} tomorrow at 10am'.",
+          "assertions": {
+            "outcome": [
+              "An event for coffee with Alex is created on the calendar for tomorrow at 10:00am, and its title reflects the phrase."
+            ],
+            "mechanism": [
+              "Creates exactly one event from the phrase as given; does not fabricate attendees, location, or other details that were not present in the phrase."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-all-day-event",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: an all-day event must occupy exactly one day; the API treats end.date as exclusive, which the naive path gets wrong by spanning two days.",
+      "steps": [
+        {
+          "intent": "Add an all-day event called 'Company offsite {{run_id}}' to my calendar for this coming Friday.",
+          "assertions": {
+            "outcome": [
+              "A single all-day event titled 'Company offsite {{run_id}}' now exists covering exactly this coming Friday — one day, not spilling over into Saturday."
+            ],
+            "mechanism": [
+              "Creates an all-day event using calendar dates rather than timed dateTimes, and sets the exclusive end date to the day after the event day so it occupies exactly one day."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-recurring-standup",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a recurring event requires a time zone for the recurrence to expand correctly; create one series, then clean it up.",
+      "steps": [
+        {
+          "intent": "Set up a daily standup titled 'Standup {{run_id}}' that repeats every weekday at 9:00am for the next two weeks.",
+          "assertions": {
+            "outcome": [
+              "A recurring event titled 'Standup {{run_id}}' now exists that repeats on weekdays at 9:00am, and its id is reported."
+            ],
+            "mechanism": [
+              "Creates one recurring event carrying a recurrence rule (not a batch of separate events), and supplies a time zone for the recurrence."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Standup {{run_id}}' standup series you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Standup {{run_id}}' recurring series no longer exists."
+            ],
+            "mechanism": [
+              "Deletes the recurring event created earlier in this session by its id; does not delete unrelated events."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reschedule-event",
+      "kind": "arrange-act",
+      "description": "Find-then-act: create a meeting, then move it to a later time the same day by editing it in place.",
+      "steps": [
+        {
+          "intent": "Schedule 'Budget review {{run_id}}' on my calendar tomorrow at 2:00pm for 30 minutes.",
+          "assertions": {
+            "outcome": [
+              "A 30-minute event 'Budget review {{run_id}}' now exists tomorrow starting at 2:00pm."
+            ],
+            "mechanism": [
+              "Creates the event with a single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Actually move that 'Budget review {{run_id}}' meeting to 4:00pm the same day.",
+          "assertions": {
+            "outcome": [
+              "The 'Budget review {{run_id}}' event now starts at 4:00pm and still runs 30 minutes on the same day; no duplicate copy of the event was created."
+            ],
+            "mechanism": [
+              "Updates the existing event's start and end in place by its id rather than creating a new event; only the time fields change."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-attendees-preserving-existing",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: array fields replace wholesale on update, so adding a guest naively wipes the existing roster — the right path reads, unions, and writes back.",
+      "steps": [
+        {
+          "intent": "Create a meeting 'Design review {{run_id}}' tomorrow at 1:00pm and invite alice@example.com and bob@example.com.",
+          "assertions": {
+            "outcome": [
+              "A meeting 'Design review {{run_id}}' now exists tomorrow at 1:00pm with both alice@example.com and bob@example.com invited."
+            ],
+            "mechanism": [
+              "Creates the event with both attendees in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Also add carol@example.com to that 'Design review {{run_id}}' meeting.",
+          "assertions": {
+            "outcome": [
+              "The 'Design review {{run_id}}' meeting now has all three guests — alice@example.com, bob@example.com, and carol@example.com; neither original guest was dropped."
+            ],
+            "mechanism": [
+              "Adds carol by reading the current attendee list and writing it back with carol unioned in, rather than replacing the whole attendee array with only carol."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-events-on-day",
+      "kind": "arrange-act",
+      "description": "Find-then-act: seed a distinctive event, then ask what's on the calendar that day and confirm it surfaces.",
+      "steps": [
+        {
+          "intent": "Put 'Dentist {{run_id}}' on my calendar this Thursday at 11:00am.",
+          "assertions": {
+            "outcome": [
+              "An event 'Dentist {{run_id}}' now exists this Thursday at 11:00am."
+            ],
+            "mechanism": [
+              "Creates the event with a single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "What's on my calendar this Thursday?",
+          "assertions": {
+            "outcome": [
+              "The reply lists this Thursday's events, including the 'Dentist {{run_id}}' appointment at 11:00am."
+            ],
+            "mechanism": [
+              "Lists events scoped to this Thursday's time window rather than dumping the whole calendar or inventing events."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-events-by-text",
+      "kind": "arrange-act",
+      "description": "Find-then-act: seed an event with a distinctive title, then locate it by a free-text description.",
+      "steps": [
+        {
+          "intent": "Add an event titled 'Quarterly tax filing {{run_id}}' next Monday at 9:00am.",
+          "assertions": {
+            "outcome": [
+              "An event 'Quarterly tax filing {{run_id}}' now exists next Monday at 9:00am."
+            ],
+            "mechanism": [
+              "Creates the event with a single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Find my event about the tax filing.",
+          "assertions": {
+            "outcome": [
+              "The 'Quarterly tax filing {{run_id}}' event is located and its date and time are reported."
+            ],
+            "mechanism": [
+              "Locates the event via a text search over calendar events rather than guessing an id or fabricating a result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-availability",
+      "kind": "arrange-act",
+      "description": "Find-then-act: block a window, then ask about availability in that window and confirm the busy block is reflected.",
+      "steps": [
+        {
+          "intent": "Block my calendar with 'Focus time {{run_id}}' this Friday from 1:00pm to 3:00pm.",
+          "assertions": {
+            "outcome": [
+              "An event 'Focus time {{run_id}}' now exists this Friday from 1:00pm to 3:00pm."
+            ],
+            "mechanism": [
+              "Creates the event with a single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Am I free this Friday afternoon?",
+          "assertions": {
+            "outcome": [
+              "The reply indicates I am busy during this Friday afternoon around 1:00pm–3:00pm because of the blocked time, rather than reporting that I am entirely free."
+            ],
+            "mechanism": [
+              "Determines availability by querying busy blocks for the calendar in Friday afternoon's window rather than guessing or only re-listing titles."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-event-color",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a color is a palette index resolved from the colors endpoint, not a hex value or an arbitrary number.",
+      "steps": [
+        {
+          "intent": "Create 'Team lunch {{run_id}}' tomorrow at noon and make it show up in red on my calendar.",
+          "assertions": {
+            "outcome": [
+              "A 'Team lunch {{run_id}}' event now exists tomorrow at noon and is displayed in red rather than the default calendar color."
+            ],
+            "mechanism": [
+              "Sets the event's color using a valid color id drawn from the calendar's color palette (the red entry), rather than passing a hex value or guessing an arbitrary number."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-video-conferencing",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a Google Meet link is created asynchronously, so a correct flow confirms the link resolved rather than reporting a pending request.",
+      "steps": [
+        {
+          "intent": "Schedule 'Client call {{run_id}}' tomorrow at 3:00pm and add a Google Meet video link to it.",
+          "assertions": {
+            "outcome": [
+              "A 'Client call {{run_id}}' event now exists tomorrow at 3:00pm with a working Google Meet video conferencing link attached, and that link is reported."
+            ],
+            "mechanism": [
+              "Requests conference creation while creating the event and confirms the Meet link actually resolved (e.g. re-reads the event until the conference status is success) rather than reporting a link that is still pending or fabricated."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-single-occurrence",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: editing one occurrence requires resolving that instance's id; patching the recurring master shifts the whole series.",
+      "steps": [
+        {
+          "intent": "Create a recurring event 'Weekly review {{run_id}}' every Monday at 10:00am for the next month.",
+          "assertions": {
+            "outcome": [
+              "A recurring 'Weekly review {{run_id}}' event repeating weekly on Mondays at 10:00am now exists."
+            ],
+            "mechanism": [
+              "Creates a single recurring event carrying a recurrence rule and a time zone."
+            ]
+          }
+        },
+        {
+          "intent": "Move just next Monday's 'Weekly review {{run_id}}' to 11:00am, leaving the rest of the series at 10:00am.",
+          "assertions": {
+            "outcome": [
+              "Only the single next-Monday occurrence of 'Weekly review {{run_id}}' is moved to 11:00am; the other occurrences remain at 10:00am."
+            ],
+            "mechanism": [
+              "Resolves the specific occurrence's instance id and updates that instance, rather than patching the recurring master (which would shift the whole series)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-event-between-calendars",
+      "kind": "arrange-act",
+      "description": "Multi-step: create a destination calendar and a primary-calendar event, then relocate the event to the new calendar.",
+      "steps": [
+        {
+          "intent": "Create a new calendar called 'Personal {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A new secondary calendar named 'Personal {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one calendar; the calendar id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add an event 'Gym session {{run_id}}' to my primary calendar tomorrow at 7:00am.",
+          "assertions": {
+            "outcome": [
+              "A 'Gym session {{run_id}}' event now exists on the primary calendar tomorrow at 7:00am."
+            ],
+            "mechanism": [
+              "Creates the event on the primary calendar; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Move that 'Gym session {{run_id}}' event from my primary calendar to the 'Personal {{run_id}}' calendar.",
+          "assertions": {
+            "outcome": [
+              "The 'Gym session {{run_id}}' event now lives on the 'Personal {{run_id}}' calendar and is no longer on the primary calendar."
+            ],
+            "mechanism": [
+              "Relocates the existing event to the destination calendar by id rather than deleting and recreating it; targets the 'Personal {{run_id}}' calendar created earlier in this session, not a substitute."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-calendar",
+      "kind": "arrange-act",
+      "description": "Single-action probe: create a new secondary calendar.",
+      "steps": [
+        {
+          "intent": "Create a new calendar called 'Side projects {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A new secondary calendar named 'Side projects {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one calendar; the id comes from the create result, not invented."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-calendars",
+      "kind": "act-only",
+      "description": "Single-capability read against ambient state: list the connected user's calendars.",
+      "steps": [
+        {
+          "intent": "List all the calendars I have access to.",
+          "assertions": {
+            "outcome": [
+              "The reply enumerates the user's calendars, including the primary calendar, and identifies them by name."
+            ],
+            "mechanism": [
+              "Reads the calendar list rather than fabricating calendar names or ids."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-calendar-timezone",
+      "kind": "act-only",
+      "description": "Single-capability read against ambient state: report the primary calendar's default time zone.",
+      "steps": [
+        {
+          "intent": "What time zone is my calendar set to?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the primary calendar's default time zone as a recognizable IANA zone name (e.g. America/Los_Angeles)."
+            ],
+            "mechanism": [
+              "Reads the calendar's metadata to obtain the time zone rather than guessing or assuming UTC."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "share-calendar-with-person",
+      "kind": "arrange-act",
+      "description": "Multi-step sharing lifecycle: create a calendar, grant a person edit access, confirm the access list, then revoke it (ACL operations require the owner role).",
+      "steps": [
+        {
+          "intent": "Create a calendar called 'Shared team {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A new secondary calendar named 'Shared team {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one calendar; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Share the 'Shared team {{run_id}}' calendar with teammate@example.com so they can see and edit its events.",
+          "assertions": {
+            "outcome": [
+              "teammate@example.com now has writer (edit) access to the 'Shared team {{run_id}}' calendar."
+            ],
+            "mechanism": [
+              "Grants access by creating a sharing rule scoped to the user teammate@example.com at the writer role on the calendar created earlier in this session."
+            ]
+          }
+        },
+        {
+          "intent": "Who has access to the 'Shared team {{run_id}}' calendar?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the access rules for the 'Shared team {{run_id}}' calendar, including teammate@example.com with writer/edit access."
+            ],
+            "mechanism": [
+              "Reads the calendar's sharing rules rather than fabricating who has access."
+            ]
+          }
+        },
+        {
+          "intent": "Remove teammate@example.com's access to the 'Shared team {{run_id}}' calendar.",
+          "assertions": {
+            "outcome": [
+              "teammate@example.com no longer has access to the 'Shared team {{run_id}}' calendar."
+            ],
+            "mechanism": [
+              "Deletes the sharing rule matching teammate@example.com, identified from the calendar's rules rather than a guessed id, and does not remove other users' access."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-duplicate-events",
+      "kind": "arrange-act",
+      "description": "Disambiguation: with two same-titled events, a delete-by-title request should prompt for which one rather than silently picking.",
+      "steps": [
+        {
+          "intent": "Add two separate events both titled 'Sync {{run_id}}' to my calendar tomorrow — one at 9:00am and one at 2:00pm.",
+          "assertions": {
+            "outcome": [
+              "Two distinct events both titled 'Sync {{run_id}}' now exist tomorrow, one starting at 9:00am and one at 2:00pm."
+            ],
+            "mechanism": ["Creates two separate events."]
+          }
+        },
+        {
+          "intent": "Cancel my 'Sync {{run_id}}' meeting.",
+          "assertions": {
+            "outcome": [
+              "Recognizing that two events are titled 'Sync {{run_id}}' (9:00am and 2:00pm), the reply asks which one to cancel instead of silently cancelling one; no event has been deleted."
+            ],
+            "mechanism": [
+              "After finding more than one event matching the title, does not call a delete tool — it surfaces the ambiguity and asks the user to choose."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-clear-calendar",
+      "kind": "act-only",
+      "description": "Graceful refusal: clearing every event off a calendar is not a supported operation and must not be faked by deleting events one by one.",
+      "steps": [
+        {
+          "intent": "Clear everything off my primary calendar — delete all the events on it.",
+          "assertions": {
+            "outcome": [
+              "The reply states that clearing or bulk-deleting all events from a calendar is not a supported operation and declines; it does not claim the calendar was cleared."
+            ],
+            "mechanism": [
+              "Does not issue a batch of delete calls to simulate clearing the calendar."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-rename-calendar",
+      "kind": "act-only",
+      "description": "Graceful refusal: renaming an existing calendar is a capability this connector does not ship and must not be faked.",
+      "steps": [
+        {
+          "intent": "Rename my work calendar to 'Archive 2026'.",
+          "assertions": {
+            "outcome": [
+              "The reply states that renaming a calendar is not supported and declines, without claiming the rename succeeded."
+            ],
+            "mechanism": [
+              "Does not call a mutating tool to fake a rename (e.g. does not create a new calendar and report it as the renamed one)."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

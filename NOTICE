@@ -1,0 +1,17 @@
+Copyright 2026 Zapier, Inc. Licensed under the Elastic License 2.0. See LICENSE.
+
+This repository contains independent, unofficial connectors for many third-party
+services, each in its own package under apps/. Each connector is built only from
+the relevant service's publicly documented API.
+
+Scope of license. Zapier licenses only the connector code in this repository,
+which Zapier wrote. Zapier grants no rights in any third party's API, services,
+software, data, schemas, documentation, or other materials, which remain the
+property of their respective owners. Use of any third-party API is governed by
+your own agreement with that third party.
+
+Trademarks. Each connector names the service it works with only to identify that
+service. Those names and logos are trademarks of their respective owners. Zapier
+claims no rights in them, and no connector is affiliated with, endorsed by, or
+sponsored by the service it connects to. See each connector's README for the
+service-specific notice. "Zapier" is a trademark of Zapier, Inc.

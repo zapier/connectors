@@ -1,0 +1,741 @@
+{
+  "skill_name": "pipedrive",
+  "description": "Intent-anchored eval scenarios for the pipedrive connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their CRM world (cold-start coverage probes); discover-act scenarios operate on a pre-existing world via in-envelope read/find primitives (all arms compete); act-only scenarios target ambient account state. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (Pipedrive correctness: ids from create results not invented, 40-char custom-field keys, enum option ids, HH:MM times, lead UUIDs, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "create-deal-in-pipeline",
+      "kind": "arrange-act",
+      "description": "Coverage probe: cold-start create a valued deal, then delete it — one chained agent session.",
+      "steps": [
+        {
+          "intent": "Create a deal called 'Acme renewal {{run_id}}' worth 12000 USD.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Acme renewal {{run_id}}' now exists with value 12000 and currency USD, and its id is reported.",
+              "Exactly one deal is created, not several."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result, not a hard-coded or invented id.",
+              "Does not invent a pipeline id or stage id: either omits them or resolves real ids from the account rather than guessing."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Acme renewal {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-contact-with-email",
+      "kind": "arrange-act",
+      "description": "Coverage probe: cold-start create a person with an email address.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Jane Doe {{run_id}}' with email jane.{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A person named 'Jane Doe {{run_id}}' with email jane.{{run_id}}@example.com now exists and its id is reported.",
+              "Exactly one person is created, not several."
+            ],
+            "mechanism": [
+              "Uses a single create-person call; the person id comes from the create result, not an invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-deal-for-named-contact",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a person, resolve them by name, attach a new deal to them, then clean up — one chained session.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Carlos Reyes {{run_id}}' with email carlos.{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A person named 'Carlos Reyes {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-person call; the person id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Find the contact named 'Carlos Reyes {{run_id}}' and return their id.",
+          "assertions": {
+            "outcome": [
+              "A person matching the name 'Carlos Reyes {{run_id}}' given in the request is located and their id is returned."
+            ],
+            "mechanism": [
+              "Searches for the person by the name given in the request rather than guessing or hard-coding a person id."
+            ]
+          }
+        },
+        {
+          "intent": "Create a deal titled 'Carlos renewal {{run_id}}' worth 5000 USD linked to the contact you just found.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Carlos renewal {{run_id}}' now exists with value 5000 and currency USD, linked to the 'Carlos Reyes {{run_id}}' person.",
+              "Its id is reported."
+            ],
+            "mechanism": [
+              "Links the new deal to the person id resolved earlier in this session rather than inventing a different contact id.",
+              "The deal id comes from the create result, not a hard-coded id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Carlos renewal {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "mark-deal-won",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a deal, mark it won, then clean up — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a deal titled 'Won test {{run_id}}' worth 800 USD.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Won test {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Mark the deal you just created as won.",
+          "assertions": {
+            "outcome": [
+              "The 'Won test {{run_id}}' deal's status is now 'won'."
+            ],
+            "mechanism": [
+              "Updates the deal id created earlier in this session rather than creating a new deal, and sets status to 'won' rather than a different status."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Won test {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-deal-to-stage",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a deal, then move it to a real stage resolved from the account's pipelines — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a deal titled 'Stage move test {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Stage move test {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Move the deal you just created to a different pipeline stage.",
+          "assertions": {
+            "outcome": [
+              "The 'Stage move test {{run_id}}' deal is now in a different stage than it started in."
+            ],
+            "mechanism": [
+              "Resolves a real stage id from the account's stages rather than guessing or inventing a stage id.",
+              "Updates the deal id created earlier in this session rather than creating a new deal."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Stage move test {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-deals-for-organization",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create an organization, attach a deal to it, then list that org's deals — one chained session.",
+      "steps": [
+        {
+          "intent": "Add an organization named 'Acme Corp {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "An organization named 'Acme Corp {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-organization call; the organization id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Create a deal titled 'Acme org deal {{run_id}}' linked to the organization you just created.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Acme org deal {{run_id}}' now exists, linked to the 'Acme Corp {{run_id}}' organization, and its id is reported."
+            ],
+            "mechanism": [
+              "Links the deal to the organization id created earlier in this session rather than inventing a different organization id."
+            ]
+          }
+        },
+        {
+          "intent": "Show all deals for the organization you just created.",
+          "assertions": {
+            "outcome": [
+              "The deals belonging to the 'Acme Corp {{run_id}}' organization are returned, including the 'Acme org deal {{run_id}}' deal.",
+              "No deals outside that organization are claimed, and no deals are fabricated."
+            ],
+            "mechanism": [
+              "Filters deals by the organization id created earlier in this session rather than listing every deal or guessing an id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Acme org deal {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "attach-product-to-deal",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a catalog product, create a deal, attach the product as a line item, then clean up — one chained session.",
+      "steps": [
+        {
+          "intent": "Add a product named 'Pro License {{run_id}}' priced at 100 USD to the catalog.",
+          "assertions": {
+            "outcome": [
+              "A catalog product named 'Pro License {{run_id}}' priced at 100 USD now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-product call; the product id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Create a deal titled 'Product attach test {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Product attach test {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add 5 units of the product you just created to the deal you just created, at 100 USD each.",
+          "assertions": {
+            "outcome": [
+              "The 'Product attach test {{run_id}}' deal now has a line item for the 'Pro License {{run_id}}' product with quantity 5 at 100 each."
+            ],
+            "mechanism": [
+              "Attaches the catalog product id created earlier in this session to the deal id created earlier in this session, rather than inventing ids.",
+              "Sets the line-item quantity to 5 as given in the request."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Product attach test {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-custom-field-on-deal",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a deal, then set one of the account's real custom fields on it (discovering the 40-char key and any option ids), then clean up.",
+      "steps": [
+        {
+          "intent": "Create a deal titled 'Custom field test {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Custom field test {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Set a custom field on the deal you just created, choosing a real custom field defined on deals in this account.",
+          "assertions": {
+            "outcome": [
+              "The 'Custom field test {{run_id}}' deal now carries a value on one of the account's real deal custom fields, and the reply reports which field was set.",
+              "If the account defines no deal custom fields, the reply says so rather than fabricating a field or claiming a value was set."
+            ],
+            "mechanism": [
+              "Discovers the custom field's 40-character key from the account's deal field definitions rather than sending the field's human-readable label as the key or inventing a key.",
+              "For a choice/enum/set field, writes the option's numeric id rather than its display label.",
+              "Updates the deal id created earlier in this session rather than a different deal."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Custom field test {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "log-call-activity-on-deal",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a deal, schedule a call activity on it at a specific date/time, then clean up — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a deal titled 'Activity test {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Activity test {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Schedule a call activity on the deal you just created for 2026-06-15 at 14:30 with the subject 'Discovery call {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A call activity with subject 'Discovery call {{run_id}}' due on 2026-06-15 at 14:30 now exists, linked to the 'Activity test {{run_id}}' deal, and its id is reported."
+            ],
+            "mechanism": [
+              "Links the activity to the deal id created earlier in this session rather than a different or invented deal id.",
+              "Sets the due time as '14:30' in 24-hour HH:MM form, not HH:MM:SS.",
+              "Sets the due date to '2026-06-15' as given in the request."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the activity you just scheduled.",
+          "assertions": {
+            "outcome": [
+              "The 'Discovery call {{run_id}}' activity no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the activity id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Activity test {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-note-to-deal",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a deal, attach a note with given content to it, then clean up — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a deal titled 'Note test {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Note test {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add a note to the deal you just created with the content: 'Customer prefers annual billing.'",
+          "assertions": {
+            "outcome": [
+              "A note reading 'Customer prefers annual billing.' is now attached to the 'Note test {{run_id}}' deal."
+            ],
+            "mechanism": [
+              "Attaches the note to the deal id created earlier in this session rather than a different or invented deal id.",
+              "Sets the note content to the text given in the request rather than fabricating different content."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Note test {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-contact-email",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a person, then update their email address in place — one chained session.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Bob Lin {{run_id}}' with email bob.{{run_id}}@old.example.com.",
+          "assertions": {
+            "outcome": [
+              "A person named 'Bob Lin {{run_id}}' with email bob.{{run_id}}@old.example.com now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-person call; the person id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Update that contact's email to bob.{{run_id}}@new.example.com.",
+          "assertions": {
+            "outcome": [
+              "The 'Bob Lin {{run_id}}' person's email is now bob.{{run_id}}@new.example.com."
+            ],
+            "mechanism": [
+              "Updates the person id created earlier in this session rather than creating a new contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-contact-by-email",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a person, then find them by their email address — one chained session.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Dana Vo {{run_id}}' with email dana.{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A person named 'Dana Vo {{run_id}}' with email dana.{{run_id}}@example.com now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-person call; the person id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Who is the contact with email dana.{{run_id}}@example.com?",
+          "assertions": {
+            "outcome": [
+              "A person matching the email dana.{{run_id}}@example.com given in the request is identified and reported."
+            ],
+            "mechanism": [
+              "Searches persons using the email given in the request rather than inventing a contact or hard-coding a person id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-deals-by-term",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a uniquely-titled deal, then find it by a search term, then clean up — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a deal titled 'Renewal special {{run_id}}' worth 3000 USD.",
+          "assertions": {
+            "outcome": [
+              "A deal titled 'Renewal special {{run_id}}' now exists with value 3000 and currency USD, and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-deal call; the deal id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Find any deals mentioning 'Renewal special {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The 'Renewal special {{run_id}}' deal is found and reported, and no deals are fabricated."
+            ],
+            "mechanism": [
+              "Uses a search query with the term given in the request rather than listing every deal and filtering client-side."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the deal you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Renewal special {{run_id}}' deal no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the deal id created earlier in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "capture-new-lead",
+      "kind": "arrange-act",
+      "description": "Coverage probe: cold-start capture a pre-deal lead, verifying lead ids are UUIDs not integers.",
+      "steps": [
+        {
+          "intent": "Capture a new lead titled 'Beta Corp inquiry {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A lead titled 'Beta Corp inquiry {{run_id}}' now exists and its id is reported.",
+              "Exactly one lead is created, not several."
+            ],
+            "mechanism": [
+              "The reported lead id is a UUID (36-char string), not an integer id.",
+              "The lead id comes from the create result, not an invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "discover-pipeline-stages",
+      "kind": "discover-act",
+      "description": "Head-to-head: discover the account's pipelines, then list the stages of one of them — in-envelope read primitives, so all arms compete.",
+      "steps": [
+        {
+          "intent": "What pipelines do we have?",
+          "assertions": {
+            "outcome": [
+              "The account's pipelines are listed with their names and ids, and none are fabricated."
+            ],
+            "mechanism": [
+              "Reads pipelines from the account rather than inventing pipeline names or ids."
+            ]
+          }
+        },
+        {
+          "intent": "List the stages in one of those pipelines.",
+          "assertions": {
+            "outcome": [
+              "The stages belonging to one of the account's pipelines are returned, and no stages are fabricated."
+            ],
+            "mechanism": [
+              "Filters stages by a pipeline id discovered earlier in this session rather than inventing stages or ignoring the pipeline filter."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-product-catalog",
+      "kind": "act-only",
+      "description": "Single-capability probe against ambient account state: read the product catalog.",
+      "steps": [
+        {
+          "intent": "What products are in our catalog?",
+          "assertions": {
+            "outcome": [
+              "The account's catalog products are reported, and no products are fabricated beyond what the account holds."
+            ],
+            "mechanism": [
+              "Lists products from the product catalog rather than reading line items off a specific deal."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-upcoming-activities",
+      "kind": "act-only",
+      "description": "Single-capability probe against ambient account state: read upcoming activities.",
+      "steps": [
+        {
+          "intent": "What activities are coming up?",
+          "assertions": {
+            "outcome": [
+              "The account's activities are reported, and none are claimed beyond what the account holds."
+            ],
+            "mechanism": [
+              "Reads activities from the account rather than fabricating a schedule."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-organization",
+      "kind": "arrange-act",
+      "description": "Coverage probe: cold-start create an organization.",
+      "steps": [
+        {
+          "intent": "Add a new organization named 'Globex Inc {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "An organization named 'Globex Inc {{run_id}}' now exists and its id is reported.",
+              "Exactly one organization is created, not several."
+            ],
+            "mechanism": [
+              "Uses a single create-organization call; the organization id comes from the create result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-deal-for-ambiguous-organization",
+      "kind": "arrange-act",
+      "description": "Disambiguation probe: seed two organizations with the same name, then ask to create a deal for that name and check the agent surfaces the ambiguity rather than guessing.",
+      "steps": [
+        {
+          "intent": "Add an organization named 'Initech {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "An organization named 'Initech {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-organization call; the organization id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add another organization also named 'Initech {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A second organization named 'Initech {{run_id}}' now exists with an id distinct from the first."
+            ],
+            "mechanism": [
+              "Uses a single create-organization call; does not reuse or overwrite the previously created organization."
+            ]
+          }
+        },
+        {
+          "intent": "Create a deal for the organization named 'Initech {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply recognizes that more than one organization matches the name given in the request and asks which one to use or presents the matching options, rather than silently picking one.",
+              "No deal is created against an arbitrarily-chosen organization while the match is ambiguous."
+            ],
+            "mechanism": [
+              "Searches for the organization by the name given in the request and detects multiple matches, rather than guessing an organization id.",
+              "Does not call a create-deal tool against a fabricated or arbitrarily-chosen organization id while the match is ambiguous."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-delete-contact-unsupported",
+      "kind": "arrange-act",
+      "description": "Graceful-refusal probe: create a person, then ask to delete it — the connector ships no contact-deletion capability, so the agent must decline cleanly.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Temp Person {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A person named 'Temp Person {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-person call; the person id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that contact from Pipedrive.",
+          "assertions": {
+            "outcome": [
+              "The reply states that deleting contacts is not supported and does not claim the contact was deleted.",
+              "The 'Temp Person {{run_id}}' person still exists."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool to delete or otherwise destroy the person, because this connector has no contact-deletion capability."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-deal-won-notification-unsupported",
+      "kind": "act-only",
+      "description": "Graceful-refusal probe: the connector performs only on-demand reads and writes, so a request to set up a notification/trigger must be declined cleanly.",
+      "steps": [
+        {
+          "intent": "Set up a notification so I am alerted whenever a deal is marked won.",
+          "assertions": {
+            "outcome": [
+              "The reply explains it cannot set up automatic notifications or triggers and does not claim a notification or automation was created."
+            ],
+            "mechanism": [
+              "Does not call any tool to create a webhook, trigger, or subscription, because this connector only performs on-demand reads and writes."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-merge-organizations-unsupported",
+      "kind": "act-only",
+      "description": "Graceful-refusal probe: the connector has no merge capability, so a request to merge duplicate organizations must be declined cleanly.",
+      "steps": [
+        {
+          "intent": "Merge the duplicate organizations named 'Acme Corp' into a single record.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that merging records is not supported and does not claim the organizations were merged."
+            ],
+            "mechanism": [
+              "Does not call any tool that claims to merge organizations, because this connector has no merge capability."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
