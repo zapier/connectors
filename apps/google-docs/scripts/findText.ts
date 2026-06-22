@@ -71,7 +71,7 @@ const definition = defineTool({
     url.searchParams.set("includeTabsContent", "true");
     url.searchParams.set(
       "fields",
-      "body/content,tabs/tabProperties,tabs/documentTab/body/content,tabs/childTabs",
+      "tabs/tabProperties,tabs/documentTab/body/content,tabs/childTabs",
     );
     const res = await googleDocsFetch(
       ctx.fetch,

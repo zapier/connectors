@@ -107,6 +107,21 @@ document with tabs you **must** set `includeTabsContent=true` or you get the
 > tab only."
 > — [Docs API · Work with tabs](https://developers.google.com/workspace/docs/api/how-tos/tabs)
 
+A `fields` read mask **cannot mix the legacy flat document fields with the tabs
+model**: once tabs exist, the legacy top-level fields (`body`, `inlineObjects`,
+`lists`, `headers`, `footers`, …) no longer represent the content of all tabs,
+so the content fields must be requested through `tabs/documentTab/…` instead of
+their flat equivalents. Combining the two in one mask (e.g. `body/content` _and_
+`tabs/documentTab/body/content`) is rejected. Mask only the tabs-model paths.
+
+> "With the additional structural hierarchy of tabs, legacy fields no longer
+> semantically represent the text content from all tabs in the document. … The
+> actual document content within the tab is exposed as `tab.documentTab`. … For
+> example, instead of using `document.body`, you should use
+> `document.tabs[indexOfTab].documentTab.body`."
+> — [Docs API · Work with tabs](https://developers.google.com/workspace/docs/api/how-tos/tabs)
+> · [Use field masks](https://developers.google.com/workspace/docs/api/how-tos/field-masks)
+
 `suggestionsViewMode` accepts `DEFAULT_FOR_CURRENT_ACCESS` (the default — shows
 suggestions inline per the caller's access), `SUGGESTIONS_INLINE`,
 `PREVIEW_SUGGESTIONS_ACCEPTED`, and `PREVIEW_WITHOUT_SUGGESTIONS`.
@@ -115,11 +130,15 @@ suggestions inline per the caller's access), `SUGGESTIONS_INLINE`,
 > `DEFAULT_FOR_CURRENT_ACCESS`."
 > — [Docs API · Work with suggestions](https://developers.google.com/workspace/docs/api/how-tos/suggestions)
 
-Embedded images are returned in the `inlineObjects` map, **keyed by object id** —
-that key is the `imageObjectId` you pass to `replaceImage`.
+Embedded images are returned in an `inlineObjects` map, **keyed by object id** —
+that key is the `imageObjectId` you pass to `replaceImage`. In the tabs model the
+map lives **per tab** under `tab.documentTab.inlineObjects` (not the legacy
+top-level `document.inlineObjects`), so it is masked via `tabs/documentTab/inlineObjects`
+and aggregated across tabs.
 
 > "`inlineObjects`: … The inline objects in the document, keyed by object ID."
 > — [Docs API · `Document`](https://developers.google.com/workspace/docs/api/reference/rest/v1/documents)
+> · [Work with tabs](https://developers.google.com/workspace/docs/api/how-tos/tabs)
 
 ## Tab targeting differs between positional and find-and-replace tools
 

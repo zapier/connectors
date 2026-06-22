@@ -37,7 +37,10 @@ export interface WireStructuralElement {
 }
 interface WireTab {
   tabProperties?: { tabId?: string; title?: string; index?: number };
-  documentTab?: { body?: { content?: WireStructuralElement[] } };
+  documentTab?: {
+    body?: { content?: WireStructuralElement[] };
+    inlineObjects?: Record<string, unknown>;
+  };
   childTabs?: WireTab[];
 }
 export interface WireDocument {
@@ -138,6 +141,27 @@ export function collectTabs(doc: WireDocument): WalkedTab[] {
       index: tab.tabProperties?.index ?? out.length,
       content: tab.documentTab?.body?.content ?? [],
     });
+    for (const child of tab.childTabs ?? []) visit(child);
+  };
+  for (const tab of doc.tabs) visit(tab);
+  return out;
+}
+
+/**
+ * Aggregate inlineObjects across all tabs. Used by getDocument so the caller
+ * gets a flat map of objectId → properties without needing to know which tab
+ * each object lives in. (The tabs model stores inlineObjects per documentTab;
+ * the legacy top-level field is blocked when tabs/* fields are also requested.)
+ */
+export function collectInlineObjects(
+  doc: WireDocument,
+): Record<string, unknown> {
+  if (!doc.tabs || doc.tabs.length === 0) {
+    return doc.inlineObjects ?? {};
+  }
+  const out: Record<string, unknown> = {};
+  const visit = (tab: WireTab): void => {
+    Object.assign(out, tab.documentTab?.inlineObjects ?? {});
     for (const child of tab.childTabs ?? []) visit(child);
   };
   for (const tab of doc.tabs) visit(tab);

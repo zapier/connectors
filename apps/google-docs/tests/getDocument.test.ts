@@ -23,15 +23,17 @@ const WIRE_DOCUMENT = {
   documentId: "doc-1",
   title: "My Doc",
   revisionId: "rev-99",
-  inlineObjects: {
-    "kix.img1": {
-      inlineObjectProperties: { embeddedObject: { title: "logo" } },
-    },
-  },
   tabs: [
     {
       tabProperties: { tabId: "t.0", title: "Main", index: 0 },
       documentTab: {
+        // Inline objects live per-tab in the tabs model (the legacy flat
+        // document.inlineObjects can't be masked alongside tabs/* — it 400s).
+        inlineObjects: {
+          "kix.img1": {
+            inlineObjectProperties: { embeddedObject: { title: "logo" } },
+          },
+        },
         body: {
           content: [
             {
@@ -156,9 +158,8 @@ describe("getDocument: run", () => {
     // Tabs summarized.
     expect(result.tabs).toEqual([{ tabId: "t.0", title: "Main", index: 0 }]);
 
-    // inlineObjects passed through; small doc not truncated.
+    // inlineObjects passed through.
     expect(result.inlineObjects).toHaveProperty("kix.img1");
-    expect(result.truncated).toBe(false);
   });
 
   it("filters content[] to elements overlapping the startIndex/endIndex range", async () => {
@@ -174,6 +175,54 @@ describe("getDocument: run", () => {
     // exclusive end) and the table (27-40) fall outside.
     expect(result.content).toHaveLength(1);
     expect(result.content[0]).toMatchObject({ startIndex: 14, endIndex: 27 });
+  });
+
+  it("returns every element with no client-side cap (factory: scope, don't cap)", async () => {
+    // ~90k chars of text — far past the removed 50k truncation budget — yet
+    // every element comes back. getDocument imposes no ceiling; large reads
+    // scope via startIndex/endIndex or go through exportDocument.
+    const bigDoc = {
+      documentId: "doc-big",
+      title: "Big",
+      revisionId: "rev-1",
+      tabs: [
+        {
+          tabProperties: { tabId: "t.0", title: "Main", index: 0 },
+          documentTab: {
+            body: {
+              content: Array.from({ length: 300 }, (_, i) => {
+                const text = `Paragraph ${i} `.padEnd(300, "x") + "\n";
+                const start = 1 + i * 301;
+                return {
+                  startIndex: start,
+                  endIndex: start + text.length,
+                  paragraph: {
+                    elements: [
+                      {
+                        startIndex: start,
+                        endIndex: start + text.length,
+                        textRun: { content: text },
+                      },
+                    ],
+                  },
+                };
+              }),
+            },
+          },
+        },
+      ],
+    };
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse(bigDoc)) as typeof globalThis.fetch;
+
+    const { data: result } = await getDocumentDefinition.run(
+      { documentId: "doc-big" },
+      { fetch: fakeFetch },
+    );
+
+    expect(result.content).toHaveLength(300);
+    expect(result).not.toHaveProperty("truncated");
+    expect(outputSchema.safeParse(result).success).toBe(true);
   });
 
   it("throws a plain Error on 404 (document not found)", async () => {

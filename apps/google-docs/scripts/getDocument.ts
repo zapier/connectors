@@ -3,8 +3,9 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { DOCS_BASE, GET_DOCUMENT_CHAR_BUDGET } from "../lib/constants.ts";
+import { DOCS_BASE } from "../lib/constants.ts";
 import {
+  collectInlineObjects,
   collectTabs,
   walkElements,
   type WireDocument,
@@ -101,11 +102,6 @@ const outputSchema = z.object({
     .describe(
       "Map of inline-object id to its properties. An image's object id (the imageObjectId for replaceImage) is the key here.",
     ),
-  truncated: z
-    .boolean()
-    .describe(
-      "True if content[] was capped at the size budget; re-read a range with startIndex/endIndex or use exportDocument(markdown).",
-    ),
 });
 
 const definition = defineTool({
@@ -130,7 +126,7 @@ const definition = defineTool({
     url.searchParams.set("includeTabsContent", "true");
     url.searchParams.set(
       "fields",
-      "documentId,title,revisionId,inlineObjects,body/content,tabs/tabProperties,tabs/documentTab/body/content,tabs/childTabs",
+      "documentId,title,revisionId,tabs/tabProperties,tabs/documentTab/inlineObjects,tabs/documentTab/body/content,tabs/childTabs",
     );
     if (input.suggestionsViewMode !== undefined) {
       url.searchParams.set("suggestionsViewMode", input.suggestionsViewMode);
@@ -158,28 +154,17 @@ const definition = defineTool({
       );
     }
 
-    // Truncate-and-point: accumulate elements until the flattened text reaches
-    // the budget, then flag truncated so the agent reads a range or exports.
-    const content: typeof elements = [];
-    let budget = 0;
-    let truncated = false;
-    for (const el of elements) {
-      if (budget >= GET_DOCUMENT_CHAR_BUDGET) {
-        truncated = true;
-        break;
-      }
-      content.push(el);
-      budget += el.text.length;
-    }
-
+    // No client-side cap: return every structural element the API returned
+    // (optionally scoped by the range read above). documents.get can't paginate,
+    // so large whole-document reads go through exportDocument (bounded by Drive's
+    // 10MB export cap); the agent trims a large result with filterOutputData.
     return {
       documentId: doc.documentId ?? input.documentId,
       title: doc.title ?? "",
       revisionId: doc.revisionId,
       tabs,
-      content,
-      inlineObjects: doc.inlineObjects ?? {},
-      truncated,
+      content: elements,
+      inlineObjects: collectInlineObjects(doc),
     };
   },
 });
