@@ -4,6 +4,7 @@ description: Agent-callable Notion tools for searching pages and databases, read
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
+  title: Notion
   source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
   zapier-app-key: NotionCLIAPI
   api-docs: https://developers.notion.com/reference/intro
