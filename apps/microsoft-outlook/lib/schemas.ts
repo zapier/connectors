@@ -200,7 +200,7 @@ export const eventSchema = z.object({
 
 // — Outgoing mail (input) —
 //
-// Input objects must reject unknown keys (the connectors-ref validator requires
+// Input objects must reject unknown keys (the connectors-dev validator requires
 // `z.strictObject` so a mistyped field fails loudly), so these input shapes are
 // declared strict and separately from the (unknown-key-stripping) output
 // recipient schemas above.
