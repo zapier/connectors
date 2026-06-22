@@ -63,9 +63,13 @@ interface DriveListResponse {
   nextPageToken?: string;
 }
 
-/** Escape single quotes for the Drive `q` string-literal grammar. */
+/**
+ * Escape a value for the Drive `q` string-literal grammar. Backslash must be
+ * escaped first (to `\\`), then the single quote (to `\'`) — doing it in the
+ * other order would double-escape the backslashes just added.
+ */
 function q(value: string): string {
-  return value.replace(/'/g, "\\'");
+  return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 const definition = defineTool({

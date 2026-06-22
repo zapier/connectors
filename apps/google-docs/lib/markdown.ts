@@ -27,7 +27,9 @@ interface InlineSpan {
 
 const LINK_RE = /^\[([^\]]+)\]\(([^)]+)\)/;
 const BOLD_RE = /^\*\*([^*]+)\*\*/;
-const ITALIC_RE = /^(?:\*([^*]+)\*|_([^_]+)_)/;
+const ITALIC_STAR_RE = /^\*([^*]+)\*/;
+const ITALIC_UNDERSCORE_RE = /^_([^_]+)_/;
+const ALNUM_RE = /[A-Za-z0-9]/;
 
 /** Parse a line's inline markup into clean text + styled spans (offsets into clean text). */
 function parseInline(src: string): { clean: string; spans: InlineSpan[] } {
@@ -56,13 +58,27 @@ function parseInline(src: string): { clean: string; spans: InlineSpan[] } {
       i += bold[0].length;
       continue;
     }
-    const italic = ITALIC_RE.exec(rest);
-    if (italic) {
+    const starItalic = ITALIC_STAR_RE.exec(rest);
+    if (starItalic) {
       const start = clean.length;
-      const inner = italic[1] ?? italic[2];
-      clean += inner;
+      clean += starItalic[1];
       spans.push({ start, end: clean.length, italic: true });
-      i += italic[0].length;
+      i += starItalic[0].length;
+      continue;
+    }
+    // `_` opens/closes emphasis only at word boundaries (CommonMark's intraword
+    // rule), so identifiers like snake_case_name keep their underscores instead
+    // of being italicized. (`*` emphasis is legitimately intraword, left as-is.)
+    const underscoreItalic = ITALIC_UNDERSCORE_RE.exec(rest);
+    if (
+      underscoreItalic &&
+      !ALNUM_RE.test(src[i - 1] ?? "") &&
+      !ALNUM_RE.test(src[i + underscoreItalic[0].length] ?? "")
+    ) {
+      const start = clean.length;
+      clean += underscoreItalic[1];
+      spans.push({ start, end: clean.length, italic: true });
+      i += underscoreItalic[0].length;
       continue;
     }
     clean += src[i];
