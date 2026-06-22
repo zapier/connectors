@@ -18,7 +18,7 @@ Tools for working with Google Docs against the [Google Docs API v1](https://deve
 - An agent needs to **create** a document — blank, from initial text or Markdown, or by filling a `{{placeholder}}` template, optionally in a specific Drive folder.
 - An agent needs to **read** a document — its structured content + edit indices (`getDocument`), clean text/Markdown (`exportDocument`), or to find documents by name (`findDocuments`) and locate text (`findText`).
 - An agent needs to **edit text** — append, insert at a position, find-and-replace, or delete a range.
-- An agent needs to **format or restyle** — apply character formatting, insert/replace inline images, or set page size / margins / background.
+- An agent needs to **format or restyle** — apply character formatting; make bulleted or numbered lists (`createList`); set paragraph style — headings, alignment, line spacing, indentation (`formatParagraph`); insert/replace inline images; or set page size / margins / background.
 
 ## Scripts
 
@@ -37,6 +37,9 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/findText.ts`](scripts/findText.ts)                                     | `findText`                   | `google-docs` | Locate occurrences of a phrase and return their index ranges.                 |
 | [`scripts/deleteContentRange.ts`](scripts/deleteContentRange.ts)                 | `deleteContentRange`         | `google-docs` | Delete the content in an index range.                                         |
 | [`scripts/formatText.ts`](scripts/formatText.ts)                                 | `formatText`                 | `google-docs` | Apply character formatting to an index range.                                 |
+| [`scripts/formatParagraph.ts`](scripts/formatParagraph.ts)                       | `formatParagraph`            | `google-docs` | Set paragraph style (heading, alignment, spacing, indentation) on a range.    |
+| [`scripts/createList.ts`](scripts/createList.ts)                                 | `createList`                 | `google-docs` | Make a range a bulleted or numbered list, or convert between the two.         |
+| [`scripts/removeListFormatting.ts`](scripts/removeListFormatting.ts)             | `removeListFormatting`       | `google-docs` | Remove bullets/numbering from a range, leaving the text.                      |
 | [`scripts/insertImage.ts`](scripts/insertImage.ts)                               | `insertImage`                | `google-docs` | Insert an inline image from a public URL.                                     |
 | [`scripts/replaceImage.ts`](scripts/replaceImage.ts)                             | `replaceImage`               | `google-docs` | Replace an existing inline image with a new one.                              |
 | [`scripts/updateDocumentStyle.ts`](scripts/updateDocumentStyle.ts)               | `updateDocumentStyle`        | `google-docs` | Set page size, margins, or background color.                                  |
@@ -68,7 +71,7 @@ This also applies to index positions: indices from `getDocument` / `findText` go
 
 **Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
 
-- **Author tables, lists (outside Markdown), headers, footers, or footnotes.** Reads include them, but there is no tool to create them. Don't simulate a table by inserting tab/newline-delimited text.
+- **Author tables, headers, footers, or footnotes.** Reads include them, but there is no tool to create them yet. Don't simulate a table by inserting tab/newline-delimited text. (Bulleted/numbered lists and paragraph styling _are_ supported — `createList`, `removeListFormatting`, `formatParagraph`.)
 - **Upload a binary file and convert it to a Doc**, or round-trip pasted HTML. Use a Drive connector for binary uploads; compose content natively here.
 - **Manage comments or accept/reject suggestions.** `getDocument` can read suggested edits via `suggestionsViewMode`, but there is no write tool for comments or suggestions.
 - **Export to PDF, DOCX, or HTML as inline content.** `exportDocument` returns plain text or Markdown only; PDF, DOCX, and HTML need a Drive download link (Drive only offers HTML as a zipped Web Page bundle, not inline `text/html`).

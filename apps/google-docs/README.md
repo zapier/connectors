@@ -38,6 +38,9 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | `findText`                   | Locate occurrences of a phrase and return their index ranges.                     |
 | `deleteContentRange`         | Delete the content in an index range.                                             |
 | `formatText`                 | Apply character formatting to an index range.                                     |
+| `formatParagraph`            | Set paragraph style (heading, alignment, spacing, indentation) on a range.        |
+| `createList`                 | Make a range a bulleted or numbered list, or convert between the two.             |
+| `removeListFormatting`       | Remove bullets/numbering from a range, leaving the text.                          |
 | `insertImage`                | Insert an inline image from a public URL.                                         |
 | `replaceImage`               | Replace an existing inline image with a new one.                                  |
 | `updateDocumentStyle`        | Set page size, margins, or background color.                                      |

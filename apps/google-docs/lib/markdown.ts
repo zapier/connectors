@@ -15,6 +15,7 @@
 // literal text, never silently dropped.
 
 import type { BatchUpdateRequest } from "./batchUpdate.ts";
+import { bulletPresetFor } from "./paragraph.ts";
 import { locationOf, rangeOf } from "./range.ts";
 
 interface InlineSpan {
@@ -173,10 +174,9 @@ export function renderMarkdownRequests(
     requests.push({
       createParagraphBullets: {
         range: rangeOf(anchorIndex + group.from, anchorIndex + group.to, tabId),
-        bulletPreset:
-          group.kind === "numbered"
-            ? "NUMBERED_DECIMAL_ALPHA_ROMAN"
-            : "BULLET_DISC_CIRCLE_SQUARE",
+        bulletPreset: bulletPresetFor(
+          group.kind === "numbered" ? "numbered" : "bullet",
+        ),
       },
     });
     group = null;
