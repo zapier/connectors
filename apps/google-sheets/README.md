@@ -1,5 +1,7 @@
 # @zapier/google-sheets-connector
 
+_Independent, unofficial connector for Google Sheets. Not affiliated with, endorsed by, or sponsored by Google Sheets. "Google Sheets" is a trademark of its owner, used only to identify the service this connector works with._
+
 Agent-callable Google Sheets tools that operate on the data _inside_ a spreadsheet. It wraps the [Google Sheets API v4](https://developers.google.com/workspace/sheets/api/reference/rest) (with spreadsheet discovery via the [Google Drive API](https://developers.google.com/drive/api/reference/rest/v3/files/list)) and exposes two surfaces: a **record surface** — rows as objects keyed by their column headers, for "log this row", "update the status", "look up the customer" jobs — and a **cell surface** — raw A1-addressed values for formulas, precise numeric/text control, and arbitrary ranges. It also manages spreadsheet/worksheet structure and presentation (formatting, sorting, validation). Auth is Google OAuth 2.0 — recommended via a Zapier-managed connection (which also handles token refresh).
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
@@ -127,3 +129,17 @@ Swap `GOOGLE_SHEETS_ZAPIER_CONNECTION_ID` for `GOOGLE_SHEETS_ACCESS_TOKEN` if yo
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Google Sheets API reference](https://developers.google.com/workspace/sheets/api/reference/rest)
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-sheets)
+
+## Legal
+
+**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Google Sheets's API, services, data, schemas, documentation, or other materials, which remain the property of Google Sheets. Your use of Google Sheets's API is governed by your own agreement with Google Sheets.
+
+**Trademarks and affiliation.** Google Sheets and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Google Sheets.
+
+**Your responsibility.** This connector calls Google Sheets's API using credentials you supply. You are responsible for holding a valid Google Sheets account, for complying with Google Sheets's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
+
+**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Google Sheets product. Zapier is not responsible for changes Google Sheets makes to its API or for any consequence of your use of Google Sheets's API. See the repository LICENSE for the full disclaimer.
+
+**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
+
+Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
