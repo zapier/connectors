@@ -30,7 +30,7 @@ const definition = defineTool({
   name: "createEvent",
   title: "Create Event",
   description:
-    "Create a calendar event. Targets the default calendar unless calendarId is set. start and end are { dateTime, timeZone } objects where dateTime is a naive local timestamp (no trailing Z or offset). For an all-day event set isAllDay with start/end at midnight and end the day AFTER the last day. Set isOnlineMeeting to add a Teams join link (requires a Microsoft 365 account).",
+    "Create a calendar event. Targets the default calendar unless calendarId is set. start and end are { dateTime, timeZone } objects where dateTime is a naive local timestamp (no trailing Z or offset). For an all-day event set isAllDay with start/end at midnight in the same time zone (end is midnight of the day AFTER the last day). Set isOnlineMeeting to add a Teams online meeting.",
   inputSchema,
   outputSchema,
   annotations: {

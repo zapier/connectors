@@ -35,8 +35,8 @@ export function calendarRoot(mailbox?: string, calendarId?: string): string {
 /**
  * Build the OData query string for a list/search call from the connector's
  * agent-friendly param names. `search` is wrapped in the quotes Graph's KQL
- * `$search` requires; `$search` cannot be combined with `$orderby` (Graph
- * rejects it), so callers pass one or the other.
+ * `$search` requires; message `$search` results come back ordered by the
+ * date/time sent, so callers pass `search` or `orderBy`, not both.
  */
 export function buildListQuery(params: {
   limit?: number;
@@ -106,7 +106,7 @@ export async function graphError(
 
   if (res.status === 404 || code === "ErrorItemNotFound") {
     return new Error(
-      `${prefix}: ${detail}. The id may be stale — message and event ids change when an item moves between folders. Re-fetch the id from the relevant list/get tool (or relocate the message by internetMessageId) and retry.`,
+      `${prefix}: ${detail}. The id may be stale — message and event ids change when an item moves between folders. Re-fetch the id from the relevant list/get tool and retry.`,
     );
   }
   if (code === "ErrorInvalidIdMalformed") {

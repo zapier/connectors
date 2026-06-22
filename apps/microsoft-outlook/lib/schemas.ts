@@ -118,9 +118,7 @@ export const messageSchema = z.object({
   internetMessageId: z
     .string()
     .optional()
-    .describe(
-      "RFC 2822 id — stable across folder moves; use it to relocate a message.",
-    ),
+    .describe("The RFC 2822 Internet message id."),
   conversationId: z.string().optional(),
   webLink: z.string().optional(),
 });
@@ -221,7 +219,7 @@ export const dateTimeTimeZoneInputSchema = z.strictObject({
   dateTime: z
     .string()
     .describe(
-      "Naive local date-time, no trailing Z or offset, e.g. 2026-07-01T15:30:00. A Z/offset makes Graph ignore timeZone.",
+      "Naive local date-time, no trailing Z or offset, e.g. 2026-07-01T15:30:00. The zone goes in timeZone, not here.",
     ),
   timeZone: z
     .string()
@@ -316,7 +314,7 @@ export const outgoingEventSchema = z.strictObject({
   isAllDay: z
     .boolean()
     .describe(
-      "All-day event. Requires start/end at midnight with end the day AFTER the last day.",
+      "All-day event. Set start and end to midnight in the same time zone; end is midnight of the day AFTER the last day.",
     )
     .optional(),
   location: z
@@ -329,7 +327,9 @@ export const outgoingEventSchema = z.strictObject({
     .optional(),
   isOnlineMeeting: z
     .boolean()
-    .describe("Add a Teams online-meeting link (requires an M365 account).")
+    .describe(
+      "Add a Teams online meeting (Microsoft Graph populates the join URL).",
+    )
     .optional(),
   showAs: z
     .enum(["free", "tentative", "busy", "oof", "workingElsewhere", "unknown"])

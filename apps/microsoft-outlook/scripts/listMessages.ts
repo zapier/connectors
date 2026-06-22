@@ -23,7 +23,7 @@ const inputSchema = z
     search: z
       .string()
       .describe(
-        'Full-text KQL search over from/subject/body, e.g. "subject:invoice from:acme". Sorted by relevance/date; cannot be combined with filter ordering. Omit to list newest-first.',
+        'Full-text KQL search over the default from/subject/body properties, e.g. "subject:invoice from:acme". Results are sorted by the date and time sent. Omit to list newest-first.',
       )
       .optional(),
     filter: z

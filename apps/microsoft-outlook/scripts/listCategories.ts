@@ -24,7 +24,7 @@ const definition = defineTool({
   name: "listCategories",
   title: "List Categories",
   description:
-    "List the signed-in user's category names and colors. A discovery tool for the valid category names passed to updateMessage or createEvent — assigning an unknown name still works but applies without a color. Only your own categories (no mailbox option).",
+    "List the signed-in user's category names and colors. A discovery tool for the valid category names passed to updateMessage or createEvent — a category's color comes from the user's master list (you apply a category by its displayName). Only your own categories (no mailbox option).",
   inputSchema,
   outputSchema,
   annotations: {

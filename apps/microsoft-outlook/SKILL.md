@@ -154,4 +154,6 @@ When no shipped script matches, read this `SKILL.md`, the [`references/`](refere
 
 ## API quirks worth knowing
 
-<!-- references-table: filled by generate-references -->
+| Reference                                                                                    | Load it when                                                                                                                                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`references/microsoft-outlook-api-gotchas.md`](references/microsoft-outlook-api-gotchas.md) | A call errors and you need recovery guidance (401/403/404/413/429), an id stops resolving after a move, or you're unsure how paging, `search` vs `filter`, attachments (3 MB), all-day/online events, date-time + time zones, the 3-email contact cap, or categories behave. |
