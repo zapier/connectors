@@ -71,7 +71,7 @@ This also applies to index positions: indices from `getDocument` / `findText` go
 - **Author tables, lists (outside Markdown), headers, footers, or footnotes.** Reads include them, but there is no tool to create them. Don't simulate a table by inserting tab/newline-delimited text.
 - **Upload a binary file and convert it to a Doc**, or round-trip pasted HTML. Use a Drive connector for binary uploads; compose content natively here.
 - **Manage comments or accept/reject suggestions.** `getDocument` can read suggested edits via `suggestionsViewMode`, but there is no write tool for comments or suggestions.
-- **Export to PDF/DOCX as inline content.** `exportDocument` returns text/Markdown/HTML only; binary formats need a Drive download link.
+- **Export to PDF, DOCX, or HTML as inline content.** `exportDocument` returns plain text or Markdown only; PDF, DOCX, and HTML need a Drive download link (Drive only offers HTML as a zipped Web Page bundle, not inline `text/html`).
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
 

@@ -19,7 +19,11 @@ const MIME_FOR_FORMAT = {
 
 const inputSchema = z
   .object({
-    documentId: z.string().describe("Document id to export."),
+    documentId: z
+      .string()
+      .describe(
+        "Document id to export (the token in the doc URL). Resolve a title to an id with findDocuments.",
+      ),
     format: z
       .enum(["text", "markdown"])
       .describe(
