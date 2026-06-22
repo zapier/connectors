@@ -12,6 +12,8 @@ metadata:
 
 # Telegram
 
+_Independent, unofficial connector for Telegram. Not affiliated with, endorsed by, or sponsored by Telegram. "Telegram" is a trademark of its owner, used only to identify the service this connector works with._
+
 Tools for a Telegram bot, against the [Telegram Bot API](https://core.telegram.org/bots/api) (`https://api.telegram.org/bot<token>/<method>`). Send text, media, locations, contacts, and polls; edit, delete, forward, copy, and pin messages; and resolve the chats, members, and files a bot interacts with. Every tool acts **as the bot** — the bot must be a member of any chat it messages, and a user must message the bot first before the bot can DM them.
 
 ## When to use this connector

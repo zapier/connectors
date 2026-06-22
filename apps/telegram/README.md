@@ -1,5 +1,7 @@
 # @zapier/telegram-connector
 
+_Independent, unofficial connector for Telegram. Not affiliated with, endorsed by, or sponsored by Telegram. "Telegram" is a trademark of its owner, used only to identify the service this connector works with._
+
 Agent-callable tools for a **Telegram bot**, wrapping the [Telegram Bot API](https://core.telegram.org/bots/api). Send messages, media (photo/document/video/audio), locations, contacts, and polls; edit, delete, forward, copy, and pin messages; and resolve the chats, members, and files a bot interacts with — 21 tools in all. Every tool acts as the bot (the bot must be a member of any chat it messages), and auth is a single bot token from [@BotFather](https://core.telegram.org/bots/features#botfather), supplied via the environment (direct) or a Zapier-managed connection (recommended). Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
@@ -98,3 +100,17 @@ Swap `TELEGRAM_ZAPIER_CONNECTION_ID` for `TELEGRAM_BOT_TOKEN` if you don't have 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Telegram Bot API docs](https://core.telegram.org/bots/api)
 - [Source](https://github.com/zapier/connectors/tree/main/apps/telegram)
+
+## Legal
+
+**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Telegram's API, services, data, schemas, documentation, or other materials, which remain the property of Telegram. Your use of Telegram's API is governed by your own agreement with Telegram.
+
+**Trademarks and affiliation.** Telegram and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Telegram.
+
+**Your responsibility.** This connector calls Telegram's API using credentials you supply. You are responsible for holding a valid Telegram account, for complying with Telegram's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
+
+**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Telegram product. Zapier is not responsible for changes Telegram makes to its API or for any consequence of your use of Telegram's API. See the repository LICENSE for the full disclaimer.
+
+**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
+
+Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
