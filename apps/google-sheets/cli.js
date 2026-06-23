@@ -17,9 +17,8 @@
  *   Tries `npx tsup`, falls back to `bunx tsup`, exits 0 regardless so that
  *   `npm install` / `pnpm install` never fails in restricted environments.
  *
- * This file is byte-identical across all connectors and is managed by
- * connector-assets/. Do not edit per-connector copies directly; edit the
- * canonical source in connector-assets/ and run `pnpm run ensure-connector-assets`.
+ * Managed by @zapier/connectors-dev — do not edit; synced byte-for-byte
+ * across every connector.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
