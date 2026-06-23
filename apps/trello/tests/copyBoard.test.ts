@@ -40,8 +40,8 @@ describe("copyBoard: run", () => {
 
     const call = calls[0]!;
     expect(call.init?.method ?? "GET").toBe("POST");
-    expect(call.url).toContain("/boards/");
-    expect(call.url).toContain("/copy");
+    expect(call.url).toContain("/boards");
+    expect(call.url).not.toContain("/copy");
     expect(copyBoard.outputSchema.safeParse(result).success).toBe(true);
   });
 });

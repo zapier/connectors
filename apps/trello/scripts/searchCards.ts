@@ -3,6 +3,32 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
+import { TRELLO_BASE, trelloError } from "../lib/trello.ts";
+
+function buildSearchQuery(input: {
+  query?: string;
+  keyword?: string;
+  listName?: string;
+  member?: string;
+  label?: string;
+  dueFilter?: string;
+}): string {
+  if (input.query !== undefined) return input.query;
+  const parts: string[] = [];
+  if (input.keyword !== undefined) parts.push(input.keyword);
+  if (input.listName !== undefined) parts.push(`list:${input.listName}`);
+  if (input.member !== undefined) {
+    parts.push(
+      input.member.startsWith("@") ? input.member : `@${input.member}`,
+    );
+  }
+  if (input.label !== undefined) parts.push(`label:${input.label}`);
+  if (input.dueFilter !== undefined) parts.push(`due:${input.dueFilter}`);
+  if (parts.length === 0) {
+    throw new Error("Trello searchCards: provide query or keyword.");
+  }
+  return parts.join(" ");
+}
 
 const inputSchema = z
   .object({
@@ -100,43 +126,25 @@ const definition = defineTool({
   },
   connection: "trello",
   run: async (input, ctx) => {
-    const url = new URL(`https://api.trello.com/1/search`);
-    if (input.query !== undefined) {
-      url.searchParams.set("query", String(input.query));
-    }
-    if (input.keyword !== undefined) {
-      url.searchParams.set("keyword", String(input.keyword));
-    }
+    const url = new URL(`${TRELLO_BASE}/search`);
+    url.searchParams.set("query", buildSearchQuery(input));
+    url.searchParams.set("modelTypes", "cards");
     if (input.boardId !== undefined) {
-      url.searchParams.set("boardId", String(input.boardId));
-    }
-    if (input.listName !== undefined) {
-      url.searchParams.set("listName", String(input.listName));
-    }
-    if (input.member !== undefined) {
-      url.searchParams.set("member", String(input.member));
-    }
-    if (input.label !== undefined) {
-      url.searchParams.set("label", String(input.label));
-    }
-    if (input.dueFilter !== undefined) {
-      url.searchParams.set("dueFilter", String(input.dueFilter));
+      url.searchParams.set("idBoards", input.boardId);
     }
     if (input.organizationId !== undefined) {
-      url.searchParams.set("organizationId", String(input.organizationId));
+      url.searchParams.set("idOrganizations", input.organizationId);
     }
-    url.searchParams.set("cardsLimit", String(input.cardsLimit ?? 20));
+    const limit = input.cardsLimit ?? 20;
+    url.searchParams.set("cards_limit", String(limit));
     if (input.partial !== undefined) {
       url.searchParams.set("partial", String(input.partial));
     }
-    const res = await ctx.fetch(url.toString(), {
-      method: "GET",
-    });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Trello searchCards ${res.status}: ${errBody}`);
-    }
-    return res.json();
+    const res = await ctx.fetch(url.toString(), { method: "GET" });
+    if (!res.ok) await trelloError("searchCards", res);
+    const data = (await res.json()) as { cards?: unknown[] };
+    const items = Array.isArray(data.cards) ? data.cards : [];
+    return { items, has_more: items.length >= limit };
   },
 });
 

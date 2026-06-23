@@ -16,7 +16,7 @@ function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
 }
 
 const CANNED = {
-  items: [
+  cards: [
     {
       id: "5a8630538097a5ac7ab30633",
       name: "Card",
@@ -41,11 +41,12 @@ describe("searchCards: run", () => {
       return jsonResponse(CANNED);
     }) as typeof globalThis.fetch;
 
-    const input = searchCards.inputSchema.parse({});
+    const input = searchCards.inputSchema.parse({ keyword: "Card" });
     const { data: result } = await searchCards.run(input, { fetch: fakeFetch });
 
     expect(calls[0]!.init?.method ?? "GET").toBe("GET");
     expect(calls[0]!.url).toContain("/search");
+    expect(calls[0]!.url).toContain("query=Card");
     expect(searchCards.outputSchema.safeParse(result).success).toBe(true);
   });
 });

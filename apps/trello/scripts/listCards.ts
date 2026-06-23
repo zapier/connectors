@@ -117,7 +117,10 @@ const definition = defineTool({
       const errBody = await res.text();
       throw new Error(`Trello listCards ${res.status}: ${errBody}`);
     }
-    return res.json();
+    const limit = input.limit ?? 20;
+    const cards = (await res.json()) as unknown[];
+    const items = Array.isArray(cards) ? cards : [];
+    return { items, has_more: items.length >= limit };
   },
 });
 

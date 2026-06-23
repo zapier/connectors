@@ -7,7 +7,10 @@ import { connectionResolvers } from "../connections.ts";
 const inputSchema = z
   .object({
     id: z.string().describe("24-char hex board id."),
-    closed: z.boolean().describe("Set true to archive the board."),
+    closed: z
+      .boolean()
+      .default(true)
+      .describe("Set true to archive the board."),
   })
   .strict();
 const outputSchema = z.object({

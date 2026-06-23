@@ -45,6 +45,7 @@ describe("addCardMember: run", () => {
       fetch: fakeFetch,
     });
 
+    expect(calls).toHaveLength(2);
     const call = calls[0]!;
     expect(call.init?.method ?? "GET").toBe("POST");
     expect(call.url).toContain("/cards/");

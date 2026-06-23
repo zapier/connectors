@@ -43,7 +43,7 @@ const definition = defineTool({
   run: async (input, ctx) => {
     const url = new URL(`${TRELLO_BASE}/search/members/`);
     url.searchParams.set("query", input.query);
-    url.searchParams.set("limit", "50");
+    url.searchParams.set("limit", "20");
     if (input.organizationId !== undefined) {
       url.searchParams.set("idOrganization", input.organizationId);
     }

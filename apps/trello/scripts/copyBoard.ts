@@ -3,6 +3,12 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
+import {
+  TRELLO_BASE,
+  trelloError,
+  trelloFormBody,
+  trelloFormHeaders,
+} from "../lib/trello.ts";
 
 const inputSchema = z
   .object({
@@ -50,24 +56,22 @@ const definition = defineTool({
   },
   connection: "trello",
   run: async (input, ctx) => {
-    const url = `https://api.trello.com/1/boards/${encodeURIComponent(input.id)}/copy`;
-    const body: Record<string, unknown> = {};
-    if (input.name !== undefined) body["name"] = input.name;
-    if (input.idOrganization !== undefined)
-      body["idOrganization"] = input.idOrganization;
-    if (input.keepFromSource !== undefined)
-      body["keepFromSource"] = input.keepFromSource;
-    if (input.idBoardSource !== undefined)
-      body["idBoardSource"] = input.idBoardSource;
-    const res = await ctx.fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const errBody = await res.text();
-      throw new Error(`Trello copyBoard ${res.status}: ${errBody}`);
+    const fields: Record<string, string | number | boolean> = {
+      idBoardSource: input.idBoardSource ?? input.id,
+    };
+    if (input.name !== undefined) fields.name = input.name;
+    if (input.idOrganization !== undefined) {
+      fields.idOrganization = input.idOrganization;
     }
+    if (input.keepFromSource !== undefined) {
+      fields.keepFromSource = input.keepFromSource;
+    }
+    const res = await ctx.fetch(`${TRELLO_BASE}/boards`, {
+      method: "POST",
+      headers: trelloFormHeaders,
+      body: trelloFormBody(fields),
+    });
+    if (!res.ok) await trelloError("copyBoard", res);
     return res.json();
   },
 });

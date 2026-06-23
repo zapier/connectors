@@ -77,7 +77,14 @@ const definition = defineTool({
       const errBody = await res.text();
       throw new Error(`Trello addCardLabel ${res.status}: ${errBody}`);
     }
-    return res.json();
+    const cardRes = await ctx.fetch(
+      `https://api.trello.com/1/cards/${encodeURIComponent(input.id)}`,
+    );
+    if (!cardRes.ok) {
+      const errBody = await cardRes.text();
+      throw new Error(`Trello addCardLabel ${cardRes.status}: ${errBody}`);
+    }
+    return cardRes.json();
   },
 });
 
