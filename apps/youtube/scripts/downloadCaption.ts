@@ -37,7 +37,7 @@ const definition = defineTool({
   name: "downloadCaption",
   title: "Download Caption",
   description:
-    "Download a caption track's text in a chosen format (srt, vtt, sbv, scc, or ttml). Resolve the track id via listCaptions. Only the video owner can download a track; auto-generated (ASR) tracks may be download-restricted. Requires the youtube.force-ssl scope.",
+    "Download a caption track's text in a chosen format (srt, vtt, sbv, scc, or ttml). Resolve the track id via listCaptions. Requires permission to edit the video (the owner or an editor) and the youtube.force-ssl scope.",
   inputSchema,
   outputSchema,
   annotations: {

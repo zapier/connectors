@@ -456,7 +456,7 @@ async function readBody(res: Response): Promise<unknown> {
  * Data API response, mapping Google's `reason` strings to the recovery the agent
  * should take: reconnect (bad/expired token), reconnect-with-scope (the connection
  * lacks the scope the tool needs, e.g. youtube.force-ssl for comment/caption writes),
- * wait-for-quota-reset (the daily quota is exhausted — resets midnight Pacific, no
+ * wait-for-quota-reset (the daily quota is exhausted — resets once per day, no
  * Retry-After is sent), back-off (short-term rate limit), or ask-for-access (you do
  * not own the resource). On success the response is returned unchanged so the caller
  * can read the body. Pass the tool name so the message names the failing operation.
@@ -476,7 +476,7 @@ export async function throwForYouTube(
   if (res.status === 401) {
     message = `${prefix}: invalid or expired credentials. Reconnect YouTube.`;
   } else if (res.status === 403 && reason && QUOTA_REASONS.has(reason)) {
-    message = `${prefix}: ${reason} — the daily YouTube API quota is exhausted (no Retry-After is sent; quota resets at midnight Pacific). Do not retry today; stop and report the quota limit.`;
+    message = `${prefix}: ${reason} — the daily YouTube API quota is exhausted (no Retry-After is sent; the quota resets once per day). Do not retry today; stop and report the quota limit.`;
   } else if (
     res.status === 429 ||
     (res.status === 403 && reason && RATE_LIMIT_REASONS.has(reason))

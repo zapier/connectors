@@ -34,7 +34,7 @@ const definition = defineTool({
   name: "setVideoThumbnail",
   title: "Set Video Thumbnail",
   description:
-    "Set or replace the custom thumbnail on a video from an image URL (JPEG or PNG, <= 2 MB). Requires a verified YouTube account — an unverified account gets a 403. Requires the youtube.upload scope and ownership of the video.",
+    "Set or replace the custom thumbnail on a video from an image URL (JPEG or PNG, <= 2 MB). The account must have permission to upload custom thumbnails (the API returns a 403 'doesn't have permissions' error otherwise — in practice this requires a verified account). Requires the youtube.upload scope and ownership of the video.",
   inputSchema,
   outputSchema,
   annotations: {

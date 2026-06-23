@@ -9,13 +9,8 @@ const inputSchema = z
   .object({
     snippet: z
       .object({
-        title: z
-          .string()
-          .describe("Playlist title (required). Max 150 characters."),
-        description: z
-          .string()
-          .describe("Playlist description. Max 5000 characters.")
-          .optional(),
+        title: z.string().describe("Playlist title (required)."),
+        description: z.string().describe("Playlist description.").optional(),
         defaultLanguage: z
           .string()
           .describe(

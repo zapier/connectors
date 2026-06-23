@@ -18,10 +18,7 @@ const inputSchema = z
       .string()
       .describe("The id of the video to update (you must own it)."),
     title: z.string().describe("New title. Max 100 characters.").optional(),
-    description: z
-      .string()
-      .describe("New description. Max 5000 characters.")
-      .optional(),
+    description: z.string().describe("New description.").optional(),
     tags: z
       .array(z.string())
       .describe("New tag list (replaces the existing tags).")

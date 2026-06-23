@@ -23,12 +23,9 @@ const inputSchema = z
     title: z
       .string()
       .describe(
-        "Video title (max 100 chars; < and > are rejected by the API).",
+        "Video title (max 100 characters; cannot include invalid characters).",
       ),
-    description: z
-      .string()
-      .describe("Video description (max 5000 chars).")
-      .optional(),
+    description: z.string().describe("Video description.").optional(),
     privacy_status: z
       .enum(["private", "public", "unlisted"])
       .describe("Video visibility. Defaults to private.")
@@ -73,7 +70,7 @@ const definition = defineTool({
   name: "uploadVideo",
   title: "Upload Video",
   description:
-    "Upload a new video file (fetched from a URL) to the authenticated user's channel, with metadata (title, description, privacy, tags, category, scheduled publish, optional thumbnail). The most expensive call in the catalog (1600 quota units). Requires the youtube.upload scope.",
+    "Upload a new video file (fetched from a URL) to the authenticated user's channel, with metadata (title, description, privacy, tags, category, scheduled publish, optional thumbnail). Charged to a separate Video Uploads quota bucket (~100 uploads/day), not the main 10,000-unit pool. Requires the youtube.upload scope.",
   inputSchema,
   outputSchema,
   annotations: {
