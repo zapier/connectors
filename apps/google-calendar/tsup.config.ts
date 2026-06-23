@@ -12,9 +12,8 @@
  * causing every script to execute when the dispatch CLI starts instead of
  * routing via runDispatchCli.
  *
- * This file is byte-identical across all connectors. Edit the canonical source
- * in the assets/ directory of @zapier/connectors-dev and run
- * `connectors-dev ensure-assets` to sync all copies.
+ * Managed by @zapier/connectors-dev — do not edit; synced byte-for-byte
+ * across every connector.
  */
 import { defineConfig } from "tsup";
 
