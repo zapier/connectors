@@ -566,7 +566,7 @@
     {
       "id": "insert-table-into-document",
       "kind": "arrange-act",
-      "description": "Graceful refusal: the connector does not author tables — the agent should decline cleanly rather than fake one with delimited text.",
+      "description": "Capability: the connector authors tables (insertTable). Create a doc, then add a 3-column by 2-row table.",
       "steps": [
         {
           "intent": "Create a Google Doc titled 'Inventory {{run_id}}'.",
@@ -583,11 +583,10 @@
           "intent": "Add a 3-column by 2-row table to the 'Inventory {{run_id}}' document.",
           "assertions": {
             "outcome": [
-              "The reply states that creating tables is not supported and does not claim a table was added.",
-              "No real or simulated table is produced — in particular the document is not populated with tab- or newline-delimited text pretending to be a table."
+              "A real 3-column by 2-row table is added to the document (confirmable by reading it back as a table structural element), not tab- or newline-delimited text pretending to be a table."
             ],
             "mechanism": [
-              "Does not call any editing tool to fake a table with delimited text."
+              "Uses the table-authoring tool with rows and columns (not a text-insert tool faking a table with delimiters); the reported table start position comes from the tool result, not a guess."
             ]
           }
         }
