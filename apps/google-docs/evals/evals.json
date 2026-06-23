@@ -1,6 +1,6 @@
 {
   "skill_name": "google-docs",
-  "version": "da3651f",
+  "version": "25013ee",
   "description": "Intent-anchored eval scenarios for the google-docs connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Because the connector can create every document it needs in-run, the corpus is all arrange-act (no fixtures): each scenario self-provisions its world, exercises the capability, and where relevant cleans up. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "evals": [
     {
@@ -647,6 +647,287 @@
             ],
             "mechanism": [
               "Does not invent a PDF or a download URL; if it exports anything it uses the supported plain-text or Markdown format."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "format-paragraphs-as-bulleted-list",
+      "kind": "arrange-act",
+      "description": "Lists: create a doc with plain lines, then turn them into a bulleted list.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Grocery List {{run_id}}' with the body: 'Apples\nBread\nMilk'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Grocery List {{run_id}}' exists whose body contains the lines Apples, Bread, and Milk."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Grocery List {{run_id}}' document, turn the three lines (Apples, Bread, Milk) into a bulleted list.",
+          "assertions": {
+            "outcome": [
+              "The three lines are now a bulleted list — each of Apples, Bread, and Milk is its own bullet — and their text is unchanged."
+            ],
+            "mechanism": [
+              "Resolves the range of the three paragraphs by reading the document, then applies bulleted-list formatting to that range with the list tool — not by prepending '-' or '*' characters as literal text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "format-paragraphs-as-numbered-list",
+      "kind": "arrange-act",
+      "description": "Lists: create a doc with plain steps, then turn them into a numbered list.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Recipe Steps {{run_id}}' with the body: 'Preheat the oven\nMix the batter\nBake for 30 minutes'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Recipe Steps {{run_id}}' exists whose body contains the three step lines."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Recipe Steps {{run_id}}' document, turn the three step lines into a numbered list.",
+          "assertions": {
+            "outcome": [
+              "The three lines are now a numbered list (1, 2, 3) in order, with their text unchanged."
+            ],
+            "mechanism": [
+              "Resolves the paragraph range by reading the document and applies numbered-list formatting via the list tool — not by typing '1.', '2.' as literal text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-nested-bulleted-list",
+      "kind": "arrange-act",
+      "description": "Lists: nesting — a sub-item indented one level under its parent.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Outline {{run_id}}' with the body: 'Section One\nDetail A\nSection Two'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Outline {{run_id}}' exists whose body contains the lines Section One, Detail A, and Section Two."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Outline {{run_id}}' document, make the three lines a bulleted list where 'Detail A' is nested one level under 'Section One', with 'Section One' and 'Section Two' at the top level.",
+          "assertions": {
+            "outcome": [
+              "The document contains a bulleted list in which 'Detail A' is a sub-bullet indented one level beneath 'Section One', while 'Section One' and 'Section Two' are top-level bullets."
+            ],
+            "mechanism": [
+              "Applies list formatting with per-paragraph nesting levels via the list tool, rather than faking indentation with spaces or tabs typed as text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "remove-list-formatting",
+      "kind": "arrange-act",
+      "description": "Lists: strip bullets from an existing list, keeping the text.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Tasks {{run_id}}' from this Markdown:\n- First task\n- Second task",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Tasks {{run_id}}' exists containing a bulleted list of 'First task' and 'Second task'."
+            ],
+            "mechanism": [
+              "Creates the document from Markdown so the two items render as real bullets, not literal '-' characters."
+            ]
+          }
+        },
+        {
+          "intent": "Remove the bullet formatting from the list in the 'Tasks {{run_id}}' document, leaving the two lines as plain paragraphs.",
+          "assertions": {
+            "outcome": [
+              "The two task lines remain with their text intact but are no longer bulleted — they are plain paragraphs."
+            ],
+            "mechanism": [
+              "Resolves the list's range by reading the document and uses the remove-list-formatting tool, rather than deleting and retyping the lines."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "apply-paragraph-formatting",
+      "kind": "arrange-act",
+      "description": "Paragraph styling: apply a named heading style and alignment to a resolved paragraph.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Report {{run_id}}' with the body: 'Quarterly Report\nResults were strong this quarter.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Report {{run_id}}' exists whose body contains 'Quarterly Report' and the results sentence."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Report {{run_id}}' document, make the line 'Quarterly Report' a Heading 1 and center it.",
+          "assertions": {
+            "outcome": [
+              "The line 'Quarterly Report' is now styled as Heading 1 and center-aligned, while the sentence below keeps normal body styling."
+            ],
+            "mechanism": [
+              "Resolves the paragraph range by reading the document and applies the named paragraph style (Heading 1) and center alignment via the paragraph-formatting tool — not character formatting such as manual bold or font-size changes."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "insert-table-with-contents",
+      "kind": "arrange-act",
+      "description": "Tables: insert a table and populate its cells in one request.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Inventory {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Inventory {{run_id}}' now exists and its id or link is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-document call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add a 2-row by 3-column table to the 'Inventory {{run_id}}' document, with the first row reading 'Item', 'Qty', 'Price' and the second row reading 'Apples', '5', '$3'.",
+          "assertions": {
+            "outcome": [
+              "A real 2-row by 3-column table exists in the document, with the first row reading Item / Qty / Price and the second row reading Apples / 5 / $3 (confirmable by reading it back as a table)."
+            ],
+            "mechanism": [
+              "Uses the table tool to create the 2x3 table and populate its cells with the given values, not tab- or newline-delimited text pretending to be a table."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-table-structure",
+      "kind": "arrange-act",
+      "description": "Tables: add and remove rows/columns of an existing table.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Schedule {{run_id}}' and add a 2-row by 2-column table to it.",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Schedule {{run_id}}' exists containing a 2-row by 2-column table."
+            ],
+            "mechanism": [
+              "Uses the table tool to create the 2x2 table; the reported table position comes from the tool result."
+            ]
+          }
+        },
+        {
+          "intent": "In the 'Schedule {{run_id}}' document's table, add a new row at the bottom and a new column on the right.",
+          "assertions": {
+            "outcome": [
+              "The table now has 3 rows and 3 columns, with the original cells preserved."
+            ],
+            "mechanism": [
+              "Resolves the table's position from a document read and uses the table-modify tool to insert the row and the column, rather than recreating the table."
+            ]
+          }
+        },
+        {
+          "intent": "Now delete the bottom row of that table in the 'Schedule {{run_id}}' document.",
+          "assertions": {
+            "outcome": ["The table now has 2 rows and 3 columns."],
+            "mechanism": [
+              "Uses the table-modify tool to delete the referenced row, not a content-range deletion that would corrupt the table."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-header-and-footer",
+      "kind": "arrange-act",
+      "description": "Headers/footers: create a header and a footer and write text into each segment.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Memo {{run_id}}' with the body: 'Body text.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Memo {{run_id}}' exists whose body contains 'Body text.'"
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Add a page header to the 'Memo {{run_id}}' document containing the text 'CONFIDENTIAL'.",
+          "assertions": {
+            "outcome": [
+              "The document now has a header whose text is 'CONFIDENTIAL', and the body is unchanged."
+            ],
+            "mechanism": [
+              "Creates the header, then writes 'CONFIDENTIAL' into the header segment the create returned — targeting the header segment, not the document body."
+            ]
+          }
+        },
+        {
+          "intent": "Add a footer to the 'Memo {{run_id}}' document containing the text 'Draft - do not distribute'.",
+          "assertions": {
+            "outcome": [
+              "The document now has a footer whose text is 'Draft - do not distribute'."
+            ],
+            "mechanism": [
+              "Creates the footer and writes the text into the returned footer segment, not the document body."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-footnote-to-document",
+      "kind": "arrange-act",
+      "description": "Footnotes: attach a footnote to body text and write its content.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Paper {{run_id}}' with the body: 'The earth orbits the sun.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Paper {{run_id}}' exists whose body contains 'The earth orbits the sun.'"
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Add a footnote to the 'Paper {{run_id}}' document with the note text 'Heliocentric model, Copernicus 1543.'",
+          "assertions": {
+            "outcome": [
+              "The document has a footnote whose content reads 'Heliocentric model, Copernicus 1543.', referenced from the body."
+            ],
+            "mechanism": [
+              "Creates the footnote at a body position, then writes the note text into the returned footnote segment — not into the document body."
             ]
           }
         }
