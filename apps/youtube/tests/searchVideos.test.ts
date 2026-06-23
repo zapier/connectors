@@ -87,9 +87,7 @@ describe("searchVideos: error path", () => {
 
     expect(err).toBeInstanceOf(Error);
     expect((err as Error).message).toContain("quotaExceeded");
-    expect((err as Error).message).toContain(
-      "quota resets at midnight Pacific",
-    );
+    expect((err as Error).message).toContain("quota resets once per day");
   });
 });
 
