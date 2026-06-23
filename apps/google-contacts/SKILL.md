@@ -98,4 +98,6 @@ When `PREFLIGHT_RUNNER` is `bun`, use `bunx` instead of `npx` — match the pack
 
 ## API quirks worth knowing
 
-<!-- references-table: filled by generate-references -->
+| Reference file                                                                           | When to load                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`references/google-contacts-api-gotchas.md`](references/google-contacts-api-gotchas.md) | Before any tool call — covers error codes, update replacement semantics, etag concurrency, search prefix matching + warmup, write propagation delay, resource name formats, contact group types, membership limits, other-contacts field restrictions, and pagination. |
