@@ -158,10 +158,10 @@
           "intent": "Raise that budget to $75 per day.",
           "assertions": {
             "outcome": [
-              "The 'Eval Budget {{run_id}}' budget's daily amount is now $75/day."
+              "An existing budget is raised to a $75/day amount and the reply confirms the new $75 daily figure, rather than a new budget being created."
             ],
             "mechanism": [
-              "Updates the budget the agent just created in this session, sending 75,000,000 micros and a field mask that targets the amount; does not create a second budget."
+              "Calls updateCampaignBudget with the amount as 75,000,000 micros (75 × 1,000,000) against an existing budget id; does not create a second budget."
             ]
           }
         }
