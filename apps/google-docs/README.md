@@ -1,5 +1,7 @@
 # @zapier/google-docs-connector
 
+_Independent, unofficial connector for Google Docs. Not affiliated with, endorsed by, or sponsored by Google Docs. "Google Docs" is a trademark of its owner, used only to identify the service this connector works with._
+
 Agent-callable Google Docs tools wrapping the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for find / export / copy-template / folder operations: create documents (blank, from text/Markdown, or from a template), read structured content and tabs, export as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character formatting, insert and replace inline images, and set page style. 14 tools. Auth is a single Google OAuth 2.0 access token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
@@ -105,3 +107,17 @@ Reach for this connector when an agent needs to act on Google Docs documents dir
 - [Google Docs API reference](https://developers.google.com/workspace/docs/api/reference/rest)
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-docs)
+
+## Legal
+
+**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Google Docs's API, services, data, schemas, documentation, or other materials, which remain the property of Google Docs. Your use of Google Docs's API is governed by your own agreement with Google Docs.
+
+**Trademarks and affiliation.** Google Docs and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Google Docs.
+
+**Your responsibility.** This connector calls Google Docs's API using credentials you supply. You are responsible for holding a valid Google Docs account, for complying with Google Docs's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
+
+**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Google Docs product. Zapier is not responsible for changes Google Docs makes to its API or for any consequence of your use of Google Docs's API. See the repository LICENSE for the full disclaimer.
+
+**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
+
+Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.

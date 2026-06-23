@@ -4,12 +4,15 @@ description: Agent-callable Google Docs tools — create, read, export, and find
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
+  title: Google Docs
   source: https://github.com/zapier/connectors/blob/main/apps/google-docs/SKILL.md
   zapier-app-key: GoogleDocsCLIAPI
   api-docs: https://developers.google.com/workspace/docs/api/reference/rest
 ---
 
 # Google Docs
+
+_Independent, unofficial connector for Google Docs. Not affiliated with, endorsed by, or sponsored by Google Docs. "Google Docs" is a trademark of its owner, used only to identify the service this connector works with._
 
 Tools for working with Google Docs against the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content, and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for the find / export / copy-template / folder operations the Docs API doesn't provide. 22 tools: create documents (blank, from text/Markdown, or from a template), read a document's structured content and tabs, export it as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character and paragraph formatting, make bulleted/numbered lists, insert and edit tables, create headers / footers / footnotes, insert and replace inline images, and set page/margin/background style.
 
