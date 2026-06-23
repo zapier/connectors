@@ -17,7 +17,7 @@ describe("listCampaigns: run", () => {
             advertisingChannelType: "SEARCH",
             campaignBudget: "customers/1/campaignBudgets/77",
             biddingStrategyType: "TARGET_CPA",
-            startDate: "2026-01-01",
+            startDateTime: "2026-01-01 00:00:00",
             resourceName: "customers/1/campaigns/555",
           },
         },
@@ -41,7 +41,7 @@ describe("listCampaigns: run", () => {
       advertising_channel_type: "SEARCH",
       campaign_budget: "customers/1/campaignBudgets/77",
       bidding_strategy_type: "TARGET_CPA",
-      start_date: "2026-01-01",
+      start_date_time: "2026-01-01 00:00:00",
     });
     expect(result.next_page_token).toBe("NXT");
   });

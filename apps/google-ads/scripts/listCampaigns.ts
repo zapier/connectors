@@ -54,13 +54,17 @@ const outputSchema = z.object({
           .string()
           .describe("Bidding strategy, e.g. TARGET_CPA, MAXIMIZE_CONVERSIONS.")
           .optional(),
-        start_date: z
+        start_date_time: z
           .string()
-          .describe("Campaign start date, YYYY-MM-DD.")
+          .describe(
+            "Campaign start datetime, e.g. '2026-01-01 00:00:00'. Replaces the deprecated start_date as of API v23.",
+          )
           .optional(),
-        end_date: z
+        end_date_time: z
           .string()
-          .describe("Campaign end date, YYYY-MM-DD.")
+          .describe(
+            "Campaign end datetime, e.g. '2026-12-31 23:59:59'. Replaces the deprecated end_date as of API v23.",
+          )
           .optional(),
         resource_name: z
           .string()
@@ -83,8 +87,8 @@ interface CampaignRow {
     advertisingChannelType?: string;
     campaignBudget?: string;
     biddingStrategyType?: string;
-    startDate?: string;
-    endDate?: string;
+    startDateTime?: string;
+    endDateTime?: string;
     resourceName?: string;
   };
 }
@@ -109,7 +113,7 @@ const definition = defineTool({
       : "campaign.status != 'REMOVED'";
     const query =
       "SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type, " +
-      "campaign.campaign_budget, campaign.bidding_strategy_type, campaign.start_date, campaign.end_date " +
+      "campaign.campaign_budget, campaign.bidding_strategy_type, campaign.start_date_time, campaign.end_date_time " +
       `FROM campaign WHERE ${where} ORDER BY campaign.id`;
     const { results, nextPageToken } = await searchGaql(ctx.fetch, {
       customerId: input.customerId,
@@ -128,8 +132,8 @@ const definition = defineTool({
           advertising_channel_type: c.advertisingChannelType,
           campaign_budget: c.campaignBudget,
           bidding_strategy_type: c.biddingStrategyType,
-          start_date: c.startDate,
-          end_date: c.endDate,
+          start_date_time: c.startDateTime,
+          end_date_time: c.endDateTime,
           resource_name: c.resourceName,
         };
       }),

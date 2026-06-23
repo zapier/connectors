@@ -46,7 +46,9 @@ const definition = defineTool({
   outputSchema,
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    // status: 'REMOVED' is an irreversible delete, so this tool can perform a
+    // destructive update even though pause/enable are reversible.
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: true,
   },

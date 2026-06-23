@@ -59,10 +59,8 @@ describe("setCampaignStatus: run", () => {
     expect((err as Error).message).toContain("loginCustomerId");
   });
 
-  it("is idempotent and not flagged destructive", () => {
+  it("is idempotent and flagged destructive (status: REMOVED is irreversible)", () => {
     expect(setCampaignStatusDefinition.annotations?.idempotentHint).toBe(true);
-    expect(setCampaignStatusDefinition.annotations?.destructiveHint).toBe(
-      false,
-    );
+    expect(setCampaignStatusDefinition.annotations?.destructiveHint).toBe(true);
   });
 });
