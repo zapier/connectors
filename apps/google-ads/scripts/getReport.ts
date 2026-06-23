@@ -3,7 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { searchGaql } from "../lib/googleAdsFetch.ts";
+import { DEFAULT_ROW_LIMIT, searchGaql } from "../lib/googleAdsFetch.ts";
 
 const DATE_PRESETS = [
   "TODAY",
@@ -71,7 +71,7 @@ const inputSchema = z
       .int()
       .positive()
       .describe(
-        "Maximum rows to return. Defaults to 50. A soft cap — raise it or page via pageToken; segmented reports can exceed 50 rows.",
+        `Maximum rows to return. Defaults to ${DEFAULT_ROW_LIMIT}. A soft cap — raise it or page via pageToken; segmented reports can exceed ${DEFAULT_ROW_LIMIT} rows.`,
       )
       .optional(),
     pageToken: z
@@ -138,7 +138,7 @@ const definition = defineTool({
 
     let query = `SELECT ${select} FROM ${input.resource} WHERE ${dateClause}`;
     if (input.orderBy) query += ` ORDER BY ${input.orderBy}`;
-    query += ` LIMIT ${input.limit ?? 50}`;
+    query += ` LIMIT ${input.limit ?? DEFAULT_ROW_LIMIT}`;
 
     const { results, nextPageToken } = await searchGaql(ctx.fetch, {
       customerId: input.customerId,

@@ -3,7 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { searchGaql } from "../lib/googleAdsFetch.ts";
+import { DEFAULT_ROW_LIMIT, searchGaql } from "../lib/googleAdsFetch.ts";
 
 const inputSchema = z
   .object({
@@ -19,6 +19,14 @@ const inputSchema = z
     status: z
       .enum(["ENABLED", "PAUSED", "REMOVED"])
       .describe("Filter by ad status. Omit to return all non-removed ads.")
+      .optional(),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .describe(
+        `Maximum rows to return. Defaults to ${DEFAULT_ROW_LIMIT}. A soft cap — raise it or page via pageToken for more.`,
+      )
       .optional(),
     pageToken: z
       .string()
@@ -101,7 +109,7 @@ const definition = defineTool({
     const query =
       "SELECT ad_group_ad.ad.id, ad_group_ad.ad.name, ad_group_ad.ad.type, ad_group_ad.ad.final_urls, " +
       "ad_group_ad.status, ad_group_ad.ad_group " +
-      `FROM ad_group_ad WHERE ${filters.join(" AND ")}`;
+      `FROM ad_group_ad WHERE ${filters.join(" AND ")} LIMIT ${input.limit ?? DEFAULT_ROW_LIMIT}`;
     const { results, nextPageToken } = await searchGaql(ctx.fetch, {
       customerId: input.customerId,
       query,

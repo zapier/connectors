@@ -126,7 +126,8 @@
           "intent": "Break down clicks and cost by device for the last 7 days for account {{google_ads_customer_id}}.",
           "assertions": {
             "outcome": [
-              "The reply presents clicks and cost segmented by device (e.g. mobile / desktop / tablet) over the last 7 days (rows may be empty if there is no traffic)."
+              "The reply communicates the device-level result for the last 7 days: either clicks and cost broken down by device (e.g. mobile / desktop / tablet), or a clear statement that there is no device-level data/traffic for that period. It must not fabricate device figures.",
+              "Any cost figure is presented as a sensible currency amount, not a raw micros integer (e.g. not reporting a $5 cost as 5000000)."
             ],
             "mechanism": [
               "Requests the report with a device segment over a last-7-days range; segmenting by device is expressed in the query, not faked by post-hoc grouping of unsegmented data."

@@ -11,6 +11,14 @@
 export const GOOGLE_ADS_VERSION = "v23";
 export const GOOGLE_ADS_API = `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}`;
 
+/**
+ * Default row cap for the list/report tools when the caller omits `limit`.
+ * A soft cap: the agent can raise `limit` or page via `pageToken`. Without it,
+ * `googleAds:search` returns up to 10,000 rows per page (it rejects `pageSize`),
+ * which floods an agent's context on large accounts.
+ */
+export const DEFAULT_ROW_LIMIT = 50;
+
 type Fetch = typeof globalThis.fetch;
 
 interface RequestOpts {

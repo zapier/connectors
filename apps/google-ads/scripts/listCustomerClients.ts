@@ -3,7 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { searchGaql } from "../lib/googleAdsFetch.ts";
+import { DEFAULT_ROW_LIMIT, searchGaql } from "../lib/googleAdsFetch.ts";
 
 const inputSchema = z
   .object({
@@ -16,6 +16,14 @@ const inputSchema = z
       .boolean()
       .describe(
         "Include manager accounts in the results. Defaults to false (operating accounts only).",
+      )
+      .optional(),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .describe(
+        `Maximum rows to return. Defaults to ${DEFAULT_ROW_LIMIT}. A soft cap — raise it or page via pageToken for more.`,
       )
       .optional(),
     pageToken: z
@@ -96,7 +104,7 @@ const definition = defineTool({
     const query =
       "SELECT customer_client.id, customer_client.descriptive_name, customer_client.manager, " +
       "customer_client.level, customer_client.currency_code, customer_client.time_zone " +
-      `FROM customer_client WHERE ${filters.join(" AND ")}`;
+      `FROM customer_client WHERE ${filters.join(" AND ")} LIMIT ${input.limit ?? DEFAULT_ROW_LIMIT}`;
     const { results, nextPageToken } = await searchGaql(ctx.fetch, {
       customerId: input.customerId,
       query,
