@@ -14,6 +14,8 @@
 import {
   ConnectorHttpError,
   type ConnectorHttpErrorOptions,
+  readResponseBody,
+  toConnectorHttpResponse,
 } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
@@ -251,12 +253,10 @@ export class DropboxApiError extends ConnectorHttpError {
     return new DropboxApiError(buildErrorMessage(tool, res.status, summary), {
       tool,
       summary,
-      response: {
-        status: res.status,
-        statusText: res.statusText ?? "",
-        headers: headersToRecord(res.headers),
-        body,
-      },
+      // Reuse the SDK's capture so the response (status/headers/body) is built
+      // exactly as the shared error path builds it — the subclass only adds the
+      // Dropbox-specific `summary`/hint, it doesn't re-derive the capture.
+      response: toConnectorHttpResponse(res, body),
     });
   }
 }
@@ -269,40 +269,16 @@ function extractErrorSummary(body: unknown): string {
   return "";
 }
 
-function headersToRecord(headers: Headers | undefined): Record<string, string> {
-  const out: Record<string, string> = {};
-  headers?.forEach((value, key) => {
-    out[key] = value;
-  });
-  return out;
-}
-
 /**
- * Read a failed response's body exactly once, parsing JSON when possible and
- * falling back to raw text (relay/proxy errors are often plain text) or
- * `undefined` when the body can't be read. Returns the parsed body and its
- * Dropbox `error_summary` prefix (when present) for soft-success branching.
+ * Read a failed response's body exactly once (via the SDK's `readResponseBody`:
+ * JSON for Dropbox's own errors, raw text for relay/proxy plain-text errors,
+ * `undefined` when unreadable) and return it alongside its Dropbox
+ * `error_summary` prefix (when present) for soft-success branching.
  */
 export async function readDropboxError(res: {
   text: () => Promise<string>;
 }): Promise<{ body: unknown; summary: string }> {
-  let text: string | undefined;
-  try {
-    text = await res.text();
-  } catch {
-    text = undefined;
-  }
-  let body: unknown;
-  if (text === undefined || text === "") {
-    body = text;
-  } else {
-    try {
-      // JSON for Dropbox's own errors; raw text for relay/proxy plain-text errors.
-      body = JSON.parse(text) as unknown;
-    } catch {
-      body = text;
-    }
-  }
+  const body = await readResponseBody(res);
   return { body, summary: extractErrorSummary(body) };
 }
 
