@@ -12,6 +12,28 @@ import { z } from "zod";
 import { connectionResolvers } from "../connections.ts";
 import { throwForYouTube, VideoSchema } from "../lib/youtube.ts";
 
+// The resumable-upload PUT (and the thumbnail PUT) send the file as a binary
+// request body. The Zapier connection relay carries only string/JSON bodies, so
+// `ctx.fetch` rejects a binary body there with a low-level SDK message. Translate
+// that into an actionable error instead of leaking it: uploads must run over a
+// direct token connection. See references/youtube-api-gotchas.md → Uploads.
+const RELAY_BINARY_UNSUPPORTED =
+  "YouTube uploadVideo streams the file as a binary request body, which the Zapier " +
+  "connection relay does not support (it carries only string/JSON bodies). Uploading " +
+  "over a `zapier:<id>` connection is therefore not possible — invoke uploadVideo with " +
+  "a direct token connection (`env:YOUTUBE_TOKEN`, a `youtube.upload`-scoped OAuth " +
+  "token) instead. See references/youtube-api-gotchas.md → Uploads.";
+
+function rethrowUpload(err: unknown): never {
+  if (
+    err instanceof Error &&
+    err.message.includes("only accepts `body: string`")
+  ) {
+    throw new Error(RELAY_BINARY_UNSUPPORTED, { cause: err });
+  }
+  throw err;
+}
+
 const inputSchema = z
   .object({
     video_url: z
@@ -133,11 +155,13 @@ const definition = defineTool({
     }
 
     // Step 2: upload the bytes to the session URI.
-    const uploadRes = await ctx.fetch(sessionUri, {
-      method: "PUT",
-      headers: { "Content-Type": videoType },
-      body: bytes,
-    });
+    const uploadRes = await ctx
+      .fetch(sessionUri, {
+        method: "PUT",
+        headers: { "Content-Type": videoType },
+        body: bytes,
+      })
+      .catch(rethrowUpload);
     await throwForYouTube(uploadRes, "uploadVideo");
     const video = (await uploadRes.json()) as { id?: string } & Record<
       string,
@@ -153,14 +177,17 @@ const definition = defineTool({
         );
         thumbUrl.searchParams.set("videoId", video.id);
         thumbUrl.searchParams.set("uploadType", "media");
-        const thumbRes = await ctx.fetch(thumbUrl.toString(), {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              imgRes.headers.get("content-type") ?? "application/octet-stream",
-          },
-          body: new Uint8Array(await imgRes.arrayBuffer()),
-        });
+        const thumbRes = await ctx
+          .fetch(thumbUrl.toString(), {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                imgRes.headers.get("content-type") ??
+                "application/octet-stream",
+            },
+            body: new Uint8Array(await imgRes.arrayBuffer()),
+          })
+          .catch(rethrowUpload);
         await throwForYouTube(thumbRes, "uploadVideo");
       }
     }

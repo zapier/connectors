@@ -291,6 +291,15 @@ Scope descriptions (from the consent screen):
 - **Maximum file size: 256GB.** Accepted media MIME types are `video/*` and
   `application/octet-stream`.
   ([videos.insert](https://developers.google.com/youtube/v3/docs/videos/insert))
+- **Uploads require a direct token connection, not the Zapier relay.** Step 3 PUTs
+  the file as a binary request body, but the Zapier connection relay carries only
+  string/JSON bodies (`@zapier/zapier-sdk`'s relay `fetch` accepts
+  `string | FormData | URLSearchParams | Record`, never `Uint8Array`/`ArrayBuffer`/
+  `Blob`/streams). So `uploadVideo` (and the thumbnail PUT) only work over a direct
+  token connection (`env:YOUTUBE_TOKEN`); over a `zapier:<id>` connection the binary
+  PUT is rejected and `uploadVideo` throws a clear "not supported over the Zapier
+  relay" error. The metadata calls (session open, etc.) use JSON bodies and are
+  unaffected.
 
 ### Thumbnails
 

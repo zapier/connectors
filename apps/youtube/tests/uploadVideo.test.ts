@@ -104,4 +104,30 @@ describe("uploadVideo: error path", () => {
       uploadVideoDefinition.run(validInput, { fetch: fakeFetch }),
     ).rejects.toThrow(/Location header missing/);
   });
+
+  it("translates the Zapier-relay binary-body rejection into an actionable error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      binaryResponse(new Uint8Array([1, 2, 3])),
+    );
+
+    // Session-open (string body) succeeds; the binary PUT is what the relay rejects.
+    let n = 0;
+    const fakeFetch: typeof globalThis.fetch = (async () => {
+      n++;
+      if (n === 1) {
+        return jsonResponse(
+          {},
+          { headers: { location: "https://upload.example/session" } },
+        );
+      }
+      throw new Error(
+        "buildZapierFetch: Zapier-mode `fetch` only accepts `body: string`. " +
+          "Streaming bodies, `FormData`, `Blob`, and `ArrayBuffer` are not supported in Zapier mode.",
+      );
+    }) as typeof globalThis.fetch;
+
+    await expect(
+      uploadVideoDefinition.run(validInput, { fetch: fakeFetch }),
+    ).rejects.toThrow(/Zapier connection relay does not support/);
+  });
 });
