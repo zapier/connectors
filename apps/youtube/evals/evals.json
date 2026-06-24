@@ -173,7 +173,7 @@
           "intent": "Add the video with id dQw4w9WgXcQ to the playlist you just created.",
           "assertions": {
             "outcome": [
-              "The video with id dQw4w9WgXcQ is now an item in the 'Eval playlist {{run_id}}' playlist."
+              "The video with id dQw4w9WgXcQ is now an item in the playlist created earlier in this session."
             ],
             "mechanism": [
               "Adds the video to the playlist created earlier in this session rather than to a different or invented playlist.",
@@ -185,7 +185,7 @@
           "intent": "List the videos currently in that playlist.",
           "assertions": {
             "outcome": [
-              "The reply lists the contents of the 'Eval playlist {{run_id}}' playlist, including the video added earlier in this session."
+              "The reply lists the contents of the playlist created earlier in this session, including the video added earlier."
             ],
             "mechanism": [
               "Reads the items of the playlist created earlier in this session; does not invent playlist contents."
@@ -196,7 +196,7 @@
           "intent": "Remove that video from the playlist again.",
           "assertions": {
             "outcome": [
-              "The video added earlier is no longer an item in the 'Eval playlist {{run_id}}' playlist."
+              "The video added earlier is no longer an item in the playlist created earlier in this session."
             ],
             "mechanism": [
               "Removes the item using the playlistItem id obtained from listing the playlist's items, not the bare video id."
@@ -207,7 +207,7 @@
           "intent": "Now delete the playlist you created.",
           "assertions": {
             "outcome": [
-              "The 'Eval playlist {{run_id}}' playlist no longer exists (cleanup)."
+              "The playlist created earlier in this session no longer exists (cleanup)."
             ],
             "mechanism": [
               "Deletes the playlist created earlier in this session rather than an unrelated playlist."
