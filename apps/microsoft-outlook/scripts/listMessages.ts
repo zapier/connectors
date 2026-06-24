@@ -42,9 +42,8 @@ const inputSchema = z
       .number()
       .int()
       .gte(1)
-      .lte(1000)
       .describe(
-        "Messages per page (max 1000). Defaults to 10 when omitted; pass a value when you need a specific number of results.",
+        "Messages per page. Defaults to 10 when omitted; pass a value when you need a specific number of results.",
       )
       .optional(),
     cursor: z
@@ -68,7 +67,7 @@ const definition = defineTool({
   name: "listMessages",
   title: "List Messages",
   description:
-    'List or search mailbox messages, newest first. Restrict to a folder with folderId, exact-match with filter, or full-text search with search (KQL, e.g. "subject:invoice from:acme"). The entry point for resolving a message id before getMessage/updateMessage/moveMessage.',
+    'Search or list mailbox messages. Listing is newest-first; search results (KQL, e.g. "subject:invoice from:acme") are ordered by sent date, not recency. Scope with folderId; exact-match with filter. The entry point for resolving a message id before getMessage/updateMessage/moveMessage.',
   inputSchema,
   outputSchema,
   annotations: {
