@@ -80,7 +80,18 @@ const nameFields = {
     )
     .optional(),
 };
-export const NameSchema = z.object(nameFields);
+export const NameSchema = z.object({
+  ...nameFields,
+  // Read-only computed names the API returns (output only — kept off NameInput).
+  displayName: z
+    .string()
+    .describe("Read-only. The API's computed display name for the contact.")
+    .optional(),
+  displayNameLastFirst: z
+    .string()
+    .describe("Read-only. The computed display name in last-name-first order.")
+    .optional(),
+});
 export const NameInput = z.strictObject(nameFields);
 
 const emailFields = {
