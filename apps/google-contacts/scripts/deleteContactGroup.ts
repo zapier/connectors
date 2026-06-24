@@ -25,7 +25,7 @@ const definition = defineTool({
   name: "deleteContactGroup",
   title: "Delete Contact Group",
   description:
-    "Delete a user contact group (label). System groups (myContacts, starred) cannot be deleted. Optionally delete the member contacts too.",
+    "Delete a user contact group (label). System groups (myContacts, starred) cannot be deleted. Optionally delete the member contacts too. A 404 means nothing was deleted — the resourceName wasn't found (already deleted, or a wrong id); it is NOT a success. Re-resolve via listContactGroups before retrying.",
   inputSchema,
   outputSchema: z.object({
     success: z
@@ -37,7 +37,9 @@ const definition = defineTool({
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,
-    idempotentHint: true,
+    // Not idempotent: a 404 (already-deleted or wrong id) throws rather than
+    // reporting success, so a blind retry isn't safe — the agent must re-resolve.
+    idempotentHint: false,
     openWorldHint: true,
   },
   connection: "google-contacts",

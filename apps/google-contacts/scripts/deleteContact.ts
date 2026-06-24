@@ -19,7 +19,7 @@ const definition = defineTool({
   name: "deleteContact",
   title: "Delete Contact",
   description:
-    "Delete a contact from the user's account. A 404 means the contact does not exist (already deleted or wrong id).",
+    "Delete a contact from the user's account. A 404 means nothing was deleted — the resourceName wasn't found (already deleted, or a wrong/typo'd id); it is NOT a success. Re-resolve the contact via searchContacts/listContacts before retrying.",
   inputSchema,
   outputSchema: z.object({
     success: z
@@ -31,7 +31,9 @@ const definition = defineTool({
   annotations: {
     readOnlyHint: false,
     destructiveHint: true,
-    idempotentHint: true,
+    // Not idempotent: a 404 (already-deleted or wrong id) throws rather than
+    // reporting success, so a blind retry isn't safe — the agent must re-resolve.
+    idempotentHint: false,
     openWorldHint: true,
   },
   connection: "google-contacts",
