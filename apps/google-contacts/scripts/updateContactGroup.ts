@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: codegen only scaffolds single-HTTP-call ops.
 // updateContactGroup is an etag read-modify-write — contactGroups.update (PUT) requires
 // the group's current etag, so run() first GETs the group for the fresh etag, then PUTs.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";

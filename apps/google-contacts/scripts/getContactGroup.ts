@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: this is a single GET /v1/contactGroups/{id},
-// but it shares the bare "GET /{resourceName}" path+method with getContact (people/* vs
-// contactGroups/*). OpenAPI can't express two operations on one path+method, and getContact
-// is the higher-traffic read, so it keeps the codegen slot and this one is authored.
+// A single GET /v1/contactGroups/{id}. Kept as its own tool because the bare
+// "GET /{resourceName}" path+method is shared with getContact (people/* vs
+// contactGroups/*), and the two resources need different field params and parsing.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

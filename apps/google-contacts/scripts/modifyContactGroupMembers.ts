@@ -21,7 +21,16 @@ const inputSchema = z
       .describe("Contact resource names (people/c…) to remove from the group.")
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine(
+    (i) =>
+      (i.resourceNamesToAdd?.length ?? 0) > 0 ||
+      (i.resourceNamesToRemove?.length ?? 0) > 0,
+    {
+      message:
+        "Provide at least one of resourceNamesToAdd or resourceNamesToRemove — both cannot be empty.",
+    },
+  );
 
 const definition = defineTool({
   name: "modifyContactGroupMembers",

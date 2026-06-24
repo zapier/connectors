@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: codegen only scaffolds single-HTTP-call ops.
 // updateContact is an etag read-modify-write — the People API rejects an update
 // without the contact's current etag (400 FAILED_PRECONDITION), so run() first GETs
 // the contact for the fresh etag, then PATCHes :updateContact. The updatePersonFields

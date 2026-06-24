@@ -78,7 +78,17 @@ const inputSchema = z
       )
       .default(DEFAULT_PERSON_FIELDS),
   })
-  .strict();
+  .strict()
+  .refine(
+    (i) =>
+      (i.names?.length ?? 0) > 0 ||
+      (i.emailAddresses?.length ?? 0) > 0 ||
+      (i.phoneNumbers?.length ?? 0) > 0,
+    {
+      message:
+        "Provide at least one of names, emailAddresses, or phoneNumbers — a contact with no name and no contact method is not useful.",
+    },
+  );
 
 const definition = defineTool({
   name: "createContact",

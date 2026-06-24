@@ -21,8 +21,7 @@ import { z } from "zod";
 // requires input objects to be strict at every level and output objects to strip.
 
 // ---- Default field masks (the API requires a mask on every read/write) -------
-// Codegen sets these as Zod defaults on the spec-driven tools; the hand-authored
-// ops (updateContact, getContactGroup) import them so all tools agree.
+// Every contact tool imports these defaults so all tools request the same fields.
 
 /** Comprehensive personFields/readMask default — a useful contact without the
  * agent composing a mask. `metadata` is required for the etag to come back. */
@@ -236,15 +235,14 @@ const MembershipSchema = z.object({
 // ---- The canonical Person resource (output) ----------------------------------
 
 /** The Google People API Person resource returned by every contact tool.
- * Canonical shape — no V3-style flattening or derived fields. */
+ * Mirrors the API's nested shape — no flattening or derived fields. */
 export const PersonSchema = z
   .object({
     resourceName: z
       .string()
       .describe(
         "Canonical contact id, e.g. people/c12345. Pass to getContact/updateContact/deleteContact/modifyContactGroupMembers.",
-      )
-      .optional(),
+      ),
     etag: z
       .string()
       .describe(
@@ -285,8 +283,7 @@ export const ContactGroupSchema = z
       .string()
       .describe(
         "Canonical group id, e.g. contactGroups/1a2b3c. Pass to modifyContactGroupMembers.",
-      )
-      .optional(),
+      ),
     etag: z
       .string()
       .describe(

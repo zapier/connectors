@@ -17,7 +17,7 @@ const inputSchema = z
       .describe(
         "When true, also delete the contacts that were in the group (not just the label). Defaults to false (label only).",
       )
-      .optional(),
+      .default(false),
   })
   .strict();
 
@@ -47,9 +47,7 @@ const definition = defineTool({
     const url = new URL(
       `https://people.googleapis.com/v1/${input.resourceName}`,
     );
-    if (input.deleteContacts !== undefined) {
-      url.searchParams.set("deleteContacts", String(input.deleteContacts));
-    }
+    url.searchParams.set("deleteContacts", String(input.deleteContacts));
     const res = await ctx.fetch(url.toString(), { method: "DELETE" });
     await throwForGoogleContacts(res, "deleteContactGroup");
     return { success: true };

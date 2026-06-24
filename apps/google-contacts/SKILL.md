@@ -16,18 +16,6 @@ _Independent, unofficial connector for Google Contacts. Not affiliated with, end
 
 Agent-callable tools for Google Contacts, wrapping the [Google People API](https://developers.google.com/people/api/rest). Create, read, update, and delete a person's contacts; search contacts by name, email, or phone; set or remove contact photos; create and manage contact groups (labels) and their membership; and browse the auto-saved "other contacts" surface. Every tool uses a single OAuth connection; capability is gated by the granted scope.
 
-## Step 0 — pre-flight and auth
-
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
-
-```bash
-./preflight.sh
-```
-
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
-
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
-
 ## When to use this connector
 
 - Saving, finding, updating, or deleting a person's Google Contacts ("add Jane to my contacts", "what's Bob's email", "remove this contact").
@@ -88,13 +76,56 @@ Google Contacts uses OAuth 2.0. The connector needs Google "contacts" access (re
 
 Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it).
 
-## Running locally
+## Using this skill
+
+### 0. Pre-flight and auth
+
+Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
 
 ```bash
-npx @zapier/google-contacts-connector run <tool-name> '{ ... }' --connection [<resolver>:]<value>
+./preflight.sh
 ```
 
-When `PREFLIGHT_RUNNER` is `bun`, use `bunx` instead of `npx` — match the package runner to the runtime the pre-flight picked (a `bun` verdict often means no usable npm).
+Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
+
+Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
+
+The three invocation paths below all assume the pre-flight reported `READY`. See **Auth** above for the two ways to supply the connection.
+
+### 1. Execute scripts directly
+
+When the agent has shell access to the installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang. **Run `--help` first** to read the input contract and confirm an auth resolver is ready:
+
+```bash
+# Inspect the contract + resolvers first
+./scripts/searchContacts.ts --help
+
+# Then invoke (direct token — token stays in env)
+GOOGLE_CONTACTS_ACCESS_TOKEN=ya29.xxx ./scripts/searchContacts.ts '{"query":"Ada"}' --connection env:GOOGLE_CONTACTS_ACCESS_TOKEN
+
+# Or route through a Zapier connection
+./scripts/getContact.ts '{"resourceName":"people/c123"}' --connection zapier:<connection-id>
+```
+
+Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
+
+### 2. Use the package's CLI
+
+```bash
+GOOGLE_CONTACTS_ACCESS_TOKEN=ya29.xxx npx @zapier/google-contacts-connector run searchContacts '{"query":"Ada"}' --connection env:GOOGLE_CONTACTS_ACCESS_TOKEN
+npx @zapier/google-contacts-connector --help                     # all scripts
+npx @zapier/google-contacts-connector run searchContacts --help  # per-script schema + resolvers
+```
+
+Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun` (a `bun` verdict often means no usable npm). Some harnesses block `npx`/`bunx` — fall back to (1).
+
+### 3. Use as a recipe
+
+When no shipped script matches, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"google-contacts"`; imitate that shape (Zod input/output schemas, a `(input, ctx) => …` run body, and direct-mode auth as a Bearer token in the `Authorization` header). If you persist generated code, add a comment pointing back to this skill's source:
+
+```ts
+// Source: https://github.com/zapier/connectors/blob/main/apps/google-contacts/SKILL.md
+```
 
 ## API quirks worth knowing
 
