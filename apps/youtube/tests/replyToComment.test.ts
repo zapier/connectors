@@ -83,6 +83,30 @@ describe("replyToComment: error path", () => {
       ),
     ).rejects.toThrow();
   });
+
+  it("translates a 400 operationNotSupported (reply-to-reply) into actionable guidance", async () => {
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse(
+        {
+          error: {
+            code: 400,
+            message: "Operation not supported.",
+            errors: [{ reason: "operationNotSupported" }],
+          },
+        },
+        { status: 400 },
+      )) as typeof globalThis.fetch;
+
+    await expect(
+      replyToCommentDefinition.run(
+        {
+          part: "snippet",
+          snippet: { parentId: "a_reply_id", textOriginal: "hi" },
+        },
+        { fetch: fakeFetch },
+      ),
+    ).rejects.toThrow(/top-level comment thread|nested replies/i);
+  });
 });
 
 describe("replyToComment: governance", () => {

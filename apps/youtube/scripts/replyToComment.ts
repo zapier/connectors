@@ -1,9 +1,17 @@
 #!/usr/bin/env node
-import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
+import {
+  ConnectorHttpError,
+  defineTool,
+  handleIfScriptMain,
+} from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { CommentSchema, throwForYouTube } from "../lib/youtube.ts";
+import {
+  CommentSchema,
+  hasYouTubeReason,
+  throwForYouTube,
+} from "../lib/youtube.ts";
 
 const inputSchema = z
   .object({
@@ -11,7 +19,9 @@ const inputSchema = z
       .object({
         parentId: z
           .string()
-          .describe("The comment thread id to reply to (from listComments)."),
+          .describe(
+            "The TOP-LEVEL comment thread id to reply to (from listComments) — not a reply id. Replies are single-level: you cannot reply to a reply.",
+          ),
         textOriginal: z.string().describe("The reply text to post."),
       })
       .strict(),
@@ -27,7 +37,7 @@ const definition = defineTool({
   name: "replyToComment",
   title: "Reply To Comment",
   description:
-    "Reply to an existing top-level comment thread. The parentId is the comment thread id from listComments. Requires the youtube.force-ssl scope.",
+    "Reply to an existing top-level comment thread. The parentId must be a top-level comment thread id from listComments — replies are single-level, so you cannot reply to a reply (YouTube rejects it with operationNotSupported). Requires the youtube.force-ssl scope.",
   inputSchema,
   outputSchema,
   annotations: {
@@ -49,6 +59,27 @@ const definition = defineTool({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
+    if (res.ok) return res.json();
+
+    // Replies are single-level: passing a reply's id as parentId (instead of a
+    // top-level thread id) is rejected with operationNotSupported. Translate it
+    // into actionable guidance rather than surfacing the raw upstream reason.
+    if (res.status === 400) {
+      const errBody = (await res.json().catch(() => null)) as unknown;
+      if (hasYouTubeReason(errBody, "operationNotSupported")) {
+        throw ConnectorHttpError.fromResponseBody(res, errBody, {
+          message:
+            "YouTube replyToComment 400: operationNotSupported — parentId must be a top-level comment thread id (from listComments), not a reply. YouTube does not support nested replies.",
+        });
+      }
+      throw ConnectorHttpError.fromResponseBody(res, errBody, {
+        message: `YouTube replyToComment 400: ${
+          (errBody as { error?: { message?: string } })?.error?.message ??
+          "bad request"
+        }`,
+      });
+    }
+
     await throwForYouTube(res, "replyToComment");
     return res.json();
   },
