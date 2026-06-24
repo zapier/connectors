@@ -554,7 +554,7 @@
     },
     {
       "id": "get-video-analytics",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: time-series analytics (watch time, retention) are out of scope; the agent must not substitute lifetime statistics and present them as an analytics report.",
       "steps": [
         {
@@ -592,7 +592,7 @@
     },
     {
       "id": "schedule-livestream",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: live-stream creation/management is out of scope.",
       "steps": [
         {
