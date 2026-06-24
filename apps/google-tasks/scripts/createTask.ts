@@ -30,7 +30,7 @@ const inputSchema = z
       .string()
       .datetime({ offset: true })
       .describe(
-        "Due date, RFC3339. Date-only — the time is discarded; pass YYYY-MM-DD or midnight UTC. Just the day shown, not a deadline.",
+        "Due date as a full RFC3339 timestamp (e.g. 2026-07-01T00:00:00Z) — a bare date is rejected by the API. The date is recorded and the time is discarded, so pass midnight UTC for the intended day. Just the day shown, not a deadline.",
       )
       .optional(),
     parent: z
