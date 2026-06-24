@@ -21,9 +21,9 @@
     "preflight.sh",
     "SKILL.md",
     "README.md",
-    "NOTICE.md",
     "LICENSE",
-    "references/"
+    "references/",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsup",
