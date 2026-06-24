@@ -337,7 +337,7 @@
     },
     {
       "id": "rename-system-group-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Refusal: system groups (My Contacts, Starred) cannot be renamed.",
       "steps": [
         {
@@ -448,7 +448,7 @@
           "intent": "Find one of my 'other contacts' — someone I've interacted with but not saved.",
           "assertions": {
             "outcome": [
-              "At least one 'other contact' is located and the reply reports its name and/or email along with its resource id."
+              "At least one 'other contact' is returned, with its name and/or email."
             ],
             "mechanism": [
               "Reads or searches the other-contacts surface; does not invent an other-contact."
@@ -456,10 +456,10 @@
           }
         },
         {
-          "intent": "Save that other-contact into my saved contacts.",
+          "intent": "Save the first of those other contacts into my saved contacts.",
           "assertions": {
             "outcome": [
-              "A saved contact corresponding to that person now exists, and the reply reports a saved-contact resource id (a people/... name)."
+              "A saved contact for the first of those other contacts now exists, and the reply reports a saved-contact resource id (a people/... name)."
             ],
             "mechanism": [
               "Uses the copy/promote-other-contact operation on the discovered other-contact rather than creating a brand-new contact from scratch."
@@ -470,7 +470,7 @@
     },
     {
       "id": "bulk-update-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Refusal: the connector does not do bulk/batch updates across all contacts.",
       "steps": [
         {
@@ -488,7 +488,7 @@
     },
     {
       "id": "directory-lookup-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Refusal: the connector covers personal contacts, not Google Workspace directory lookups.",
       "steps": [
         {
@@ -506,7 +506,7 @@
     },
     {
       "id": "merge-duplicates-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Refusal: the connector does not merge/deduplicate contacts.",
       "steps": [
         {
