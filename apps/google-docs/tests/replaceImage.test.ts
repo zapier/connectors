@@ -143,6 +143,6 @@ describe("replaceImage: run", () => {
       .catch((e: unknown) => e);
 
     expect(err instanceof Error).toBe(true);
-    expect((err as Error).message).toContain("PNG/JPEG/GIF");
+    expect((err as Error).message).toContain("PNG, JPEG, or GIF");
   });
 });

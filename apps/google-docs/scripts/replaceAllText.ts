@@ -52,7 +52,7 @@ const definition = defineTool({
   name: "replaceAllText",
   title: "Replace All Text",
   description:
-    "Find and replace all occurrences of a string across the document (best for unique placeholder tags like {{name}}). Returns occurrencesChanged — 0 means nothing matched. For a positional replace, use findText then deleteContentRange + insertText.",
+    "Find and replace all occurrences of a string across the document (best for unique placeholder tags like {{name}}). Returns occurrencesChanged — when this is 0, the search string was not found; tell the user no matches were found rather than reporting success. For a positional replace, or when the target text appears multiple times and only one instance should change, use findText then deleteContentRange + insertText.",
   inputSchema,
   outputSchema,
   annotations: {

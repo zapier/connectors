@@ -45,10 +45,10 @@ function mapGoogleError(
     return `Google Docs ${opName}: the document is too large to export (Drive caps export at 10MB). Read it in sections with getDocument's startIndex/endIndex range instead.`;
   }
   if (lower.includes("access to the provided image was forbidden")) {
-    return `Google Docs ${opName}: the image URL is not publicly fetchable. Google fetches the image server-side anonymously, so it must be a public URL with no login or cookies (Drive uc?export=view links no longer work — use a public CDN URL or drive.google.com/thumbnail?id=...).`;
+    return `Google Docs ${opName}: the image URL is not publicly fetchable. Google fetches the image server-side, so it must be a public URL that needs no login or cookies — a standard Google Drive sharing link requires authentication and won't work.`;
   }
   if (lower.includes("problem retrieving the image")) {
-    return `Google Docs ${opName}: Google could not retrieve the image. It must be PNG/JPEG/GIF (checked by bytes, not extension), under 50MB, and at most 25 megapixels.`;
+    return `Google Docs ${opName}: Google could not retrieve the image. It must be PNG, JPEG, or GIF, under 50MB, and at most 25 megapixels.`;
   }
   if (status === 404) {
     return `Google Docs ${opName} 404: document not found. Check the documentId (the token in the doc URL /document/d/<id>/edit) — resolve a title to an id with findDocuments.`;

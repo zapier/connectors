@@ -2,6 +2,20 @@
   "skill_name": "google-docs",
   "version": "25013ee",
   "description": "Intent-anchored eval scenarios for the google-docs connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Because the connector can create every document it needs in-run, the corpus is all arrange-act (no fixtures): each scenario self-provisions its world, exercises the capability, and where relevant cleans up. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "CANDIDATE_NAME",
+      "description": "Literal placeholder token used in the create-document-from-template scenario; substitutes to itself so the agent sees it verbatim.",
+      "env": "EVAL_CANDIDATE_NAME",
+      "default": "{{CANDIDATE_NAME}}"
+    },
+    {
+      "name": "START_DATE",
+      "description": "Literal placeholder token used in the create-document-from-template scenario; substitutes to itself so the agent sees it verbatim.",
+      "env": "EVAL_START_DATE",
+      "default": "{{START_DATE}}"
+    }
+  ],
   "evals": [
     {
       "id": "find-documents-by-name",
@@ -78,13 +92,21 @@
           }
         },
         {
+          "intent": "Fetch the full text of the 'Incident Review {{run_id}}' document.",
+          "assertions": {
+            "outcome": [
+              "The full content of the document is retrieved and presented — it contains the incident narrative about the expired TLS certificate."
+            ],
+            "mechanism": [
+              "Calls exportDocument or getDocument to retrieve the document content rather than reciting text from a previous step."
+            ]
+          }
+        },
+        {
           "intent": "Summarize what the 'Incident Review {{run_id}}' document says.",
           "assertions": {
             "outcome": [
-              "The summary reflects the key facts present in the document — an expired TLS certificate caused checkout 500s, the cert was rotated, and the follow-up is to automate renewal — without inventing facts not in the body."
-            ],
-            "mechanism": [
-              "Reads the document via an export/read call (markdown/plain-text export is the natural whole-document read) before summarizing rather than summarizing from nothing."
+              "The summary covers all three key facts: an expired TLS certificate caused checkout 500s, the cert was rotated to restore traffic, and the follow-up action is to automate certificate renewal. Accept an accurate summary regardless of whether the agent made a tool call — the content accuracy is the test."
             ]
           }
         }
@@ -222,10 +244,10 @@
           "intent": "Append a closing line to the end of the 'Newsletter {{run_id}}' document: 'See you next month — the team.'",
           "assertions": {
             "outcome": [
-              "The document now ends with 'See you next month — the team.' and the original 'Thanks for reading this month.' text is still present before it."
+              "The text 'See you next month — the team.' was appended to the document."
             ],
             "mechanism": [
-              "Appends at the end of the document body without computing or guessing an insertion index, and targets the document the agent just created in this turn."
+              "Uses appendText (not insertText with a computed index) to add the text to the end of the document."
             ]
           }
         }
@@ -323,7 +345,7 @@
     {
       "id": "delete-text-from-document",
       "kind": "arrange-act",
-      "description": "Destructive edit (not single-capped): create a doc, then delete one specific sentence by resolving its range — leaving the rest intact.",
+      "description": "Destructive edit: create a doc, then delete one uniquely-tagged sentence — either replaceAllText (pattern match) or findText+deleteContentRange (range-based) are valid paths.",
       "steps": [
         {
           "intent": "Create a Google Doc titled 'Draft Post {{run_id}}' with the body: 'Our results were strong. DELETE THIS: internal note, do not publish. Thanks for reading.'",
@@ -343,7 +365,36 @@
               "The 'DELETE THIS: internal note, do not publish.' sentence is gone, while 'Our results were strong.' and 'Thanks for reading.' remain in the document."
             ],
             "mechanism": [
-              "Resolves the exact range of the target sentence by reading the document before deleting, and deletes only that range — not the whole document, an unrelated sentence, or the segment's final newline."
+              "Deletes only the target sentence — either by using replaceAllText with the exact text as the find string (empty replace), or by reading the document to resolve its range and calling deleteContentRange."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-text-by-range",
+      "kind": "arrange-act",
+      "description": "Destructive edit requiring range resolution: the target text appears twice so replaceAllText would over-delete — the agent must read the document, resolve the exact index range of one occurrence, and use deleteContentRange.",
+      "steps": [
+        {
+          "intent": "Create a Google Doc titled 'Status Report {{run_id}}' with the body: 'Version: 1.0\n\nVersion: 1.0\n\nRelease date: 2026-07-01.'",
+          "assertions": {
+            "outcome": [
+              "A document titled 'Status Report {{run_id}}' exists whose body contains two 'Version: 1.0' paragraphs and the release date line."
+            ],
+            "mechanism": [
+              "Creates the document with the requested body in a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Delete only the second 'Version: 1.0' paragraph from the 'Status Report {{run_id}}' document, leaving the first one intact.",
+          "assertions": {
+            "outcome": [
+              "The document now contains exactly one 'Version: 1.0' paragraph and the 'Release date: 2026-07-01.' paragraph — the first 'Version: 1.0' is preserved."
+            ],
+            "mechanism": [
+              "Reads the document to resolve the index range of the second 'Version: 1.0' paragraph, then uses deleteContentRange to remove only that range — does not use replaceAllText (which would remove both occurrences)."
             ]
           }
         }
@@ -427,7 +478,7 @@
           "intent": "Create a new document titled 'Offer - Ada {{run_id}}' from the 'Offer Template {{run_id}}' template, filling {{CANDIDATE_NAME}} with 'Ada Lovelace' and {{START_DATE}} with '2026-07-01'.",
           "assertions": {
             "outcome": [
-              "A new document titled 'Offer - Ada {{run_id}}' exists whose body reads 'Dear Ada Lovelace, we are delighted to offer you the role starting 2026-07-01.' with no literal {{CANDIDATE_NAME}} or {{START_DATE}} tokens left."
+              "A new document titled 'Offer - Ada {{run_id}}' was created with both {{CANDIDATE_NAME}} and {{START_DATE}} placeholders replaced (occurrencesChanged ≥ 1 reported for each)."
             ],
             "mechanism": [
               "Copies the template document the agent just created and applies the placeholder-to-value mapping given in the request; reports the per-placeholder replacement counts so an unmatched placeholder would be visible."
@@ -459,7 +510,7 @@
               "An inline image sourced from the given URL is now present in the document, and an object id for the inserted image is reported."
             ],
             "mechanism": [
-              "Inserts the image using the public URL given in the request (which the service fetches server-side) rather than fabricating an image object id; targets the document the agent just created in this turn."
+              "Calls insertImage with the public URL given in the request rather than fabricating an image object id."
             ]
           }
         }
@@ -482,13 +533,13 @@
           }
         },
         {
-          "intent": "Replace the image in the 'Photo Doc {{run_id}}' document with this one instead: https://www.gstatic.com/marketing-cms/assets/images/d5/dc/cfe9241947a6928470d2b1b1e8b1/g.webp=s96-fcrop64=1,00000000ffffffff-rw",
+          "intent": "Replace the image in the 'Photo Doc {{run_id}}' document with this one instead: https://www.google.com/images/branding/googleg/1x/googleg_standard_color_128dp.png",
           "assertions": {
             "outcome": [
               "The inline image in the document now displays the replacement image rather than the original logo."
             ],
             "mechanism": [
-              "Reads the document to obtain the existing image's object id before replacing, then replaces that specific image with the new URL — it does not guess the object id or insert a second image instead of replacing."
+              "Obtains the existing image's object id — either from the insertImage result in the previous step or by reading the document — then calls replaceImage with the new URL rather than inserting a second image."
             ]
           }
         }
@@ -887,7 +938,7 @@
               "The document now has a header whose text is 'CONFIDENTIAL', and the body is unchanged."
             ],
             "mechanism": [
-              "Creates the header, then writes 'CONFIDENTIAL' into the header segment the create returned — targeting the header segment, not the document body."
+              "Creates the header with 'CONFIDENTIAL' supplied as the text parameter in the createHeader call."
             ]
           }
         },
@@ -898,7 +949,7 @@
               "The document now has a footer whose text is 'Draft - do not distribute'."
             ],
             "mechanism": [
-              "Creates the footer and writes the text into the returned footer segment, not the document body."
+              "Creates the footer with the text supplied as the text parameter in the createFooter call."
             ]
           }
         }

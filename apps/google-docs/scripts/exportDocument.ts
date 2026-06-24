@@ -45,7 +45,7 @@ const definition = defineTool({
   name: "exportDocument",
   title: "Export Document",
   description:
-    "Export a document as plain text or Markdown. Prefer markdown for reading or summarizing a whole document — it's far more usable than getDocument's structural JSON. Export loses index information, so use getDocument/findText when the next step is an index-based edit.",
+    "Export a document as plain text or Markdown. Prefer markdown for reading or summarizing a whole document — it's far more usable than getDocument's structural JSON. Export loses index information, so use getDocument/findText when the next step is an index-based edit. Only 'text' and 'markdown' are supported — PDF, DOCX, and HTML are not available. If asked for an unsupported format, tell the user and stop; do not construct a download URL or attempt any workaround.",
   inputSchema,
   outputSchema,
   annotations: {

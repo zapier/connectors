@@ -55,9 +55,9 @@ async function segmentEndIndex(
     `${DOCS_BASE}/documents/${encodeURIComponent(documentId)}`,
   );
   url.searchParams.set("includeTabsContent", "true");
-  // The mask must NOT mix the legacy flat `body/content` with `tabs/*` — the API
-  // 400s on that combination (see references/google-docs-api-gotchas.md). Read
-  // the tabs model only; collectTabs() falls back to doc.body for single-tab docs.
+  // Request content only through `tabs/*` — once a doc has tabs the flat
+  // `body/content` no longer represents all-tab content (see references/google-docs-api-gotchas.md).
+  // Read the tabs model only; collectTabs() falls back to doc.body for single-tab docs.
   url.searchParams.set(
     "fields",
     "tabs/tabProperties,tabs/documentTab/body/content,tabs/childTabs",

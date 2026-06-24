@@ -111,8 +111,8 @@ A `fields` read mask **cannot mix the legacy flat document fields with the tabs
 model**: once tabs exist, the legacy top-level fields (`body`, `inlineObjects`,
 `lists`, `headers`, `footers`, …) no longer represent the content of all tabs,
 so the content fields must be requested through `tabs/documentTab/…` instead of
-their flat equivalents. Combining the two in one mask (e.g. `body/content` _and_
-`tabs/documentTab/body/content`) is rejected. Mask only the tabs-model paths.
+their flat equivalents. The connector therefore masks the tabs model exclusively
+(`tabs/documentTab/…`) and does not request the flat fields alongside it.
 
 > "With the additional structural hierarchy of tabs, legacy fields no longer
 > semantically represent the text content from all tabs in the document. … The

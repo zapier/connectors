@@ -19,7 +19,7 @@ const inputSchema = z
     imageObjectId: z
       .string()
       .describe(
-        "Object id of the image to replace. Get it from a FRESH getDocument (inlineObjects keys) or insertImage's output — object ids shift as the doc changes.",
+        "Object id of the image to replace. Get it from getDocument (inlineObjects keys) or insertImage's output. Re-read with getDocument if the document may have changed since you obtained it.",
       ),
     imageUrl: z
       .string()
@@ -39,7 +39,7 @@ const definition = defineTool({
   name: "replaceImage",
   title: "Replace Image",
   description:
-    "Replace an existing inline image with a new one from a public URL (scales/crops to the original's dimensions). Get imageObjectId from a fresh getDocument — object ids shift as the document changes.",
+    "Replace an existing inline image with a new one from a public URL (scales/crops to the original's dimensions). Get imageObjectId from getDocument (inlineObjects keys) or a prior insertImage.",
   inputSchema,
   outputSchema: editSuccessOutput,
   annotations: {
