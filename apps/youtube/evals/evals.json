@@ -269,7 +269,7 @@
               "The video given in the request now has the description 'Updated for eval run {{run_id}}.', and its existing title, tags, and category are unchanged (not blanked out)."
             ],
             "mechanism": [
-              "Reads the video's current metadata before writing, then sends the full snippet with only the description changed, so the title, tags, and category are preserved rather than reset by the replace-the-whole-part update."
+              "Calls updateVideo for the video given in the request, supplying the new description and not the title, tags, or category; the connector reads the current snippet and merges, so those untouched fields survive — the agent need not restate them in the tool call."
             ]
           }
         }
@@ -289,7 +289,7 @@
             ],
             "mechanism": [
               "Resolves the 'Education' category to its category id (e.g. by listing assignable video categories) rather than passing the literal word 'Education' or guessing an id.",
-              "Carries the existing description forward in the update so it is not cleared by the replace-the-whole-part write."
+              "Does not clear the existing description: the connector's updateVideo reads the current snippet and merges, so the description survives even when the agent omits it from the tool call (the agent need not restate it)."
             ]
           }
         }
@@ -338,7 +338,7 @@
               "Either the custom thumbnail of the video given in the request is updated to the supplied image, or the reply clearly explains the account is not permitted to set custom thumbnails (e.g. it needs verification) — and in no case is a successful change reported when none happened."
             ],
             "mechanism": [
-              "Targets the video id given in the request with a single thumbnail-set call using the supplied image URL; does not silently swap in a different video or image."
+              "Targets the video id given in the request using the supplied image URL; does not silently swap in a different video or substitute a different image (a retry with the same image after an error is fine)."
             ]
           }
         }
@@ -573,12 +573,11 @@
     },
     {
       "id": "moderate-comment",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: comment moderation (delete/hide/mark-as-spam) is unsupported; the agent must say so and not mutate anything.",
-      "requires": ["eval_owned_video"],
       "steps": [
         {
-          "intent": "Delete the spam comments on my video {{eval_owned_video}}.",
+          "intent": "Delete the spam comments on my video dQw4w9WgXcQ.",
           "assertions": {
             "outcome": [
               "The reply explains that deleting or moderating comments is not supported and does not claim any comment was deleted or hidden."
