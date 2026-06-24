@@ -70,4 +70,16 @@ describe("listEvents: run", () => {
     expect((err as Error).message).toContain("Microsoft Outlook listEvents");
     expect((err as Error).message).toContain("ErrorItemNotFound");
   });
+
+  it("strips the null seriesMasterId Graph returns for non-recurring events", async () => {
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse({
+        value: [{ id: "EV1", subject: "Standup", seriesMasterId: null }],
+      })) as typeof globalThis.fetch;
+
+    const { data } = await listEventsDefinition.run({}, { fetch: fakeFetch });
+
+    expect(outputSchema.safeParse(data).success).toBe(true);
+    expect(data.items[0]?.seriesMasterId).toBeUndefined();
+  });
 });

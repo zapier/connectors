@@ -3,7 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { GRAPH_BASE, outlookFetch } from "../lib/graph.ts";
+import { GRAPH_BASE, outlookFetch, stripNullsDeep } from "../lib/graph.ts";
 
 const inputSchema = z.object({}).strict();
 
@@ -40,7 +40,7 @@ const definition = defineTool({
     const url = `${GRAPH_BASE}/me/outlook/masterCategories`;
     const res = await outlookFetch(ctx.fetch, "listCategories", url);
     const body = (await res.json()) as { value?: unknown[] };
-    return { items: body.value ?? [] };
+    return { items: (body.value ?? []).map((c) => stripNullsDeep(c)) };
   },
 });
 

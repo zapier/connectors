@@ -56,9 +56,45 @@ export function buildListQuery(params: {
 }
 
 /**
+ * Recursively drop keys whose value is `null` (or `undefined`). Microsoft Graph
+ * returns an explicit `null` for an empty optional property; the connector's
+ * output schemas declare those fields `.optional()` (which accepts a *missing*
+ * key, not `null`), so without this an otherwise-successful response fails
+ * output validation. Mapping `null` -> absent is semantically identical for the
+ * agent. Falsy non-null values (`false`, `0`, `""`) are preserved; arrays are
+ * mapped element-wise.
+ */
+export function stripNullsDeep<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((v) => stripNullsDeep(v)) as unknown as T;
+  }
+  if (value !== null && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (v === null || v === undefined) continue;
+      out[k] = stripNullsDeep(v);
+    }
+    return out as T;
+  }
+  return value;
+}
+
+/**
+ * Parse a Graph JSON response body and strip its null-valued keys (see
+ * `stripNullsDeep`). Use for single-object tool responses; list tools go
+ * through `toListResult`, which strips each item.
+ */
+export async function parseGraphResponse<T = unknown>(
+  res: Response,
+): Promise<T> {
+  return stripNullsDeep((await res.json()) as T);
+}
+
+/**
  * Normalize a Graph list response into the connector's `{ items, next_cursor }`
  * shape. `@odata.nextLink` is an opaque full URL — pass it back as `cursor` on
  * the next call and fetch it verbatim (don't reconstruct `$skip`/`$skiptoken`).
+ * Each item is null-stripped (see `stripNullsDeep`).
  */
 export function toListResult<T>(payload: unknown): {
   items: T[];
@@ -70,7 +106,7 @@ export function toListResult<T>(payload: unknown): {
   };
   const nextLink = p["@odata.nextLink"];
   return {
-    items: p.value ?? [],
+    items: (p.value ?? []).map((item) => stripNullsDeep(item)),
     ...(nextLink ? { next_cursor: nextLink } : {}),
   };
 }

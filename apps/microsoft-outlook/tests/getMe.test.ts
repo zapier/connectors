@@ -71,4 +71,25 @@ describe("getMe: run", () => {
     expect(outputSchema.safeParse(data).success).toBe(true);
     expect(data.displayName).toBeUndefined();
   });
+
+  it("strips the explicit nulls Graph returns for empty optional fields", async () => {
+    // Microsoft Graph returns null (not a missing key) for empty optional
+    // scalars; the connector must map those to absent so output validation
+    // (which uses .optional(), not .nullish()) still passes.
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse({
+        id: "abc123",
+        displayName: "Jane Doe",
+        mail: "jane@contoso.com",
+        userPrincipalName: "jane@contoso.com",
+        jobTitle: null,
+        mobilePhone: null,
+      })) as typeof globalThis.fetch;
+
+    const { data } = await getMeDefinition.run({}, { fetch: fakeFetch });
+
+    expect(outputSchema.safeParse(data).success).toBe(true);
+    expect(data.jobTitle).toBeUndefined();
+    expect(data.mobilePhone).toBeUndefined();
+  });
 });

@@ -3,7 +3,12 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { calendarRoot, GRAPH_BASE, outlookFetch } from "../lib/graph.ts";
+import {
+  calendarRoot,
+  GRAPH_BASE,
+  outlookFetch,
+  parseGraphResponse,
+} from "../lib/graph.ts";
 import { eventSchema } from "../lib/schemas.ts";
 
 const inputSchema = z
@@ -49,7 +54,7 @@ const definition = defineTool({
       input.eventId,
     )}`;
     const res = await outlookFetch(ctx.fetch, "getEvent", url);
-    return res.json();
+    return parseGraphResponse(res);
   },
 });
 

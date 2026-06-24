@@ -3,7 +3,12 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { GRAPH_BASE, mailboxRoot, outlookFetch } from "../lib/graph.ts";
+import {
+  GRAPH_BASE,
+  mailboxRoot,
+  outlookFetch,
+  parseGraphResponse,
+} from "../lib/graph.ts";
 import {
   dateTimeTimeZoneInputSchema,
   followupFlagSchema,
@@ -85,7 +90,7 @@ const definition = defineTool({
       method: "PATCH",
       body: JSON.stringify(body),
     });
-    return res.json();
+    return parseGraphResponse(res);
   },
 });
 

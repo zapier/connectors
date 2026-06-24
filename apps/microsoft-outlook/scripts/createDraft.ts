@@ -3,7 +3,12 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { GRAPH_BASE, mailboxRoot, outlookFetch } from "../lib/graph.ts";
+import {
+  GRAPH_BASE,
+  mailboxRoot,
+  outlookFetch,
+  parseGraphResponse,
+} from "../lib/graph.ts";
 import { outgoingMessageSchema, recipientSchema } from "../lib/schemas.ts";
 
 const inputSchema = z
@@ -53,7 +58,7 @@ const definition = defineTool({
       method: "POST",
       body: JSON.stringify(message),
     });
-    return res.json();
+    return parseGraphResponse(res);
   },
 });
 

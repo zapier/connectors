@@ -3,7 +3,7 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { GRAPH_BASE, outlookFetch } from "../lib/graph.ts";
+import { GRAPH_BASE, outlookFetch, parseGraphResponse } from "../lib/graph.ts";
 import { contactSchema } from "../lib/schemas.ts";
 
 const inputSchema = z
@@ -35,7 +35,7 @@ const definition = defineTool({
       input.contactId,
     )}`;
     const res = await outlookFetch(ctx.fetch, "getContact", url);
-    return res.json();
+    return parseGraphResponse(res);
   },
 });
 

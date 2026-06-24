@@ -3,7 +3,12 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { GRAPH_BASE, mailboxRoot, outlookFetch } from "../lib/graph.ts";
+import {
+  GRAPH_BASE,
+  mailboxRoot,
+  outlookFetch,
+  parseGraphResponse,
+} from "../lib/graph.ts";
 import { attachmentSchema } from "../lib/schemas.ts";
 
 const inputSchema = z
@@ -44,7 +49,7 @@ const definition = defineTool({
       input.messageId,
     )}/attachments/${encodeURIComponent(input.attachmentId)}`;
     const res = await outlookFetch(ctx.fetch, "getAttachment", url);
-    return res.json();
+    return parseGraphResponse(res);
   },
 });
 
