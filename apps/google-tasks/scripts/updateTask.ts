@@ -7,18 +7,14 @@ import { throwForGoogleTasks } from "../lib/google-tasks.ts";
 
 const inputSchema = z
   .object({
-    tasklist: z
-      .string()
-      .describe(
-        'Task-list id from listTaskLists, or the literal "@default" for the user\'s primary list.',
-      ),
+    tasklist: z.string().describe("Task-list id (resolve via listTaskLists)."),
     task: z.string().describe("Task id from listTasks or getTask."),
     title: z.string().max(1024).describe("Title of the task.").optional(),
     notes: z
       .string()
       .max(8192)
       .describe(
-        "Free-text notes. Assigned tasks (from Docs/Chat) cannot have notes.",
+        "Free-text notes. Tasks assigned from Google Docs cannot have notes.",
       )
       .optional(),
     status: z
@@ -31,7 +27,7 @@ const inputSchema = z
       .string()
       .datetime({ offset: true })
       .describe(
-        "Due date as a full RFC3339 timestamp (e.g. 2026-07-01T00:00:00Z) — a bare date is rejected by the API. The date is recorded and the time is discarded, so pass midnight UTC for the intended day. Just the day shown, not a deadline.",
+        "Due date as a full RFC3339 timestamp (e.g. 2026-07-01T00:00:00Z). Only the date is recorded; the time is discarded, so pass midnight UTC for the intended day. Just the day shown, not a deadline.",
       )
       .optional(),
   })

@@ -7,11 +7,7 @@ import { throwForGoogleTasks } from "../lib/google-tasks.ts";
 
 const inputSchema = z
   .object({
-    tasklist: z
-      .string()
-      .describe(
-        'Task-list id from listTaskLists, or the literal "@default" for the user\'s primary list.',
-      ),
+    tasklist: z.string().describe("Task-list id (resolve via listTaskLists)."),
     showCompleted: z
       .boolean()
       .describe(
@@ -188,7 +184,7 @@ const definition = defineTool({
   name: "listTasks",
   title: "List Tasks",
   description:
-    "List or search tasks in a list. Returns active and completed tasks by default; filter by completion, due date, or update time. Resolves task/parent/previous ids.",
+    "List or search tasks in a list. Returns active tasks by default; set showCompleted to include completed tasks, or filter by due date or update time.",
   inputSchema,
   outputSchema,
   annotations: {

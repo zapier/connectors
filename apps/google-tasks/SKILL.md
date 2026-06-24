@@ -93,4 +93,6 @@ When `PREFLIGHT_RUNNER` is `bun`, use `bunx` instead of `npx` — match the pack
 
 ## API quirks worth knowing
 
-<!-- references-table: filled by generate-references -->
+| Reference                                                                        | Load it when…                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [references/google-tasks-api-gotchas.md](references/google-tasks-api-gotchas.md) | A task or task-list call behaves unexpectedly — due dates losing their time, `position`/ordering, `status`/completion being server-managed, hidden vs. deleted tasks, subtask nesting limits, assigned tasks (from Docs/Chat), pagination/page-size or per-user limits, quota/rate-limit (`429`/quota reasons), or auth-scope (`401`/`403 insufficientPermissions`) errors. |

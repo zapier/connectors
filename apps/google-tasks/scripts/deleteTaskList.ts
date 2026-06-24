@@ -7,11 +7,7 @@ import { SUCCESS, throwForGoogleTasks } from "../lib/google-tasks.ts";
 
 const inputSchema = z
   .object({
-    tasklist: z
-      .string()
-      .describe(
-        'Task-list id from listTaskLists, or the literal "@default" for the user\'s primary list.',
-      ),
+    tasklist: z.string().describe("Task-list id (resolve via listTaskLists)."),
   })
   .strict();
 const outputSchema = z

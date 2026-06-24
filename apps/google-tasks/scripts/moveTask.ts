@@ -7,22 +7,18 @@ import { throwForGoogleTasks } from "../lib/google-tasks.ts";
 
 const inputSchema = z
   .object({
-    tasklist: z
-      .string()
-      .describe(
-        'Task-list id from listTaskLists, or the literal "@default" for the user\'s primary list.',
-      ),
+    tasklist: z.string().describe("Task-list id (resolve via listTaskLists)."),
     task: z.string().describe("Task id from listTasks or getTask."),
     parent: z
       .string()
       .describe(
-        "New parent task id (one level of subtasks only). Omit to move to the top level. The parent must exist and not be hidden.",
+        "New parent task id (subtasks nest one level deep). Omit to move to the top level. Assigned/repeating tasks and completed-hidden tasks cannot be parents.",
       )
       .optional(),
     previous: z
       .string()
       .describe(
-        "New previous-sibling task id. Omit to move to the first position. The sibling must exist and not be hidden.",
+        "New previous-sibling task id. Omit to move to the first position.",
       )
       .optional(),
     destinationTasklist: z

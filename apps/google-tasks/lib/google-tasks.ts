@@ -60,7 +60,7 @@ export async function throwForGoogleTasks(
   if (res.status === 401) {
     message = `${prefix}: invalid or expired credentials. Reconnect Google Tasks.`;
   } else if (res.status === 429 || (reason && RATE_LIMIT_REASONS.has(reason))) {
-    message = `${prefix}: ${reason ?? "rateLimitExceeded"} — rate/quota limited (50,000 queries/day/project). Back off and retry with jitter (no Retry-After is sent).`;
+    message = `${prefix}: ${reason ?? "rateLimitExceeded"} — rate/quota limited (Tasks API courtesy limit is 50,000 queries/day). Back off and retry with exponential backoff + jitter.`;
   } else if (res.status === 403 && reason === "insufficientPermissions") {
     message = `${prefix}: insufficientPermissions — reconnect Google Tasks with task access (the granted OAuth scope is too narrow; write tools need the full tasks scope, not tasks.readonly).`;
   } else if (res.status === 403) {

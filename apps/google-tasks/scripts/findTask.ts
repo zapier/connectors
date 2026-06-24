@@ -8,18 +8,14 @@ import { throwForGoogleTasks } from "../lib/google-tasks.ts";
 // The Google Tasks API has NO server-side task search, so findTask is authored
 // (not codegen-scaffolded): it lists tasks, pages through nextPageToken, and
 // matches the title client-side — exact (case-insensitive) preferred, else the
-// closest substring match. Mirrors the V3 "Find Task" behavior, but can also
-// search completed tasks via showCompleted.
+// closest substring match. It can also search completed tasks via
+// showCompleted.
 
 const MAX_PAGES = 20;
 
 const inputSchema = z
   .object({
-    tasklist: z
-      .string()
-      .describe(
-        'Task-list id from listTaskLists, or the literal "@default" for the user\'s primary list.',
-      ),
+    tasklist: z.string().describe("Task-list id (resolve via listTaskLists)."),
     title: z
       .string()
       .describe(

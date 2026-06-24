@@ -7,11 +7,7 @@ import { SUCCESS, throwForGoogleTasks } from "../lib/google-tasks.ts";
 
 const inputSchema = z
   .object({
-    tasklist: z
-      .string()
-      .describe(
-        'Task-list id from listTaskLists, or the literal "@default" for the user\'s primary list.',
-      ),
+    tasklist: z.string().describe("Task-list id (resolve via listTaskLists)."),
     task: z.string().describe("Task id from listTasks or getTask."),
   })
   .strict();
@@ -31,7 +27,7 @@ const definition = defineTool({
   name: "deleteTask",
   title: "Delete Task",
   description:
-    "Permanently delete a task. Irreversible. Deleting one instance of a recurring task removes the whole series. To just hide completed tasks, use clearCompletedTasks.",
+    "Permanently delete a task. Irreversible. If the task was assigned from Docs/Chat, its source is deleted too. To just hide completed tasks, use clearCompletedTasks.",
   inputSchema,
   outputSchema,
   annotations: {
