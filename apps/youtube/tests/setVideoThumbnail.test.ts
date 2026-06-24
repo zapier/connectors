@@ -85,4 +85,49 @@ describe("setVideoThumbnail: error path", () => {
       setVideoThumbnailDefinition.run(validInput, { fetch: fakeFetch }),
     ).rejects.toThrow(/could not fetch image_url/);
   });
+
+  it("translates a 403 forbidden into verified-account guidance", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      binaryResponse(new Uint8Array([255, 216, 255])),
+    );
+
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse(
+        {
+          error: {
+            code: 403,
+            message:
+              "The user doesn't have permissions to upload and set custom video thumbnails.",
+            errors: [{ reason: "forbidden" }],
+          },
+        },
+        { status: 403 },
+      )) as typeof globalThis.fetch;
+
+    await expect(
+      setVideoThumbnailDefinition.run(validInput, { fetch: fakeFetch }),
+    ).rejects.toThrow(/verified YouTube account/i);
+  });
+
+  it("translates a 403 insufficientPermissions into a scope-reconnect message", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      binaryResponse(new Uint8Array([255, 216, 255])),
+    );
+
+    const fakeFetch: typeof globalThis.fetch = (async () =>
+      jsonResponse(
+        {
+          error: {
+            code: 403,
+            message: "Insufficient permission.",
+            errors: [{ reason: "insufficientPermissions" }],
+          },
+        },
+        { status: 403 },
+      )) as typeof globalThis.fetch;
+
+    await expect(
+      setVideoThumbnailDefinition.run(validInput, { fetch: fakeFetch }),
+    ).rejects.toThrow(/youtube\.upload scope/i);
+  });
 });

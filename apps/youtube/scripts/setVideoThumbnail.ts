@@ -4,11 +4,19 @@
 // be expressed as a codegen single-JSON-call op. The image is fetched from the given
 // URL (unauthenticated — globalThis.fetch, so the YouTube bearer token is never sent
 // to a third-party host) and streamed to the upload endpoint via the authed ctx.fetch.
-import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
+import {
+  ConnectorHttpError,
+  defineTool,
+  handleIfScriptMain,
+} from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { throwForYouTube, ThumbnailsSchema } from "../lib/youtube.ts";
+import {
+  hasYouTubeReason,
+  throwForYouTube,
+  ThumbnailsSchema,
+} from "../lib/youtube.ts";
 
 const inputSchema = z
   .object({
@@ -67,6 +75,27 @@ const definition = defineTool({
       headers: { "Content-Type": contentType },
       body: bytes,
     });
+    if (res.ok) return res.json();
+
+    // A 403 here has two distinct causes worth separating for the agent: a missing
+    // youtube.upload scope (reconnect), versus the account simply not being permitted
+    // to set custom thumbnails — observed in practice for unverified accounts, which
+    // the API phrases as a plain "forbidden". The shared mapper's generic 403 text
+    // doesn't mention the verification requirement, so handle 403 explicitly here.
+    if (res.status === 403) {
+      const errBody = (await res.json().catch(() => null)) as unknown;
+      if (hasYouTubeReason(errBody, "insufficientPermissions")) {
+        throw ConnectorHttpError.fromResponseBody(res, errBody, {
+          message:
+            "YouTube setVideoThumbnail 403: insufficientPermissions — the connection lacks the youtube.upload scope. Reconnect YouTube with upload access.",
+        });
+      }
+      throw ConnectorHttpError.fromResponseBody(res, errBody, {
+        message:
+          "YouTube setVideoThumbnail 403: forbidden — this account isn't permitted to set a custom thumbnail. Custom thumbnails require a verified YouTube account (verify at youtube.com/verify) and ownership of the video.",
+      });
+    }
+
     await throwForYouTube(res, "setVideoThumbnail");
     return res.json();
   },
