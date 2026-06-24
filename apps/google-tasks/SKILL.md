@@ -1,0 +1,96 @@
+---
+name: google-tasks
+description: Agent-callable Google Tasks tools — create, list, update, complete, move, and delete tasks and task lists. Use when the user wants to manage Google Tasks or to-dos, even if they don't name Google Tasks explicitly.
+license: Elastic-2.0
+compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+metadata:
+  source: https://github.com/zapier/connectors/blob/main/apps/google-tasks/SKILL.md
+  title: Google Tasks
+  api-docs: https://developers.google.com/workspace/tasks/reference/rest
+  zapier-app-key: GoogleTasksCLIAPI
+---
+
+# Google Tasks
+
+_Independent, unofficial connector for Google Tasks. Not affiliated with, endorsed by, or sponsored by Google Tasks. "Google Tasks" is a trademark of its owner, used only to identify the service this connector works with._
+
+Agent-callable tools for Google Tasks (the [Google Tasks API v1](https://developers.google.com/workspace/tasks/reference/rest)). Manage **task lists** (list, get, create, rename, delete) and **tasks** (list, find by title, get, create, update, complete/reopen, reorder/reparent/move, delete, and clear completed). Authenticate once with a Zapier-managed Google connection (recommended) or a direct OAuth token. The connector exposes the full task surface as 13 single-purpose tools with stable, predictable I/O — no triggers (it is non-polling).
+
+## Step 0 — pre-flight and auth
+
+Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+
+```bash
+./preflight.sh
+```
+
+Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
+
+Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
+
+## When to use this connector
+
+- **Capture and organize to-dos** — create tasks (optionally as subtasks or at a position), create and rename task lists.
+- **Review what's on a list** — list active (or completed) tasks, find a task by title, get a task's details.
+- **Move work forward** — mark tasks complete or reopen them, reorder or reparent tasks, move a task to another list.
+- **Prune** — delete a task or list, or clear (hide) all completed tasks in a list.
+- Use whenever the user wants to manage Google Tasks or their to-do list, even if they don't name Google Tasks explicitly.
+
+## Scripts
+
+| Script                           | Tool name             | Connections    | Description                                                                               |
+| -------------------------------- | --------------------- | -------------- | ----------------------------------------------------------------------------------------- |
+| `scripts/listTaskLists.ts`       | `listTaskLists`       | `google-tasks` | List the user's task lists (id + title). The resolver for any `tasklist` input.           |
+| `scripts/getTaskList.ts`         | `getTaskList`         | `google-tasks` | Get a single task list by id.                                                             |
+| `scripts/createTaskList.ts`      | `createTaskList`      | `google-tasks` | Create a new task list.                                                                   |
+| `scripts/updateTaskList.ts`      | `updateTaskList`      | `google-tasks` | Rename a task list (title is the only editable field).                                    |
+| `scripts/deleteTaskList.ts`      | `deleteTaskList`      | `google-tasks` | Delete a task list and all tasks in it (irreversible).                                    |
+| `scripts/listTasks.ts`           | `listTasks`           | `google-tasks` | List/search tasks in a list; active-only by default, with completion/due/updated filters. |
+| `scripts/findTask.ts`            | `findTask`            | `google-tasks` | Find a task in a list by title (exact match preferred). Resolves a title to a task id.    |
+| `scripts/getTask.ts`             | `getTask`             | `google-tasks` | Get a single task by id.                                                                  |
+| `scripts/createTask.ts`          | `createTask`          | `google-tasks` | Create a task (optionally a subtask / at a position).                                     |
+| `scripts/updateTask.ts`          | `updateTask`          | `google-tasks` | Update a task; set `status` to complete or reopen it.                                     |
+| `scripts/moveTask.ts`            | `moveTask`            | `google-tasks` | Reposition, reparent, or move a task to another list.                                     |
+| `scripts/deleteTask.ts`          | `deleteTask`          | `google-tasks` | Permanently delete a task.                                                                |
+| `scripts/clearCompletedTasks.ts` | `clearCompletedTasks` | `google-tasks` | Hide all completed tasks in a list (recoverable; non-destructive).                        |
+
+## Disambiguation & refusals
+
+- **Resolving a task or list by name.** Before updating, completing, moving, or deleting a task referenced by title, resolve it first — `findTask` returns the best title match, or `listTasks` to see candidates. If two or more tasks in the list have the **same title** (exact, case-insensitive), don't silently pick one: list the tied candidates with a distinguishing field (due date, status, notes) and ask which one. If exactly one matches, act on it — don't over-ask. Same rule for `listTaskLists` when a list is named.
+- **Unsupported operations — say so, don't fake it.** This connector cannot: create or edit **recurring** tasks (the API has no recurrence fields — recurrence is managed only in the Google Tasks app), set a task's **time of day or reminder** (`due` is date-only — the time is discarded), or reorder by writing `position` (use `moveTask`). If asked for one of these, say it's unsupported and stop — do not substitute another tool and report success for something you didn't do.
+
+## Output format
+
+Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
+
+- **`data`** — the script's result (the shape declared by its `outputSchema`).
+- **`meta.outputDataValidation`** — what validating `data` did:
+  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
+
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
+
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` — CLI: append `--filterOutputData '<jq>'`; MCP: pass `meta: { filterOutputData: "<jq>" }` as a tool argument. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (see this script's output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema. The imported SDK has no `filterOutputData` option — reshape the returned `data` in code instead.
+
+## Auth
+
+Google Tasks uses Google **OAuth 2.0** (scope `https://www.googleapis.com/auth/tasks` — full read/write; the read-only scope `…/auth/tasks.readonly` covers only the list/get tools). One connection slot, `google-tasks`, with two modes:
+
+- **Zapier-managed (recommended) — `zapier:<connection-id>`.** Select the Google Tasks connection by id (`GOOGLE_TASKS_ZAPIER_CONNECTION_ID`). Zapier injects the credential per request and handles token refresh, retries, and governance — nothing expires on you.
+- **Direct token — `env:GOOGLE_TASKS_ACCESS_TOKEN`.** A Google OAuth access token, sent as a bearer header. Note: Google access tokens expire ~1 hour after issue and this mode does **not** refresh them, so it suits short-lived/testing use; prefer the Zapier-managed connection for anything ongoing.
+- `GOOGLE_TASKS_REFRESH_TOKEN` / `GOOGLE_TASKS_CLIENT_ID` / `GOOGLE_TASKS_CLIENT_SECRET` are **reserved for a future refresh-capable direct mode and are not used in this version.**
+
+Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it).
+
+## Running locally
+
+```bash
+npx @zapier/google-tasks-connector run <tool-name> '{ ... }' --connection [<resolver>:]<value>
+```
+
+When `PREFLIGHT_RUNNER` is `bun`, use `bunx` instead of `npx` — match the package runner to the runtime the pre-flight picked (a `bun` verdict often means no usable npm).
+
+## API quirks worth knowing
+
+<!-- references-table: filled by generate-references -->
