@@ -7,6 +7,8 @@
 // on its own response shape. The two helpers below cover the connector's two
 // HTTP shapes: GAQL reads (googleAds:search) and resource mutates (:mutate).
 
+import { ConnectorHttpError, readResponseBody } from "@zapier/connectors-sdk";
+
 /** The Google Ads API version this connector targets. */
 export const GOOGLE_ADS_VERSION = "v23";
 export const GOOGLE_ADS_API = `https://googleads.googleapis.com/${GOOGLE_ADS_VERSION}`;
@@ -49,41 +51,52 @@ interface GoogleAdsErrorBody {
 }
 
 /**
- * Turn a non-2xx Google Ads response into an actionable Error message.
- * Pulls the first GoogleAdsFailure sub-error when present and adds a recovery
- * hint for the two failure modes an agent can act on (manager-account routing
- * and malformed GAQL).
+ * Build an actionable message from a non-2xx Google Ads response body. Pulls the
+ * first GoogleAdsFailure sub-error when present and adds a recovery hint for the
+ * two failure modes an agent can act on (manager-account routing and malformed
+ * GAQL). The status is named here (toString also renders it) so the one-line
+ * `.message` reads on its own.
  */
-function googleAdsError(
+function googleAdsMessage(
   toolName: string,
   status: number,
-  body: GoogleAdsErrorBody | string,
-): Error {
-  if (typeof body === "string") {
-    return new Error(
-      `Google Ads ${toolName} ${status}: ${body || "unknown error"}`,
-    );
+  body: unknown,
+): string {
+  if (typeof body !== "object" || body === null) {
+    const text = typeof body === "string" ? body : "";
+    return `Google Ads ${toolName} ${status}: ${text || "unknown error"}`;
   }
-  const sub = body.error?.details?.[0]?.errors?.[0];
+  const err = (body as GoogleAdsErrorBody).error;
+  const sub = err?.details?.[0]?.errors?.[0];
   const code = sub?.errorCode ? Object.values(sub.errorCode)[0] : undefined;
-  const message = sub?.message ?? body.error?.message ?? "unknown error";
+  const message = sub?.message ?? err?.message ?? "unknown error";
 
   if (
     code === "USER_PERMISSION_DENIED" ||
     /permission to access customer/i.test(message)
   ) {
-    return new Error(
-      `Google Ads ${toolName} ${status}: ${message} When the account is accessed through a manager account, set loginCustomerId to the manager account id (digits only).`,
-    );
+    return `Google Ads ${toolName} ${status}: ${message} When the account is accessed through a manager account, set loginCustomerId to the manager account id (digits only).`;
   }
   if (sub?.errorCode && "queryError" in sub.errorCode) {
-    return new Error(
-      `Google Ads ${toolName} ${status}: GAQL error (${code}): ${message} Discover valid fields for a resource with listSearchableFields, then fix the SELECT/FROM/WHERE clause.`,
-    );
+    return `Google Ads ${toolName} ${status}: GAQL error (${code}): ${message} Discover valid fields for a resource with listSearchableFields, then fix the SELECT/FROM/WHERE clause.`;
   }
-  return new Error(
-    `Google Ads ${toolName} ${status} (${code ?? body.error?.status ?? "error"}): ${message}`,
-  );
+  return `Google Ads ${toolName} ${status} (${code ?? err?.status ?? "error"}): ${message}`;
+}
+
+/**
+ * Turn a non-2xx Google Ads response into a `ConnectorHttpError`. The full
+ * response (status, headers, body) is captured on `error.response` and renders
+ * in `toString()` — so the GoogleAdsFailure envelope (and any unrecognized
+ * edge/proxy body) surfaces intact instead of collapsing to a derived one-liner.
+ */
+function googleAdsError(
+  toolName: string,
+  res: Pick<Response, "status" | "statusText" | "headers">,
+  body: unknown,
+): ConnectorHttpError {
+  return ConnectorHttpError.fromResponseBody(res, body, {
+    message: googleAdsMessage(toolName, res.status, body),
+  });
 }
 
 /** Make an authed Google Ads request and return the parsed JSON body. */
@@ -102,14 +115,11 @@ export async function googleAdsRequest<T>(
   });
 
   if (!res.ok) {
-    const parsed = (await res
-      .json()
-      .catch(() => null)) as GoogleAdsErrorBody | null;
-    throw googleAdsError(
-      toolName,
-      res.status,
-      parsed ?? (await res.text().catch(() => "")),
-    );
+    // Read the body once: JSON for the GoogleAdsFailure envelope, raw text for
+    // an unrecognized edge/proxy body. (The old json()-then-text() fallback
+    // couldn't reach the text branch — the failed json() had already consumed
+    // the stream.)
+    throw googleAdsError(toolName, res, await readResponseBody(res));
   }
   return (await res.json()) as T;
 }
