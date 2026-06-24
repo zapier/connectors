@@ -1,5 +1,12 @@
 # @zapier/google-calendar-connector
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [571624a]
+  - @zapier/connectors-sdk@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes
