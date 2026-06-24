@@ -1,6 +1,5 @@
 {
   "name": "@zapier/google-sheets-connector",
-  "private": true,
   "description": "Agent-callable Google Sheets tools — read and write spreadsheet data as rows or raw cells, manage worksheets and columns, and apply formatting, sorting, and validation. Use when the user mentions Google Sheets or wants to read, add, update, look up, or organize spreadsheet data, even if they don't name Sheets explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -56,5 +55,9 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
