@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: codegen scaffolds the single POST, but
-// YouTube returns subscriptionDuplicate when the user is already subscribed —
+// subscriptions.insert is a single POST, but YouTube returns subscriptionDuplicate
+// when the user is already subscribed —
 // a postcondition-satisfied "soft success". We catch it and look up the existing
 // subscription so the tool still returns a valid Subscription (with the id the
 // agent needs) rather than throwing on a state it actually wanted.

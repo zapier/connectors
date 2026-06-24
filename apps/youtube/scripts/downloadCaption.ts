@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: codegen scaffolds JSON-returning ops, but
 // captions.download returns a raw caption FILE body (srt/vtt/sbv/scc/ttml text),
-// not a JSON resource — so the response is read as text and wrapped here.
+// not a JSON resource — so the response is read as text and wrapped here rather
+// than parsed as JSON.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

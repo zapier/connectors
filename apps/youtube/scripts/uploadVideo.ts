@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: videos.insert uses the resumable upload
-// protocol on the upload host — a two-step composition (POST the metadata with
-// X-Upload-Content-* headers to open a session, read the session URI from the
-// Location header, then PUT the bytes to it) that doesn't fit codegen's single
-// JSON-call model. The source video (and optional thumbnail) are fetched from
+// videos.insert uses the resumable upload protocol on the upload host — a two-step
+// flow (POST the metadata with X-Upload-Content-* headers to open a session, read
+// the session URI from the Location header, then PUT the bytes to it), so it's
+// hand-rolled rather than a single JSON call. The source video (and optional
+// thumbnail) are fetched from
 // their URLs with globalThis.fetch so the YouTube bearer token is never sent to a
 // third-party host; the upload-host calls go through the authed ctx.fetch.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: this is a read-modify-write composition,
-// not a single HTTP call codegen can scaffold. videos.update REPLACES every field
+// This is a read-modify-write composition, not a single HTTP call. videos.update
+// REPLACES every field
 // within a written part — any mutable snippet/status field omitted from the request
 // is reset to its default. So "change just the title" must first read the current
 // snippet+status, merge the agent's changes onto it, then PUT the full object back.

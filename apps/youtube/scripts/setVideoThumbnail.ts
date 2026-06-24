@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: thumbnails.set is a binary upload on the
-// upload host (raw image bytes + Content-Type, not a JSON requestBody), so it can't
-// be expressed as a codegen single-JSON-call op. The image is fetched from the given
+// thumbnails.set is a binary upload on the upload host (raw image bytes +
+// Content-Type, not a JSON requestBody), so it's hand-rolled rather than a single
+// JSON call. The image is fetched from the given
 // URL (unauthenticated — globalThis.fetch, so the YouTube bearer token is never sent
 // to a third-party host) and streamed to the upload endpoint via the authed ctx.fetch.
 import {
