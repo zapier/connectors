@@ -1,5 +1,12 @@
 # @zapier/telegram-connector
 
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [571624a]
+  - @zapier/connectors-sdk@0.2.0
+
 ## 0.1.3
 
 ### Patch Changes
