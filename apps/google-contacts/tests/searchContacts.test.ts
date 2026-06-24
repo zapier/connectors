@@ -16,13 +16,12 @@ function jsonResponse(body: unknown): Response {
 }
 
 describe("searchContacts: run", () => {
-  it("GETs people:searchContacts with the query and renames nextPageToken", async () => {
+  it("GETs people:searchContacts with the query (no pagination cursor)", async () => {
     const calls: Array<{ url: string }> = [];
     const fakeFetch = (async (url: string) => {
       calls.push({ url });
       return jsonResponse({
         results: [{ person: { resourceName: "people/c1" } }],
-        nextPageToken: "tok",
       });
     }) as typeof globalThis.fetch;
 
@@ -34,7 +33,6 @@ describe("searchContacts: run", () => {
     expect(calls[0]?.url).toContain("/v1/people:searchContacts");
     expect(calls[0]?.url).toContain("query=jane");
     expect(result.results?.[0]?.person?.resourceName).toBe("people/c1");
-    expect(result.next_page_token).toBe("tok");
     expect(outputSchema.safeParse(result).success).toBe(true);
   });
 });

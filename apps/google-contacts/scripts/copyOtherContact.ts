@@ -18,7 +18,7 @@ const inputSchema = z
     copyMask: z
       .string()
       .describe(
-        "Which fields to copy onto the new contact. Defaults to names, emails, and phones.",
+        "Which fields to copy onto the new contact. Only emailAddresses, names, and phoneNumbers are supported. Defaults to all three.",
       )
       .default("names,emailAddresses,phoneNumbers"),
   })

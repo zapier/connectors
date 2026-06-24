@@ -44,10 +44,6 @@ const definition = defineTool({
       .array(z.object({ person: PersonSchema.optional() }))
       .optional()
       .describe("Matching other contacts."),
-    next_page_token: z
-      .string()
-      .optional()
-      .describe("Cursor for the next page; absent when there are no more."),
   }),
   annotations: {
     readOnlyHint: true,
@@ -65,12 +61,8 @@ const definition = defineTool({
     url.searchParams.set("pageSize", String(input.pageSize ?? 10));
     const res = await ctx.fetch(url.toString(), { method: "GET" });
     await throwForGoogleContacts(res, "searchOtherContacts");
-    const payload = (await res.json()) as Record<string, unknown>;
-    if (payload && typeof payload === "object" && "nextPageToken" in payload) {
-      payload.next_page_token = payload.nextPageToken;
-      delete payload.nextPageToken;
-    }
-    return payload;
+    // searchOtherContacts does not paginate (no pageToken in, no cursor out).
+    return res.json();
   },
 });
 
