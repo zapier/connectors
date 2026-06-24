@@ -97,7 +97,7 @@ const definition = defineTool({
   name: "searchVideos",
   title: "Search Videos",
   description:
-    "Search YouTube for videos by keyword, channel, date, or duration. Returns lightweight results (id + snippet); call getVideo for statistics and contentDetails. Charged to a separate Search Queries quota bucket (~100 searches/day), independent of the main 10,000-unit pool.",
+    "Search YouTube for videos by keyword, channel, date, or duration. Returns lightweight results (id + snippet); call getVideo for statistics and contentDetails. Metered against a separate Search Queries quota bucket, independent of the main 10,000-unit pool.",
   inputSchema,
   outputSchema,
   annotations: {

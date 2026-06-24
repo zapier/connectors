@@ -70,7 +70,7 @@ const definition = defineTool({
   name: "uploadVideo",
   title: "Upload Video",
   description:
-    "Upload a new video file (fetched from a URL) to the authenticated user's channel, with metadata (title, description, privacy, tags, category, scheduled publish, optional thumbnail). Charged to a separate Video Uploads quota bucket (~100 uploads/day), not the main 10,000-unit pool. Requires the youtube.upload scope.",
+    "Upload a new video file (fetched from a URL) to the authenticated user's channel, with metadata (title, description, privacy, tags, category, scheduled publish, optional thumbnail). Metered against a separate Video Uploads quota bucket, not the main 10,000-unit pool. Requires the youtube.upload scope.",
   inputSchema,
   outputSchema,
   annotations: {
