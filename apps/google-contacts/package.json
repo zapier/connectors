@@ -1,9 +1,6 @@
 {
   "name": "@zapier/google-contacts-connector",
-  "version": "0.0.0",
-  "publishConfig": {
-    "access": "public"
-  },
+  "private": true,
   "description": "Agent-callable Google Contacts tools — create, find, update, and delete contacts, manage contact groups (labels) and membership, and read auto-saved other contacts. Use when the user mentions Google Contacts or wants to look up, save, or organize people — including requests that don't name Google Contacts explicitly, e.g. add Jane to my contacts, find Bob's email.",
   "license": "Elastic-2.0",
   "type": "module",
