@@ -38,7 +38,7 @@ const definition = defineTool({
   name: "listOtherContacts",
   title: "List Other Contacts",
   description:
-    'List the user\'s auto-saved "other contacts" — people interacted with (e.g. emailed) but never explicitly saved. Read-only; use copyOtherContactToMyContactsGroup to make one editable.',
+    'List the user\'s auto-saved "other contacts" — people interacted with (e.g. emailed) but never explicitly saved. Read-only; use copyOtherContact to make one editable.',
   inputSchema,
   outputSchema: z.object({
     otherContacts: z

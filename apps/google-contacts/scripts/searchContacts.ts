@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
 import {
+  DEFAULT_PERSON_FIELDS,
   PersonSchema,
   throwForGoogleContacts,
 } from "../lib/google-contacts.ts";
@@ -20,9 +21,7 @@ const inputSchema = z
       .describe(
         "Comma-separated list of contact fields to return on each match. Defaults to a comprehensive set.",
       )
-      .default(
-        "names,emailAddresses,phoneNumbers,addresses,organizations,biographies,metadata,memberships",
-      ),
+      .default(DEFAULT_PERSON_FIELDS),
     pageSize: z
       .number()
       .int()

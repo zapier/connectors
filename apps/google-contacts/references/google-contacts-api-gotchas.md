@@ -130,15 +130,16 @@ The response reports partial failures without erroring:
 ([otherContacts.list](https://developers.google.com/people/api/rest/v1/otherContacts/list)).
 They require the `contacts.other.readonly` OAuth scope
 ([otherContacts.list](https://developers.google.com/people/api/rest/v1/otherContacts/list))
-and the API provides only read endpoints (`list`, `search`, `copyOtherContactToMyContactsGroup`).
+and the connector exposes them only through read/copy tools: `listOtherContacts`, `searchOtherContacts`, and `copyOtherContact`.
 
 **Limited field set:** other contacts support only a subset of person fields for
 `READ_SOURCE_TYPE_CONTACT`: emailAddresses, metadata, names, phoneNumbers, photos
 ([otherContacts.list](https://developers.google.com/people/api/rest/v1/otherContacts/list)).
 
-`copyOtherContactToMyContactsGroup` promotes an other contact to a saved contact.
-The `copyMask` is limited to: emailAddresses, names, phoneNumbers
-([copyOtherContactToMyContactsGroup](https://developers.google.com/people/api/rest/v1/otherContacts/copyOtherContactToMyContactsGroup)).
+The `copyOtherContact` tool promotes an other contact to a saved contact (wrapping
+Google's `otherContacts.copyOtherContactToMyContactsGroup` method). The `copyMask`
+is limited to: emailAddresses, names, phoneNumbers
+([docs](https://developers.google.com/people/api/rest/v1/otherContacts/copyOtherContactToMyContactsGroup)).
 
 ## Pagination
 

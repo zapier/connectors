@@ -47,7 +47,7 @@ const definition = defineTool({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ copyMask: input.copyMask }),
     });
-    await throwForGoogleContacts(res, "copyOtherContactToMyContactsGroup");
+    await throwForGoogleContacts(res, "copyOtherContact");
     return res.json();
   },
 });

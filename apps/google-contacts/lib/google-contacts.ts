@@ -2,7 +2,7 @@
 //
 // The Person resource is returned by ~10 tools (createContact, getContact,
 // updateContact, searchContacts, listContacts, updateContactPhoto,
-// deleteContactPhoto, copyOtherContactToMyContactsGroup, listOtherContacts,
+// deleteContactPhoto, copyOtherContact, listOtherContacts,
 // searchOtherContacts), and the Name / EmailAddress / PhoneNumber / Address /
 // Organization / ... sub-shapes are shared between the contact-write inputs and
 // the Person output — so the canonical shapes live here and every contact tool
@@ -378,7 +378,7 @@ export async function throwForGoogleContacts(
     res.status === 429 ||
     (status && RATE_LIMIT_STATUSES.has(status))
   ) {
-    message = `${prefix}: RESOURCE_EXHAUSTED — rate/quota limited (the per-day Contact Writes quota is the common cause for writes). Back off and retry with jitter (no Retry-After is sent).`;
+    message = `${prefix}: RESOURCE_EXHAUSTED — rate/quota limited (the per-day Contact Writes quota is the common cause for writes). Back off and retry with jitter (the API does not document a Retry-After header).`;
   } else if (res.status === 403) {
     message = `${prefix}: ${status ?? "PERMISSION_DENIED"} — the granted OAuth scope is too narrow. Reconnect Google Contacts with contacts access (and contacts.other.readonly for other-contacts tools).`;
   } else if (res.status === 400 && status === "FAILED_PRECONDITION") {
