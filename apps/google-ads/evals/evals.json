@@ -1,0 +1,344 @@
+{
+  "skill_name": "google-ads",
+  "version": "ce5eb75",
+  "description": "Intent-anchored eval scenarios for the google-ads connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision in-connector assets (budgets, conversion actions); discover-act scenarios read/find against a pre-existing Google Ads account (a fixture, since the connector can't create accounts or campaigns); act-only scenarios target the ambient connection or are graceful-refusal probes for out-of-scope capabilities. outcome assertions are backend-agnostic world/reply facts graded on all arms; mechanism assertions are tool-call hygiene graded only on our-tool arms. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "google_ads_customer_id",
+      "description": "A Google Ads operating account (customer id) the eval connection can access. The connector cannot create accounts, so an operator provisions one and confirms the eval connection can reach it.",
+      "env": "EVAL_GOOGLE_ADS_CUSTOMER_ID",
+      "default": "1234567890",
+      "expects": "A Google Ads account customer id (10 digits, no hyphens) that the eval connection can access — either directly accessible via listAccessibleCustomers, or as a client account beneath an accessible manager. The account has API access enabled and a defined account currency so budget amounts and cost metrics resolve.",
+      "provision": "operator"
+    },
+    {
+      "name": "google_ads_seeded_campaign",
+      "description": "A known campaign in the customer account, used by the find-and-pause scenario as a target the connector cannot create itself.",
+      "env": "EVAL_GOOGLE_ADS_CAMPAIGN",
+      "default": "Eval Campaign",
+      "expects": "At least one campaign named 'Eval Campaign' in the google_ads_customer_id account, currently ENABLED, so the find-and-pause scenario has a real target to locate, pause, and re-enable.",
+      "provision": "operator",
+      "root": "google_ads_customer_id"
+    }
+  ],
+  "evals": [
+    {
+      "id": "list-accessible-accounts",
+      "kind": "act-only",
+      "description": "Account-resolution entry point: report which Google Ads accounts the connection can access.",
+      "steps": [
+        {
+          "intent": "Which Google Ads accounts can I access?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the Google Ads accounts the connection can directly access (it may report that none are directly accessible), identifying them by their customer ids / resource names."
+            ],
+            "mechanism": [
+              "Lists the accessible customers rather than inventing or hard-coding a customer id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "resolve-client-accounts-under-manager",
+      "kind": "discover-act",
+      "description": "Manager-hierarchy navigation: enumerate the client (operating) accounts beneath a manager account.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "List the client accounts I can operate on under the Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the client/operating accounts beneath the given account (or states there are none), reporting each account's id."
+            ],
+            "mechanism": [
+              "Enumerates the client accounts under the account id given in the request, sending that id as the manager (login-customer-id) context; does not fabricate account ids."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "discover-queryable-fields",
+      "kind": "act-only",
+      "description": "GAQL authoring aid: discover which fields are queryable on a resource.",
+      "steps": [
+        {
+          "intent": "What fields can I query on a campaign in Google Ads, and which of them can I filter or sort by?",
+          "assertions": {
+            "outcome": [
+              "The reply lists queryable campaign fields (e.g. campaign.id, campaign.name, campaign.status) and indicates, for fields it returns, whether each is selectable, filterable, and/or sortable."
+            ],
+            "mechanism": [
+              "Looks up the field metadata for the campaign resource rather than guessing field names from memory."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-active-campaigns",
+      "kind": "discover-act",
+      "description": "Core read: list the active campaigns in an account.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "List the active (enabled) campaigns in my Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the enabled campaigns in the given account (possibly none), each with at least its name and status."
+            ],
+            "mechanism": [
+              "Restricts the result to ENABLED campaigns and uses the customer id given in the request rather than guessing one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-campaign-performance",
+      "kind": "discover-act",
+      "description": "Reporting: a 30-day campaign performance report with core metrics.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "How did my campaigns perform over the last 30 days in account {{google_ads_customer_id}}? Show impressions, clicks, and cost.",
+          "assertions": {
+            "outcome": [
+              "The reply presents a per-campaign performance report covering the last 30 days with impressions, clicks, and cost (the result set may be empty if the account has no campaigns).",
+              "Any cost figure is presented as a sensible currency amount, not a raw micros integer (e.g. not reporting a $5 cost as 5000000)."
+            ],
+            "mechanism": [
+              "Requests the report for the account in the request over a last-30-days range with impressions/clicks/cost metrics, in a single report query."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-clicks-by-device",
+      "kind": "discover-act",
+      "description": "Reporting with segmentation: clicks and cost broken down by device over 7 days.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "Break down clicks and cost by device for the last 7 days for account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "The reply communicates the device-level result for the last 7 days: either clicks and cost broken down by device (e.g. mobile / desktop / tablet), or a clear statement that there is no device-level data/traffic for that period. It must not fabricate device figures.",
+              "Any cost figure is presented as a sensible currency amount, not a raw micros integer (e.g. not reporting a $5 cost as 5000000)."
+            ],
+            "mechanism": [
+              "Requests the report with a device segment over a last-7-days range; segmenting by device is expressed in the query, not faked by post-hoc grouping of unsegmented data."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-and-adjust-budget",
+      "kind": "arrange-act",
+      "description": "In-connector lifecycle: create a daily budget (micros), then raise it. Probes the micros conversion.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "Create a daily budget named 'Eval Budget {{run_id}}' of $50 per day in Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "A campaign budget named 'Eval Budget {{run_id}}' with a $50/day amount now exists in the given account and its resource name is reported."
+            ],
+            "mechanism": [
+              "Sends the daily amount as 50,000,000 micros (50 × 1,000,000), not as 50.",
+              "Creates the budget in the account id given in the request via a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Raise that budget to $75 per day.",
+          "assertions": {
+            "outcome": [
+              "An existing budget is raised to a $75/day amount and the reply confirms the new $75 daily figure, rather than a new budget being created."
+            ],
+            "mechanism": [
+              "Calls updateCampaignBudget with the amount as 75,000,000 micros (75 × 1,000,000) against an existing budget id; does not create a second budget."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-up-offline-conversion-action",
+      "kind": "arrange-act",
+      "description": "In-connector lifecycle: create an offline-conversion tracking action, then find it.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "Set up offline conversion tracking by creating a conversion action named 'Eval Offline {{run_id}}' in Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "A conversion action named 'Eval Offline {{run_id}}' set up for offline (click-upload) tracking now exists in the given account and its resource name is reported."
+            ],
+            "mechanism": [
+              "Creates the conversion action with an upload-clicks type so it is usable for offline conversions; creates it in the account id given in the request."
+            ]
+          }
+        },
+        {
+          "intent": "List the conversion actions in that account and confirm the one you just created is there.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the account's conversion actions and confirms 'Eval Offline {{run_id}}' is present."
+            ],
+            "mechanism": [
+              "Finds the action by listing the account's conversion actions rather than asserting its presence without a lookup."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-and-pause-campaign",
+      "kind": "discover-act",
+      "description": "Campaign management: locate a named campaign, pause it, then re-enable it (restore state).",
+      "requires": ["google_ads_customer_id", "google_ads_seeded_campaign"],
+      "steps": [
+        {
+          "intent": "Find the campaign named '{{google_ads_seeded_campaign}}' in Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "The reply locates the campaign named '{{google_ads_seeded_campaign}}' in the given account and reports its id and status."
+            ],
+            "mechanism": [
+              "Resolves the campaign by its name in the request rather than guessing a campaign id."
+            ]
+          }
+        },
+        {
+          "intent": "Pause that campaign.",
+          "assertions": {
+            "outcome": ["The campaign the agent just located is now paused."],
+            "mechanism": [
+              "Sets the status to PAUSED on the campaign id resolved earlier in this session; does not pause a different campaign or guess an id."
+            ]
+          }
+        },
+        {
+          "intent": "Re-enable that campaign so it is running again.",
+          "assertions": {
+            "outcome": [
+              "The same campaign is now enabled again (state restored)."
+            ],
+            "mechanism": [
+              "Sets the status to ENABLED on the same campaign id; does not remove the campaign (REMOVED is irreversible)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "run-gaql-query",
+      "kind": "discover-act",
+      "description": "Power read: run a raw GAQL query for campaign fields.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "Run a query to get the id, name, and status of every campaign in Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "The reply returns campaigns from the given account with their id, name, and status (possibly an empty set)."
+            ],
+            "mechanism": [
+              "Issues a single GAQL query selecting from one resource (campaign); does not attempt a multi-resource JOIN."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-ad-groups-and-ads",
+      "kind": "discover-act",
+      "description": "Hierarchy read: list ad groups, then the ads within one of them.",
+      "requires": ["google_ads_customer_id"],
+      "steps": [
+        {
+          "intent": "List the ad groups in my Google Ads account {{google_ads_customer_id}}.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the account's ad groups (possibly none), each with its name and status."
+            ],
+            "mechanism": [
+              "Uses the customer id given in the request; does not invent an ad group."
+            ]
+          }
+        },
+        {
+          "intent": "Now show me the ads in one of those ad groups.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the ads in one of the account's ad groups (possibly none), identifying each ad."
+            ],
+            "mechanism": [
+              "Scopes the ad listing to an ad group it discovered in this session rather than guessing an ad group id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-offline-conversion-upload",
+      "kind": "act-only",
+      "description": "Graceful refusal: uploading offline conversions is out of scope (a separate data-upload surface).",
+      "steps": [
+        {
+          "intent": "Upload yesterday's offline sales conversions to Google Ads: order ABC123 converted at 2026-06-21 14:00 for $250, click id Cj0KEQ.",
+          "assertions": {
+            "outcome": [
+              "The reply states that uploading offline conversions is not something this connector can do and does not claim the upload succeeded.",
+              "If helpful, the reply may note it can still create or list conversion actions, but it does not present that as having uploaded the conversion."
+            ],
+            "mechanism": [
+              "Does not call any tool that fabricates a conversion upload."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-create-campaign",
+      "kind": "act-only",
+      "description": "Graceful refusal: full campaign creation is out of scope.",
+      "steps": [
+        {
+          "intent": "Create and launch a new Search campaign called 'Summer Promo' targeting California with a $100/day budget.",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear it cannot create or launch a full campaign and does not claim a campaign was created or launched."
+            ],
+            "mechanism": [
+              "Does not fabricate a campaign-creation call or report a campaign id it did not create."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-customer-match-upload",
+      "kind": "act-only",
+      "description": "Graceful refusal: adding members to a Customer Match audience is out of scope (a separate data-upload surface).",
+      "steps": [
+        {
+          "intent": "Add these customer emails to my Customer Match audience: a@example.com, b@example.com.",
+          "assertions": {
+            "outcome": [
+              "The reply states that adding members to a Customer Match audience is not supported by this connector and does not claim the emails were added."
+            ],
+            "mechanism": [
+              "Does not call any tool that fabricates an audience-member upload."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
