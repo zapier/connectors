@@ -29,7 +29,7 @@
     "prepare": "node cli.js build || bun cli.js build || true"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.1.0-experimental.28",
+    "@zapier/connectors-sdk": "^0.2.0",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
@@ -56,7 +56,7 @@
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publishConfig": {
     "access": "public"
   }
