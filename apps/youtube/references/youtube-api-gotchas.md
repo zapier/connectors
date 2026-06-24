@@ -267,6 +267,31 @@ Scope descriptions (from the consent screen):
 - Categories are region-specific; `videoCategories.list` is queried by `regionCode`.
   ([videoCategories.list](https://developers.google.com/youtube/v3/docs/videoCategories/list))
 
+### Uploads (resumable protocol)
+
+`videos.insert` is a media upload, not a plain JSON call: it uses Google's
+**resumable upload protocol** against the upload host
+(`https://www.googleapis.com/upload/youtube/v3/videos`), as a two-step flow.
+
+1. **Start a session.** `POST …/upload/youtube/v3/videos?uploadType=resumable&part=…`
+   with the video resource as a JSON body (`Content-Type: application/json; charset=UTF-8`)
+   plus two headers describing the bytes that follow: `X-Upload-Content-Length`
+   ("The number of bytes that will be uploaded in subsequent requests") and
+   `X-Upload-Content-Type` ("the MIME type of the file that you are uploading").
+   ([resumable upload protocol](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol))
+2. **Read the session URI.** On success "the response will include a `Location` HTTP
+   header that specifies the URI for the resumable session. This is the URI that you
+   will use to upload your video file." Save it.
+   ([resumable upload protocol](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol))
+3. **Upload the bytes.** `PUT` the file data to that session URI; a completed upload
+   returns the created video resource, while an interrupted one returns HTTP 308
+   (Resume Incomplete) so the transfer can be resumed rather than restarted.
+   ([resumable upload protocol](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol))
+
+- **Maximum file size: 256GB.** Accepted media MIME types are `video/*` and
+  `application/octet-stream`.
+  ([videos.insert](https://developers.google.com/youtube/v3/docs/videos/insert))
+
 ### Thumbnails
 
 - `thumbnails.set` accepts `image/jpeg`, `image/png` (and
