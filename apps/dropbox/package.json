@@ -1,6 +1,5 @@
 {
   "name": "@zapier/dropbox-connector",
-  "private": true,
   "description": "Agent-callable Dropbox tools — upload, organize, find, and share files and folders. Use when the user wants to manage Dropbox content (save, move, search, share, list, or read files), including requests that don't name Dropbox explicitly, e.g. \"save this report to my cloud storage\" or \"share that folder with Sam\".",
   "license": "Elastic-2.0",
   "type": "module",
@@ -60,5 +59,9 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
