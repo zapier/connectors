@@ -510,7 +510,7 @@
               "The reply returns the transcript text of a caption track from the video given in the request (or clearly reports that the track cannot be downloaded), without fabricating transcript content."
             ],
             "mechanism": [
-              "Downloads using a caption track id obtained from listing this video's tracks, not a guessed id."
+              "Calls downloadCaption with an opaque caption track id belonging to this video (the long id surfaced by listing its tracks), not a fabricated or guessed value."
             ]
           }
         }
