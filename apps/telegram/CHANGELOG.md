@@ -1,5 +1,18 @@
 # @zapier/telegram-connector
 
+## 0.1.2
+
+### Patch Changes
+
+- 6fa76ba: Restrict the Pipedrive and Telegram connectors to non-public npm access.
+
+  Per STAFF-4355, these connectors should not be world-public on npm. Switch
+  their `publishConfig.access` from `"public"` to `"restricted"` (matching the
+  `@zapier/slack-connector` precedent from STAFF-4104), which also drops them
+  from the public GitHub mirror via `scripts/is-connector-public.mjs`. The
+  already-published public `0.1.1` versions still need a registry-side
+  `npm access set status=private` (or unpublish) to be fully withdrawn.
+
 ## 0.1.1
 
 ### Patch Changes
