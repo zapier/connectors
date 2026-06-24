@@ -30,7 +30,8 @@ const definition = defineTool({
   outputSchema: ContactGroupSchema,
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    // Rename overwrites the existing group name (replace, not add) — non-additive.
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: true,
   },

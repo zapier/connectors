@@ -36,7 +36,8 @@ const definition = defineTool({
   outputSchema: PersonResponseSchema,
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    // Overwrites the contact's existing photo (replace, not add) — non-additive.
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: true,
   },

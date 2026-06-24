@@ -87,7 +87,7 @@ const inputSchema = z
   .strict();
 
 /** Rebuild names[].unstructuredName from the parts when the agent set name parts
- * but not the full name, so the contact's display name doesn't go stale (§3d). */
+ * but not the full name, so the contact's display name doesn't go stale. */
 function withUnstructuredNames(
   names: z.infer<typeof NameInput>[],
 ): z.infer<typeof NameInput>[] {
@@ -114,7 +114,11 @@ const definition = defineTool({
   outputSchema: PersonSchema,
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    // Each array field is replace-not-merge: sending one (e.g. emailAddresses)
+    // overwrites the whole field and silently drops any values not included.
+    // That is a non-additive (destructive) update, so the host should treat it
+    // as such and not suppress a confirmation.
+    destructiveHint: true,
     idempotentHint: true,
     openWorldHint: true,
   },

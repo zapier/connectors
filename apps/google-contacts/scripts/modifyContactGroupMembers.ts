@@ -52,7 +52,8 @@ const definition = defineTool({
   }),
   annotations: {
     readOnlyHint: false,
-    destructiveHint: false,
+    // resourceNamesToRemove removes group memberships — a non-additive update.
+    destructiveHint: true,
     idempotentHint: false,
     openWorldHint: true,
   },
