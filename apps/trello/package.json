@@ -1,6 +1,5 @@
 {
   "name": "@zapier/trello-connector",
-  "private": true,
   "description": "Agent-callable Trello tools — create and update cards, manage boards, lists, labels, checklists, and search. Use when the user mentions Trello or wants to create cards, move tasks, or manage boards, even if they do not name Trello explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -56,5 +55,9 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "restricted"
   }
 }
