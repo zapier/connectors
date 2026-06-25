@@ -1,6 +1,565 @@
 {
   "skill_name": "google-tasks",
   "version": "9810152",
-  "description": "TODO: representative eval cases for the google-tasks connector.",
-  "evals": []
+  "description": "Intent-anchored eval scenarios for the google-tasks connector. Google Tasks is ambient + self-provisioning, so scenarios are arrange-act: each creates a throwaway task list namespaced with {{run_id}}, exercises the capability, and deletes the list (zero residue; create/delete double as coverage). No fixtures. Assertions split into outcome (backend-agnostic world/reply facts, graded on all arms) and mechanism (tool-call hygiene, our-arm-only). Includes a default-list probe and a recurring-task refusal as guidance/eval-regression signals. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "add-task-to-a-list",
+      "kind": "arrange-act",
+      "description": "Cold-start create: make a list, add a task to it, clean up.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Groceries {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task list named 'Eval Groceries {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-task-list call; the list id comes from the create result, not a hard-coded id."
+            ]
+          }
+        },
+        {
+          "intent": "Add a task 'Buy oat milk' to the 'Eval Groceries {{run_id}}' list you just created.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Buy oat milk' now exists in the 'Eval Groceries {{run_id}}' list."
+            ],
+            "mechanism": [
+              "Creates the task under the list created earlier in this session, using that list's id rather than a guessed or default list."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Groceries {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Groceries {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the list created earlier in this session; does not delete an unrelated list."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-active-tasks",
+      "kind": "arrange-act",
+      "description": "List the tasks in a list; default view is active-only.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Today {{run_id}}', then add two tasks to it: 'Email Dana' and 'Submit report'.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Today {{run_id}}' exists containing tasks 'Email Dana' and 'Submit report'."
+            ],
+            "mechanism": [
+              "Creates the two tasks under the just-created list's id, not a default or invented list."
+            ]
+          }
+        },
+        {
+          "intent": "List the tasks in the 'Eval Today {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "The reply lists both 'Email Dana' and 'Submit report' as tasks in the 'Eval Today {{run_id}}' list."
+            ],
+            "mechanism": [
+              "Lists tasks for the list resolved by name in this session; does not invent task ids."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Today {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Today {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "complete-a-task",
+      "kind": "arrange-act",
+      "description": "Mark a named task done — resolve by title, then set status.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Done {{run_id}}' and add a task 'Pay rent' to it.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Done {{run_id}}' exists containing a task 'Pay rent'."
+            ],
+            "mechanism": [
+              "The task is created under the just-created list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Mark the 'Pay rent' task in the 'Eval Done {{run_id}}' list as done.",
+          "assertions": {
+            "outcome": [
+              "The 'Pay rent' task is now completed (its status is completed)."
+            ],
+            "mechanism": [
+              "Resolves the 'Pay rent' task by title to its id, then marks it complete via a status update; does not delete the task or guess an id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Done {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Done {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-task-by-name",
+      "kind": "arrange-act",
+      "description": "Resolve a task title to its id (the API has no server-side search).",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Find {{run_id}}' and add three tasks to it: 'Renew passport', 'Book flights', and 'Pack bags'.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Find {{run_id}}' exists containing the three named tasks."
+            ],
+            "mechanism": [
+              "The tasks are created under the just-created list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Find the task called 'Book flights' in the 'Eval Find {{run_id}}' list and report its id.",
+          "assertions": {
+            "outcome": [
+              "The 'Book flights' task is located and its id is reported."
+            ],
+            "mechanism": [
+              "Finds the task by matching the title within the named list; does not guess or hard-code a task id, and does not return a different task."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Find {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Find {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reschedule-task-due-date",
+      "kind": "arrange-act",
+      "description": "Change a task's due date — exercises the RFC3339 date-only handling.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Due {{run_id}}' and add a task 'Dentist appointment' to it.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Due {{run_id}}' exists containing a task 'Dentist appointment'."
+            ],
+            "mechanism": [
+              "The task is created under the just-created list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Set the due date of the 'Dentist appointment' task to July 15, 2026.",
+          "assertions": {
+            "outcome": [
+              "The 'Dentist appointment' task now has a due date of 2026-07-15."
+            ],
+            "mechanism": [
+              "Resolves the task by title, then updates it with the due value as a full RFC3339 timestamp (e.g. 2026-07-15T00:00:00Z), not a bare date; a single update call."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Due {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Due {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-task-list",
+      "kind": "arrange-act",
+      "description": "Rename a task list (title is the only editable field).",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Rename {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task list named 'Eval Rename {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-task-list call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Rename the 'Eval Rename {{run_id}}' list to 'Eval Renamed {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The list is now named 'Eval Renamed {{run_id}}' (the same list, retitled)."
+            ],
+            "mechanism": [
+              "Updates the list resolved earlier in this session by id; does not create a second list."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Renamed {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Renamed {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list renamed earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "organize-task-as-subtask",
+      "kind": "arrange-act",
+      "description": "Nest one task under another — hierarchy is set via move, not by writing parent/position.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Org {{run_id}}' and add two tasks to it: 'Launch plan' and 'Draft copy'.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Org {{run_id}}' exists containing 'Launch plan' and 'Draft copy'."
+            ],
+            "mechanism": [
+              "Both tasks are created under the just-created list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Make 'Draft copy' a subtask of 'Launch plan' in the 'Eval Org {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "'Draft copy' is now a subtask of 'Launch plan' (its parent is the 'Launch plan' task)."
+            ],
+            "mechanism": [
+              "Resolves both tasks by title, then reparents 'Draft copy' via a move operation with the parent set to the 'Launch plan' id; does not attempt to set hierarchy by writing a parent/position field on an update."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Org {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Org {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-task-between-lists",
+      "kind": "arrange-act",
+      "description": "Move a task from one list to another.",
+      "steps": [
+        {
+          "intent": "Create two task lists, 'Eval Inbox {{run_id}}' and 'Eval Later {{run_id}}', and add a task 'Review budget' to 'Eval Inbox {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Both lists exist and 'Review budget' is a task in 'Eval Inbox {{run_id}}'."
+            ],
+            "mechanism": [
+              "The task is created under the 'Eval Inbox {{run_id}}' list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Move the 'Review budget' task from 'Eval Inbox {{run_id}}' to 'Eval Later {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "'Review budget' now lives in the 'Eval Later {{run_id}}' list and no longer in 'Eval Inbox {{run_id}}'."
+            ],
+            "mechanism": [
+              "Resolves both lists by name and the task by title, then moves it to the destination list; does not delete and recreate the task."
+            ]
+          }
+        },
+        {
+          "intent": "Delete both the 'Eval Inbox {{run_id}}' and 'Eval Later {{run_id}}' task lists.",
+          "assertions": {
+            "outcome": [
+              "Neither 'Eval Inbox {{run_id}}' nor 'Eval Later {{run_id}}' exists anymore (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the two lists created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clear-completed-tasks",
+      "kind": "arrange-act",
+      "description": "Clear completed tasks — non-destructive (hides), active tasks untouched.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Clear {{run_id}}', add two tasks 'Ship v1' and 'Write changelog', then mark 'Ship v1' as done.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Clear {{run_id}}' exists with 'Ship v1' completed and 'Write changelog' still active."
+            ],
+            "mechanism": [
+              "'Ship v1' is completed via a status update, not deleted."
+            ]
+          }
+        },
+        {
+          "intent": "Clear the completed tasks from the 'Eval Clear {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "After clearing, the active task 'Write changelog' still appears in the list's normal view while the completed 'Ship v1' no longer appears there."
+            ],
+            "mechanism": [
+              "Uses the clear-completed operation on the resolved list; does not individually delete tasks."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Clear {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Clear {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-a-task",
+      "kind": "arrange-act",
+      "description": "Permanently delete a named task.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Del {{run_id}}' and add a task 'Obsolete task' to it.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Del {{run_id}}' exists containing a task 'Obsolete task'."
+            ],
+            "mechanism": [
+              "The task is created under the just-created list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Obsolete task' from the 'Eval Del {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "The 'Obsolete task' no longer exists in the 'Eval Del {{run_id}}' list."
+            ],
+            "mechanism": [
+              "Resolves the task by title to its id, then deletes that task; does not delete an unrelated task or the whole list."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Del {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Del {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "view-completed-tasks",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: completed tasks are hidden from the default list view and only appear when explicitly requested.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Vc {{run_id}}', add a task 'Old task', and mark it done.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Vc {{run_id}}' exists with 'Old task' completed."
+            ],
+            "mechanism": ["'Old task' is completed via a status update."]
+          }
+        },
+        {
+          "intent": "Show me the completed tasks in the 'Eval Vc {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "The completed 'Old task' is included in the results for the 'Eval Vc {{run_id}}' list."
+            ],
+            "mechanism": [
+              "Requests completed tasks explicitly (sets the show-completed option, and the hidden option so app-completed tasks surface too) rather than relying on the active-only default."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Vc {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Vc {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-task-to-default-list",
+      "kind": "arrange-act",
+      "description": "Probe: add a task to the user's primary/default list without naming a list (tests reaching the default list).",
+      "steps": [
+        {
+          "intent": "Add a task 'Call the dentist {{run_id}}' to my main to-do list.",
+          "assertions": {
+            "outcome": [
+              "A task 'Call the dentist {{run_id}}' now exists on the user's primary (default) task list."
+            ],
+            "mechanism": [
+              "Targets the user's default/primary list (e.g. via the default-list alias, or by listing task lists and choosing the primary one) rather than fabricating a list id or creating a new list."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Call the dentist {{run_id}}' task from my main to-do list.",
+          "assertions": {
+            "outcome": [
+              "The 'Call the dentist {{run_id}}' task no longer exists on the primary list (cleanup)."
+            ],
+            "mechanism": [
+              "Resolves the task by title on the primary list, then deletes that task."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-recurring-task-refusal",
+      "kind": "arrange-act",
+      "description": "Graceful refusal: recurrence can't be set through the connector (the API has no recurrence fields).",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Recur {{run_id}}' and add a task 'Water the plants' to it.",
+          "assertions": {
+            "outcome": [
+              "A list 'Eval Recur {{run_id}}' exists containing a task 'Water the plants'."
+            ],
+            "mechanism": [
+              "The task is created under the just-created list's id."
+            ]
+          }
+        },
+        {
+          "intent": "Set the 'Water the plants' task to repeat every week.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that a repeating/recurring schedule cannot be set through this connector (recurrence is managed in the Google Tasks app) and does not claim to have set a repeat."
+            ],
+            "mechanism": [
+              "Does not call a mutating tool that pretends to configure recurrence (no fabricated recurrence/repeat field)."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Recur {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Recur {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-task-time-of-day",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent honest limitation: tasks are date-only, so a specific time of day can't be stored.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Time {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A task list named 'Eval Time {{run_id}}' now exists."],
+            "mechanism": ["Uses a single create-task-list call."]
+          }
+        },
+        {
+          "intent": "Add a task 'Call mom' to the 'Eval Time {{run_id}}' list, due tomorrow at 3pm.",
+          "assertions": {
+            "outcome": [
+              "A task 'Call mom' is created in the 'Eval Time {{run_id}}' list with a due date of tomorrow, and the reply communicates that a specific time of day (3pm) cannot be stored on a Google Task (it is date-only)."
+            ],
+            "mechanism": [
+              "Sends the due value as a full RFC3339 timestamp for tomorrow's date; does not fabricate a time-of-day or reminder field the API lacks."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Time {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Time {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-same-title-tasks",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two tasks share a title, so acting by name must ask which one rather than silently pick.",
+      "steps": [
+        {
+          "intent": "Create a task list named 'Eval Ambig {{run_id}}' and add two separate tasks to it, both titled 'Review'.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Ambig {{run_id}}' list contains two distinct tasks that are both titled 'Review'."
+            ],
+            "mechanism": ["Creates two tasks under the just-created list's id."]
+          }
+        },
+        {
+          "intent": "Mark the 'Review' task in the 'Eval Ambig {{run_id}}' list as complete.",
+          "assertions": {
+            "outcome": [
+              "Because two tasks are both titled 'Review', the reply asks the user which one to complete (or otherwise surfaces the ambiguity) rather than silently completing one.",
+              "No task is marked complete in this turn without resolving the ambiguity."
+            ],
+            "mechanism": [
+              "Does not blindly complete the first title match; if it inspects the list it recognizes more than one 'Review' task before acting."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Ambig {{run_id}}' task list.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Ambig {{run_id}}' task list no longer exists (cleanup)."
+            ],
+            "mechanism": ["Deletes the list created earlier in this session."]
+          }
+        }
+      ]
+    }
+  ]
 }
