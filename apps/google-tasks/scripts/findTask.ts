@@ -52,21 +52,35 @@ const TaskSchema = z
       .string()
       .datetime({ offset: true })
       .nullable()
-      .describe("Completion time (RFC3339). Read-only.")
+      .describe(
+        "Completion time (RFC3339). Server-stamped; absent when the task is not completed. Read-only.",
+      )
       .optional(),
-    deleted: z.boolean().nullable().describe("Read-only.").optional(),
-    hidden: z.boolean().nullable().describe("Read-only.").optional(),
+    deleted: z
+      .boolean()
+      .nullable()
+      .describe("True if the task has been soft-deleted. Read-only.")
+      .optional(),
+    hidden: z
+      .boolean()
+      .nullable()
+      .describe(
+        "True if the task is hidden (completed-in-app or cleared). Read-only.",
+      )
+      .optional(),
     parent: z
       .string()
       .nullable()
       .describe(
-        "Parent task id when this is a subtask; absent for top-level tasks. Read-only.",
+        "Parent task id when this is a subtask; absent for top-level tasks. Read-only — change via moveTask.",
       )
       .optional(),
     position: z
       .string()
       .nullable()
-      .describe("Opaque ordering string. Read-only — reorder via moveTask.")
+      .describe(
+        "Opaque ordering string (lexicographic), not an index. Read-only — reorder via moveTask.",
+      )
       .optional(),
     updated: z
       .string()
@@ -78,6 +92,17 @@ const TaskSchema = z
       .string()
       .nullable()
       .describe("Link to the task in the Google Tasks web UI. Read-only.")
+      .optional(),
+    links: z
+      .array(
+        z.object({
+          type: z.string().nullable().optional(),
+          description: z.string().nullable().optional(),
+          link: z.string().nullable().optional(),
+        }),
+      )
+      .nullable()
+      .describe("Related links (e.g. email, chat). Read-only.")
       .optional(),
   })
   .describe("A task.");

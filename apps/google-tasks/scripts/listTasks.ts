@@ -160,9 +160,15 @@ const outputSchema = z
               )
               .optional(),
             links: z
-              .any()
+              .array(
+                z.object({
+                  type: z.string().nullable().optional(),
+                  description: z.string().nullable().optional(),
+                  link: z.string().nullable().optional(),
+                }),
+              )
               .nullable()
-              .describe("Nested object — shape passes through.")
+              .describe("Related links (e.g. email, chat). Read-only.")
               .optional(),
           })
           .describe("A task."),

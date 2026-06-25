@@ -92,7 +92,7 @@ const definition = defineTool({
   name: "getTask",
   title: "Get Task",
   description:
-    "Get a single task by id, including its parent (if a subtask), links, and assignment info.",
+    "Get a single task by id, including its parent (if a subtask) and links.",
   inputSchema,
   outputSchema,
   annotations: {
