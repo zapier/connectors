@@ -1,0 +1,554 @@
+{
+  "skill_name": "youtube",
+  "version": "3fbd922",
+  "description": "Intent-anchored eval scenarios for the youtube connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (playlists, uploads) as cold-start coverage probes; discover-act scenarios operate on the public YouTube world or a seeded fixture via in-envelope read/find primitives; act-only scenarios target a named ambient resource (a public video, a channel handle, or an owned-video fixture). Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene and the connector's id/scope/replace-semantics traps, graded only on our-tool arms). {{run_id}} namespaces created assets so re-runs don't collide.",
+  "fixtures": [
+    {
+      "name": "eval_owned_video",
+      "description": "A video owned by the eval account, used by the update/comment/caption scenarios (the connector can update or download captions only for a video the credential owns). The operator uploads one test video once and supplies its id.",
+      "env": "EVAL_YOUTUBE_OWNED_VIDEO",
+      "default": "eval-owned-video",
+      "expects": "A video owned by the YouTube account the eval connection is bound to, set to public or unlisted, that already has a non-empty title, a non-empty description, at least one tag, and an assigned category, has comments enabled, and carries at least one caption track (e.g. an English track, auto-generated is fine). The eval connection must hold the youtube and youtube.force-ssl scopes so the update, comment, and caption operations against it are permitted.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "search-videos-by-keyword",
+      "kind": "discover-act",
+      "description": "Single-action discovery against the public catalog: keyword video search.",
+      "steps": [
+        {
+          "intent": "Find me a few YouTube videos about building a backyard chicken coop.",
+          "assertions": {
+            "outcome": [
+              "The reply lists multiple real YouTube videos relevant to building a backyard chicken coop, each identified well enough to act on (title plus a video id, link, or channel)."
+            ],
+            "mechanism": [
+              "Runs a keyword search rather than guessing or fabricating video ids/titles.",
+              "Reports only videos returned by the search; does not invent statistics like view counts that a search result does not carry."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-videos-filtered",
+      "kind": "discover-act",
+      "description": "Discovery with constraints: a search narrowed by recency and duration.",
+      "steps": [
+        {
+          "intent": "Find short videos (under about 4 minutes) about espresso latte art that were published this year, newest first.",
+          "assertions": {
+            "outcome": [
+              "The reply returns videos that match the request — short clips about espresso/latte art — and presents them ordered with the most recent first."
+            ],
+            "mechanism": [
+              "Applies the duration, recency, and ordering constraints as search parameters rather than fetching an unfiltered list and silently ignoring them."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-video-and-get-details",
+      "kind": "discover-act",
+      "description": "Find-then-act: search surfaces a candidate, then full details are fetched because search results lack statistics.",
+      "steps": [
+        {
+          "intent": "Find the official music video for 'Bohemian Rhapsody' by Queen and tell me its view count and how long it runs.",
+          "assertions": {
+            "outcome": [
+              "The reply identifies a single 'Bohemian Rhapsody' video and reports both its view count and its runtime/duration."
+            ],
+            "mechanism": [
+              "Resolves the video by searching, then fetches the full video record for the statistics and duration rather than reading them off the search result (search results carry no view count or duration).",
+              "Reports the view count as the value returned by the API rather than rounding or inventing a number."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-video-stats",
+      "kind": "act-only",
+      "description": "Single read of a known public video's full record — exercises string-typed counts and ISO-8601 duration.",
+      "steps": [
+        {
+          "intent": "Look up the YouTube video with id dQw4w9WgXcQ and tell me its title, view count, like count, and duration.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the title, view count, and duration for the video id given in the request, and states the like count or notes it is unavailable if the API does not return one — without fabricating a value."
+            ],
+            "mechanism": [
+              "Fetches the video by the id given in the request rather than searching for or guessing a different video.",
+              "Presents the duration in a human-readable form derived from the API's ISO-8601 duration, not a made-up length."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-video-view-counts",
+      "kind": "act-only",
+      "description": "Read two videos in one shot and compare — guards against coercing string-typed counts wrong or fabricating one side.",
+      "steps": [
+        {
+          "intent": "Compare the view counts of the videos with ids dQw4w9WgXcQ and 9bZkp7q19f0 and tell me which one has more views.",
+          "assertions": {
+            "outcome": [
+              "The reply reports a view count for each of the two video ids given in the request and states which of the two has more views, consistent with the numbers reported."
+            ],
+            "mechanism": [
+              "Reads both videos for the two ids given in the request (a single multi-id lookup is acceptable) rather than reading one and guessing the other.",
+              "Compares the counts numerically and correctly even though the API returns them as strings."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-channel-profile",
+      "kind": "act-only",
+      "description": "Resolve a channel by its @handle and read its profile statistics.",
+      "steps": [
+        {
+          "intent": "How many subscribers and total videos does the YouTube channel @MrBeast have?",
+          "assertions": {
+            "outcome": [
+              "The reply reports a subscriber count and a public video count for the @MrBeast channel."
+            ],
+            "mechanism": [
+              "Resolves the channel by its handle rather than guessing a channel id.",
+              "Does not present the rounded subscriber count as an exact figure when the API has rounded it, and does not invent a count the API withholds."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-channel-latest-uploads",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: enumerating a known channel's own recent uploads should go through the uploads playlist, not a quota-heavy, eventually-consistent search.",
+      "steps": [
+        {
+          "intent": "Show me the 5 most recent videos uploaded by the channel @veritasium.",
+          "assertions": {
+            "outcome": [
+              "The reply lists recent videos that belong to the @veritasium channel — not videos from other channels — and presents them newest-first."
+            ],
+            "mechanism": [
+              "Enumerates the channel's own uploads by resolving the channel and reading its uploads playlist, rather than relying on a keyword/channel search to list a known channel's videos.",
+              "All returned videos belong to the resolved channel."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-playlist-videos",
+      "kind": "arrange-act",
+      "description": "Full playlist lifecycle in one chained session: create, add a video, list items, remove the item by its playlistItem id, then delete the playlist. Exercises the playlistItem-id-vs-video-id trap and gives CRUD-liveness signal.",
+      "steps": [
+        {
+          "intent": "Create a new public playlist titled 'Eval playlist {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A public playlist titled 'Eval playlist {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one playlist with that exact title and public visibility; the playlist id comes from the create result, not a hard-coded id."
+            ]
+          }
+        },
+        {
+          "intent": "Add the video with id dQw4w9WgXcQ to the playlist you just created.",
+          "assertions": {
+            "outcome": [
+              "The video with id dQw4w9WgXcQ is now an item in the playlist created earlier in this session."
+            ],
+            "mechanism": [
+              "Adds the video to the playlist created earlier in this session rather than to a different or invented playlist.",
+              "Passes the video id given in the request as the video to add, not the playlist id."
+            ]
+          }
+        },
+        {
+          "intent": "List the videos currently in that playlist.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the contents of the playlist created earlier in this session, including the video added earlier."
+            ],
+            "mechanism": [
+              "Reads the items of the playlist created earlier in this session; does not invent playlist contents."
+            ]
+          }
+        },
+        {
+          "intent": "Remove that video from the playlist again.",
+          "assertions": {
+            "outcome": [
+              "The video added earlier is no longer an item in the playlist created earlier in this session."
+            ],
+            "mechanism": [
+              "Removes the item using the playlistItem id obtained from listing the playlist's items, not the bare video id."
+            ]
+          }
+        },
+        {
+          "intent": "Now delete the playlist you created.",
+          "assertions": {
+            "outcome": [
+              "The playlist created earlier in this session no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the playlist created earlier in this session rather than an unrelated playlist."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-playlist-privacy",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: changing a playlist's privacy must resend the title (required by the API) so the replace-not-merge update doesn't wipe the description.",
+      "steps": [
+        {
+          "intent": "Create a public playlist titled 'Eval privacy {{run_id}}' with the description 'Keep this description intact.'",
+          "assertions": {
+            "outcome": [
+              "A public playlist titled 'Eval privacy {{run_id}}' with the description 'Keep this description intact.' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one playlist with that title, description, and public visibility; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Make that playlist private.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval privacy {{run_id}}' playlist is now private and its description still reads 'Keep this description intact.' (the description was not wiped)."
+            ],
+            "mechanism": [
+              "Updates the playlist created earlier in this session, sending the existing title and description alongside the new privacy value because the update replaces the whole part rather than merging — so omitted fields would be cleared."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that playlist.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval privacy {{run_id}}' playlist no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the playlist created earlier in this session, not an unrelated one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-video-description",
+      "kind": "act-only",
+      "description": "Guidance-dependent, high-reach write: changing only the description must not wipe the title, tags, or category (the destructive-omit footgun — update replaces the whole part, so the tool must read-modify-write).",
+      "requires": ["eval_owned_video"],
+      "steps": [
+        {
+          "intent": "Update the description of my video {{eval_owned_video}} to 'Updated for eval run {{run_id}}.'",
+          "assertions": {
+            "outcome": [
+              "The video given in the request now has the description 'Updated for eval run {{run_id}}.', and its existing title, tags, and category are unchanged (not blanked out)."
+            ],
+            "mechanism": [
+              "Calls updateVideo for the video given in the request, supplying the new description and not the title, tags, or category; the connector reads the current snippet and merges, so those untouched fields survive — the agent need not restate them in the tool call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "recategorize-and-retitle-video",
+      "kind": "act-only",
+      "description": "Second update-video variant: a multi-field edit (title + category) that must still preserve the untouched description, and resolves the category id rather than guessing it.",
+      "requires": ["eval_owned_video"],
+      "steps": [
+        {
+          "intent": "Rename my video {{eval_owned_video}} to 'Eval retitle {{run_id}}' and put it in the 'Education' category, but leave its description as-is.",
+          "assertions": {
+            "outcome": [
+              "The video given in the request is now titled 'Eval retitle {{run_id}}' and assigned to the Education category, while its existing description is unchanged."
+            ],
+            "mechanism": [
+              "Resolves the 'Education' category to its category id (e.g. by listing assignable video categories) rather than passing the literal word 'Education' or guessing an id.",
+              "Does not clear the existing description: the connector's updateVideo reads the current snippet and merges, so the description survives even when the agent omits it from the tool call (the agent need not restate it)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "like-video",
+      "kind": "act-only",
+      "description": "Rate a video then clear the rating (cleanup). Rating needs only the manage scope, not the comment scope.",
+      "steps": [
+        {
+          "intent": "Like the YouTube video with id dQw4w9WgXcQ.",
+          "assertions": {
+            "outcome": [
+              "The video given in the request is now liked by the authenticated account."
+            ],
+            "mechanism": [
+              "Applies a 'like' rating to the video id given in the request rather than a different video or a different rating."
+            ]
+          }
+        },
+        {
+          "intent": "Actually, remove my like from that video.",
+          "assertions": {
+            "outcome": [
+              "The authenticated account no longer has a like on that video (the rating is cleared)."
+            ],
+            "mechanism": [
+              "Clears the rating on the same video rather than applying a dislike or acting on a different video."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-video-comments",
+      "kind": "act-only",
+      "description": "Read the comment threads on a public video.",
+      "steps": [
+        {
+          "intent": "What are the top comments on the YouTube video with id dQw4w9WgXcQ?",
+          "assertions": {
+            "outcome": [
+              "The reply summarizes or lists real top-level comments from the video given in the request."
+            ],
+            "mechanism": [
+              "Reads the comment threads for the video id given in the request rather than fabricating comment text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "comment-and-reply",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: post a top-level comment on the owned video (needs the force-ssl scope), then reply to that thread — replies are single-level and target the thread's parent id.",
+      "requires": ["eval_owned_video"],
+      "steps": [
+        {
+          "intent": "Post the comment 'Eval comment {{run_id}}' on my video {{eval_owned_video}}.",
+          "assertions": {
+            "outcome": [
+              "A top-level comment with the text 'Eval comment {{run_id}}' is now posted on the video given in the request."
+            ],
+            "mechanism": [
+              "Posts a single top-level comment carrying that exact text against the video id given in the request."
+            ]
+          }
+        },
+        {
+          "intent": "Reply to the comment you just posted with 'Eval reply {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A reply with the text 'Eval reply {{run_id}}' is attached to the comment posted earlier in this session."
+            ],
+            "mechanism": [
+              "Replies using the top-level comment thread id from the comment created earlier in this session as the parent, rather than treating it as a new top-level comment or replying to a reply."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "subscribe-and-unsubscribe",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: subscribe to a channel, then unsubscribe — which requires resolving the subscription id (not the channel id). Tolerates the already-subscribed soft-success.",
+      "steps": [
+        {
+          "intent": "Subscribe me to the YouTube channel @TED.",
+          "assertions": {
+            "outcome": [
+              "The authenticated account is subscribed to the @TED channel (including the case where it was already subscribed — that still counts as subscribed, not a failure)."
+            ],
+            "mechanism": [
+              "Resolves the @TED channel to its channel id and subscribes to it; treats an already-subscribed response as success rather than an error."
+            ]
+          }
+        },
+        {
+          "intent": "Now unsubscribe me from that channel.",
+          "assertions": {
+            "outcome": [
+              "The authenticated account is no longer subscribed to the @TED channel."
+            ],
+            "mechanism": [
+              "Looks up the subscription to that channel to obtain the subscription id and unsubscribes with it, rather than passing the channel id to the unsubscribe call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-my-subscriptions",
+      "kind": "act-only",
+      "description": "Read the authenticated account's own subscriptions.",
+      "steps": [
+        {
+          "intent": "What YouTube channels am I subscribed to?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the authenticated account's subscribed channels, or states plainly that there are none, without inventing channels."
+            ],
+            "mechanism": [
+              "Lists the authenticated account's own subscriptions rather than searching for or guessing channels."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-video-captions",
+      "kind": "act-only",
+      "description": "List the caption tracks available on a public video (needs the force-ssl scope even to list).",
+      "steps": [
+        {
+          "intent": "What caption tracks (languages) are available for the YouTube video with id dQw4w9WgXcQ?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the caption tracks available for the video given in the request — their languages, or that none are available — without inventing tracks."
+            ],
+            "mechanism": [
+              "Lists the caption tracks for the video id given in the request rather than fabricating language entries."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "download-video-transcript",
+      "kind": "discover-act",
+      "description": "Discover the caption tracks on the owned video, then download one — download is permitted only on a video the account can edit.",
+      "requires": ["eval_owned_video"],
+      "steps": [
+        {
+          "intent": "List the caption tracks on my video {{eval_owned_video}}.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the caption tracks on the video given in the request, including enough to identify a track to download."
+            ],
+            "mechanism": [
+              "Lists the caption tracks for the video id given in the request rather than inventing track ids."
+            ]
+          }
+        },
+        {
+          "intent": "Download the text of the first caption track you found.",
+          "assertions": {
+            "outcome": [
+              "The reply returns the transcript text of a caption track from the video given in the request (or clearly reports that the track cannot be downloaded), without fabricating transcript content."
+            ],
+            "mechanism": [
+              "Calls downloadCaption with an opaque caption track id belonging to this video (the long id surfaced by listing its tracks), not a fabricated or guessed value."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-video-categories",
+      "kind": "act-only",
+      "description": "List the assignable video categories for a region — the resolver behind a video's category.",
+      "steps": [
+        {
+          "intent": "What video categories can I assign to a video in the United States?",
+          "assertions": {
+            "outcome": [
+              "The reply lists real YouTube video categories available in the US region."
+            ],
+            "mechanism": [
+              "Returns categories for the US region and confines the answer to ones that can actually be assigned to a video rather than listing every category indiscriminately."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-ambiguous-video",
+      "kind": "discover-act",
+      "description": "No-op/disambiguation: a like request whose title matches many videos should make the agent ask rather than rate an arbitrary match.",
+      "steps": [
+        {
+          "intent": "Like the YouTube video called 'Intro'.",
+          "assertions": {
+            "outcome": [
+              "Because many different videos share that title, the reply asks the user to clarify which video they mean (e.g. by listing distinguishing candidates) instead of silently liking one."
+            ],
+            "mechanism": [
+              "Does not apply a rating to any video before the ambiguity is resolved."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-video-analytics",
+      "kind": "negative",
+      "description": "Graceful refusal: time-series analytics (watch time, retention) are out of scope; the agent must not substitute lifetime statistics and present them as an analytics report.",
+      "steps": [
+        {
+          "intent": "Show me the watch time and audience retention for the video with id dQw4w9WgXcQ over the last 28 days.",
+          "assertions": {
+            "outcome": [
+              "The reply states that watch-time / audience-retention analytics are not supported and does not claim to provide them.",
+              "The reply does not pass off the video's lifetime view/like counts as the requested watch-time or retention analytics."
+            ],
+            "mechanism": [
+              "Does not fabricate an analytics report; any read it performs is presented as plain video statistics, not as the requested time-series analytics."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "moderate-comment",
+      "kind": "negative",
+      "description": "Graceful refusal: comment moderation (delete/hide/mark-as-spam) is unsupported; the agent must say so and not mutate anything.",
+      "steps": [
+        {
+          "intent": "Delete the spam comments on my video dQw4w9WgXcQ.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that deleting or moderating comments is not supported and does not claim any comment was deleted or hidden."
+            ],
+            "mechanism": [
+              "Makes no mutating call attempting to delete, hide, or moderate a comment."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "schedule-livestream",
+      "kind": "negative",
+      "description": "Graceful refusal: live-stream creation/management is out of scope.",
+      "steps": [
+        {
+          "intent": "Set up a live stream on my channel for tonight at 8pm.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating or managing live streams is not supported and does not claim a broadcast was scheduled."
+            ],
+            "mechanism": [
+              "Makes no tool call attempting to create or schedule a live broadcast or stream."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
