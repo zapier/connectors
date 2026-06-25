@@ -1,0 +1,444 @@
+{
+  "skill_name": "trello",
+  "version": "ce5eb75",
+  "description": "Intent-anchored eval scenarios for the Trello connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run reveals native's capability profile; outcome assertions grade all arms, mechanism assertions our-arm-only. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "create-card-on-list",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a board + list, add a card, then archive it.",
+      "steps": [
+        {
+          "intent": "Create a board named 'Eval board {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A board named 'Eval board {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-board call; the board id comes from the create result, not a hard-coded id."
+            ]
+          }
+        },
+        {
+          "intent": "On the board you just created, add a list named 'To Do {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A list named 'To Do {{run_id}}' now exists on that board and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the list on the board id from this session rather than inventing a board id."
+            ]
+          }
+        },
+        {
+          "intent": "Create a card named 'Task {{run_id}}' on the list you just created.",
+          "assertions": {
+            "outcome": [
+              "A card titled 'Task {{run_id}}' now exists on that list and its id is reported."
+            ],
+            "mechanism": [
+              "Resolves the list id from this session before creating the card rather than guessing an idList."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the card you just created.",
+          "assertions": {
+            "outcome": ["The 'Task {{run_id}}' card is archived (closed)."],
+            "mechanism": [
+              "Archives the card id created in this session rather than a different or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-card-between-lists",
+      "kind": "arrange-act",
+      "description": "Create two lists, add a card, move it, verify destination list.",
+      "steps": [
+        {
+          "intent": "Create a board 'Move test {{run_id}}' with two lists: 'Source {{run_id}}' and 'Done {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A board and two lists with those exact names now exist; ids are reported."
+            ],
+            "mechanism": [
+              "Creates the board before lists and uses returned ids rather than inventing list ids."
+            ]
+          }
+        },
+        {
+          "intent": "Add a card 'Movable {{run_id}}' to the 'Source {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "A card 'Movable {{run_id}}' exists on the source list and its id is reported."
+            ],
+            "mechanism": [
+              "Targets the source list by name or id from this session, not a hard-coded idList."
+            ]
+          }
+        },
+        {
+          "intent": "Move the card to the 'Done {{run_id}}' list.",
+          "assertions": {
+            "outcome": ["The card now belongs to the 'Done {{run_id}}' list."],
+            "mechanism": [
+              "Moves the card created in this session using a destination list id resolved from this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-comment-to-card",
+      "kind": "arrange-act",
+      "description": "Create a card and add a comment.",
+      "steps": [
+        {
+          "intent": "Create a board 'Comment test {{run_id}}', a list 'Inbox {{run_id}}', and a card 'Discuss {{run_id}}' on that list.",
+          "assertions": {
+            "outcome": [
+              "The card 'Discuss {{run_id}}' exists and its id is reported."
+            ],
+            "mechanism": [
+              "Builds board → list → card in order using ids from each create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add the comment 'Ship by Friday {{run_id}}' to that card.",
+          "assertions": {
+            "outcome": [
+              "The comment text appears on the card (as an action or in the card's activity)."
+            ],
+            "mechanism": [
+              "Comments on the card id from this session rather than inventing a card id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "complete-checklist-item",
+      "kind": "arrange-act",
+      "description": "Checklist create → add item → mark complete.",
+      "steps": [
+        {
+          "intent": "Create a board 'Checklist {{run_id}}', list 'Tasks {{run_id}}', and card 'Prep {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The card 'Prep {{run_id}}' exists with a reported id."
+            ],
+            "mechanism": [
+              "Creates prerequisite board/list/card using returned ids."
+            ]
+          }
+        },
+        {
+          "intent": "Add a checklist named 'Steps {{run_id}}' to that card with one item 'Review docs {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A checklist 'Steps {{run_id}}' with item 'Review docs {{run_id}}' exists; item id is reported."
+            ],
+            "mechanism": [
+              "Creates checklist and item on the card from this session."
+            ]
+          }
+        },
+        {
+          "intent": "Mark 'Review docs {{run_id}}' complete.",
+          "assertions": {
+            "outcome": ["The checklist item is marked complete (state true)."],
+            "mechanism": [
+              "Updates the checklist item id from this session, not an invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-label-to-card",
+      "kind": "arrange-act",
+      "description": "Create board label, attach to card.",
+      "steps": [
+        {
+          "intent": "Create board 'Labels {{run_id}}', list 'Queue {{run_id}}', card 'Tagged {{run_id}}', and a red label named 'Urgent {{run_id}}' on that board.",
+          "assertions": {
+            "outcome": [
+              "Board, list, card, and label all exist with reported ids."
+            ],
+            "mechanism": [
+              "Creates the label on the same board as the card before attaching."
+            ]
+          }
+        },
+        {
+          "intent": "Add the 'Urgent {{run_id}}' label to the card.",
+          "assertions": {
+            "outcome": ["The card now has the urgent label applied."],
+            "mechanism": [
+              "Uses the label id created in this session rather than guessing a label id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-list-by-name-before-create",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: resolve list by name before creating a card.",
+      "steps": [
+        {
+          "intent": "Create board 'Find list {{run_id}}' with list 'Backlog {{run_id}}'.",
+          "assertions": {
+            "outcome": ["Board and list exist with reported ids."],
+            "mechanism": ["Creates board then list using returned ids."]
+          }
+        },
+        {
+          "intent": "Find lists on that board whose name contains 'Backlog {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "At least one list matching 'Backlog {{run_id}}' is returned with an id."
+            ],
+            "mechanism": [
+              "Searches lists on the board from this session rather than inventing a board id."
+            ]
+          }
+        },
+        {
+          "intent": "Create card 'From find {{run_id}}' on the matching list.",
+          "assertions": {
+            "outcome": [
+              "Card 'From find {{run_id}}' exists on the Backlog list."
+            ],
+            "mechanism": [
+              "Uses a list id from the find result in this session, not a guessed idList."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-cards-by-title",
+      "kind": "arrange-act",
+      "description": "Create a uniquely named card then search for it.",
+      "steps": [
+        {
+          "intent": "Create board 'Search {{run_id}}', list 'All {{run_id}}', and card 'Unique needle {{run_id}}'.",
+          "assertions": {
+            "outcome": ["The card 'Unique needle {{run_id}}' exists."],
+            "mechanism": ["Creates prerequisites before searching."]
+          }
+        },
+        {
+          "intent": "Search for cards matching 'Unique needle {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The search returns the card titled 'Unique needle {{run_id}}'."
+            ],
+            "mechanism": [
+              "Uses the search tool with the given title rather than listing every board manually without need."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-card-due-date",
+      "kind": "arrange-act",
+      "description": "Set a due date on an existing card.",
+      "steps": [
+        {
+          "intent": "Create board 'Due {{run_id}}', list 'Work {{run_id}}', and card 'Deadline {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Card 'Deadline {{run_id}}' exists with a reported id."
+            ],
+            "mechanism": ["Creates prerequisites using returned ids."]
+          }
+        },
+        {
+          "intent": "Set the card's due date to 2026-12-31T17:00:00.000Z.",
+          "assertions": {
+            "outcome": ["The card now has the specified due date."],
+            "mechanism": [
+              "Updates the card id from this session with a proper ISO due field."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-boards-act-only",
+      "kind": "act-only",
+      "description": "Read-only: list boards the member can access.",
+      "steps": [
+        {
+          "intent": "List the Trello boards I can access.",
+          "assertions": {
+            "outcome": [
+              "A list of boards is returned (possibly empty) with id and name fields."
+            ],
+            "mechanism": [
+              "Uses a list-boards style read call rather than inventing board data."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-current-member",
+      "kind": "act-only",
+      "description": "Identity resolver: who am I?",
+      "steps": [
+        {
+          "intent": "Who is the authenticated Trello member?",
+          "assertions": {
+            "outcome": [
+              "The response includes member id and a display name or username."
+            ],
+            "mechanism": [
+              "Calls the current-member tool rather than guessing a member id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy-board",
+      "kind": "arrange-act",
+      "description": "Copy an existing board with a new name.",
+      "steps": [
+        {
+          "intent": "Create a board named 'Original {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Board 'Original {{run_id}}' exists with a reported id."
+            ],
+            "mechanism": ["Uses create-board; id comes from the result."]
+          }
+        },
+        {
+          "intent": "Copy that board to a new board named 'Copy of {{run_id}}' without keeping cards.",
+          "assertions": {
+            "outcome": [
+              "A second board named 'Copy of {{run_id}}' now exists."
+            ],
+            "mechanism": [
+              "Copies the source board id from this session rather than inventing a source id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "close-board",
+      "kind": "arrange-act",
+      "description": "Archive a board after creating it.",
+      "steps": [
+        {
+          "intent": "Create a board 'Temporary {{run_id}}'.",
+          "assertions": {
+            "outcome": ["Board exists with a reported id."],
+            "mechanism": ["Creates board; id from result."]
+          }
+        },
+        {
+          "intent": "Archive (close) that board.",
+          "assertions": {
+            "outcome": ["The board is closed/archived."],
+            "mechanism": ["Closes the board id from this session."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-duplicate-list-names",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two lists with the same name should prompt clarification before writing.",
+      "steps": [
+        {
+          "intent": "Create board 'Dup lists {{run_id}}' with two lists both named 'Inbox'.",
+          "assertions": {
+            "outcome": ["Two lists named 'Inbox' exist on the board."],
+            "mechanism": ["Creates two distinct lists on the same board."]
+          }
+        },
+        {
+          "intent": "Add a card 'Ambiguous {{run_id}}' to the Inbox list.",
+          "assertions": {
+            "outcome": [
+              "If two Inbox lists tie, the agent asks which one rather than picking arbitrarily; if it proceeds, the card lands on exactly one list."
+            ],
+            "mechanism": [
+              "Does not silently pick among multiple exact name matches without disambiguation when both are present."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-webhook-setup",
+      "kind": "act-only",
+      "description": "Graceful refusal: webhooks are out of scope.",
+      "steps": [
+        {
+          "intent": "Register a Trello webhook that fires when any card moves on my board.",
+          "assertions": {
+            "outcome": [
+              "The agent states webhook setup is not supported by this connector and does not claim success."
+            ],
+            "mechanism": [
+              "Does not call unrelated tools to simulate webhook registration."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-local-file-upload",
+      "kind": "act-only",
+      "description": "Graceful refusal: local binary upload is out of scope.",
+      "steps": [
+        {
+          "intent": "Upload /tmp/report.pdf from my machine as an attachment on card 604a45a4087d070014a2b5f5.",
+          "assertions": {
+            "outcome": [
+              "The agent explains local file upload is not supported (URL attachments only) and does not fabricate a successful upload."
+            ],
+            "mechanism": [
+              "Does not pretend a URL attachment call succeeded for a local path."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-custom-fields-on-board",
+      "kind": "arrange-act",
+      "description": "Read custom field definitions before setting values.",
+      "steps": [
+        {
+          "intent": "Create a board 'Custom fields {{run_id}}'.",
+          "assertions": {
+            "outcome": ["Board exists with a reported id."],
+            "mechanism": ["Creates board; id from result."]
+          }
+        },
+        {
+          "intent": "List custom field definitions on that board.",
+          "assertions": {
+            "outcome": [
+              "Custom field definitions are returned (possibly an empty list)."
+            ],
+            "mechanism": [
+              "Lists custom fields for the board id from this session."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
