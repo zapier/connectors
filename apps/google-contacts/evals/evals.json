@@ -1,0 +1,526 @@
+{
+  "skill_name": "google-contacts",
+  "description": "Intent-anchored eval scenarios for the google-contacts connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (cold-start coverage probes); discover-act scenarios operate on a pre-existing world via in-envelope read/find primitives; act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created assets so re-runs don't collide. All data is fabricated (this is a high-PII surface and the repo is public). Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "google_contacts_other_contact",
+      "description": "A pre-existing 'other contact' in the account the eval connection is bound to — a person the user has interacted with (e.g. emailed) but never explicitly saved. The People API has no endpoint to create one (they are auto-generated from interactions), so an operator must ensure at least one exists.",
+      "env": "EVAL_GOOGLE_CONTACTS_OTHER_CONTACT",
+      "default": "any-other-contact",
+      "expects": "At least one 'other contact' exists in the Google account bound to the eval connection — i.e. a person the account has interacted with but not saved — discoverable via listOtherContacts / searchOtherContacts, so a copy-to-saved-contacts scenario has a real target. Requires the contacts.other.readonly scope on the connection.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "add-contact",
+      "kind": "arrange-act",
+      "description": "Cold-start coverage probe: create a new contact from name/email/phone, then delete it.",
+      "steps": [
+        {
+          "intent": "Add a new contact named 'Ada Lovelace {{run_id}}' with the email 'ada.lovelace.{{run_id}}@example.com' and phone '+1-555-0142'.",
+          "assertions": {
+            "outcome": [
+              "A contact named 'Ada Lovelace {{run_id}}' with email 'ada.lovelace.{{run_id}}@example.com' now exists, and the reply reports its resource id (a people/... name)."
+            ],
+            "mechanism": [
+              "Creates the contact in a single create call; the contact id comes from the create result, not a guessed or hard-coded id.",
+              "Sends structured name, email, and phone fields rather than dumping the whole request into one unstructured name field."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the contact 'Ada Lovelace {{run_id}}' you just created.",
+          "assertions": {
+            "outcome": [
+              "No contact named 'Ada Lovelace {{run_id}}' remains in the account."
+            ],
+            "mechanism": [
+              "Deletes the contact created earlier in this turn's session; does not delete an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-contact-details",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent (write-propagation delay): create a contact then look up its email; freshness-safe resolution beats a lagging search index.",
+      "steps": [
+        {
+          "intent": "Add a contact 'Grace Hopper {{run_id}}' with email 'grace.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": [
+              "A contact 'Grace Hopper {{run_id}}' with email 'grace.{{run_id}}@example.com' now exists."
+            ],
+            "mechanism": [
+              "Single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "What's the email address on file for 'Grace Hopper {{run_id}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the email address 'grace.{{run_id}}@example.com' for 'Grace Hopper {{run_id}}'."
+            ],
+            "mechanism": [
+              "Resolves the just-created contact via a freshness-safe enumeration (listing contacts) rather than relying solely on the search index, which can lag minutes behind new writes."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Grace Hopper {{run_id}}' contact.",
+          "assertions": {
+            "outcome": ["No contact named 'Grace Hopper {{run_id}}' remains."],
+            "mechanism": [
+              "Deletes the contact created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-second-email-preserving-existing",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent (replace-not-merge): adding an email must not drop the existing one — read-then-send-full-array.",
+      "steps": [
+        {
+          "intent": "Add a contact 'Katherine Johnson {{run_id}}' with the email 'kj.work.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": [
+              "A contact 'Katherine Johnson {{run_id}}' with the email 'kj.work.{{run_id}}@example.com' now exists."
+            ],
+            "mechanism": [
+              "Single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add a second email 'kj.personal.{{run_id}}@example.com' to 'Katherine Johnson {{run_id}}' without removing her existing email.",
+          "assertions": {
+            "outcome": [
+              "The 'Katherine Johnson {{run_id}}' contact now has BOTH 'kj.work.{{run_id}}@example.com' and 'kj.personal.{{run_id}}@example.com' as email addresses."
+            ],
+            "mechanism": [
+              "Reads the contact's current emails first and sends the complete list (both addresses) on update, rather than sending only the new email — which would replace the whole field and drop the existing address."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Katherine Johnson {{run_id}}' contact.",
+          "assertions": {
+            "outcome": [
+              "No contact named 'Katherine Johnson {{run_id}}' remains."
+            ],
+            "mechanism": [
+              "Deletes the contact created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-same-name-update",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two contacts share a name; an ambiguous update must prompt a choice, not a silent pick.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Alex Smith {{run_id}}' with email 'alex.a.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": [
+              "A contact 'Alex Smith {{run_id}}' with email 'alex.a.{{run_id}}@example.com' now exists."
+            ],
+            "mechanism": [
+              "Single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add another contact also named 'Alex Smith {{run_id}}' but with email 'alex.b.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": [
+              "A second contact named 'Alex Smith {{run_id}}', with email 'alex.b.{{run_id}}@example.com', now exists."
+            ],
+            "mechanism": [
+              "Single create call; does not merge into or overwrite the existing same-name contact."
+            ]
+          }
+        },
+        {
+          "intent": "Update Alex Smith {{run_id}}'s phone number to '+1-555-0177'.",
+          "assertions": {
+            "outcome": [
+              "The reply does not silently pick one contact; it reports that more than one contact named 'Alex Smith {{run_id}}' matches and asks which one to update, showing a distinguishing detail such as the email address."
+            ],
+            "mechanism": [
+              "Does not issue an update or other mutating call against either contact before the ambiguity is resolved."
+            ]
+          }
+        },
+        {
+          "intent": "Delete both contacts named 'Alex Smith {{run_id}}'.",
+          "assertions": {
+            "outcome": ["No contacts named 'Alex Smith {{run_id}}' remain."],
+            "mechanism": [
+              "Deletes the two same-name contacts created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-contact-by-name",
+      "kind": "arrange-act",
+      "description": "Resolve a single name match to its id before deleting (no guessing).",
+      "steps": [
+        {
+          "intent": "Add a contact 'Margaret Hamilton {{run_id}}' with email 'mh.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": ["A contact 'Margaret Hamilton {{run_id}}' now exists."],
+            "mechanism": [
+              "Single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Remove Margaret Hamilton {{run_id}} from my contacts.",
+          "assertions": {
+            "outcome": [
+              "No contact named 'Margaret Hamilton {{run_id}}' remains."
+            ],
+            "mechanism": [
+              "Resolves the single name match to its resource id before deleting, rather than guessing an id; deletes exactly that contact and no other."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-contacts",
+      "kind": "act-only",
+      "description": "Read probe: enumerate the account's contacts.",
+      "steps": [
+        {
+          "intent": "Show me my contacts.",
+          "assertions": {
+            "outcome": [
+              "A list of the account's saved contacts is returned (it may be empty if the account has none)."
+            ],
+            "mechanism": [
+              "Enumerates saved contacts directly and does not fabricate contact entries; requests a bounded page rather than attempting to pull an unbounded number of records."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-label",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a user contact group (label), then delete it.",
+      "steps": [
+        {
+          "intent": "Create a new contact label called 'Book Club {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A contact group (label) named 'Book Club {{run_id}}' now exists and the reply reports its resource id (a contactGroups/... name)."
+            ],
+            "mechanism": [
+              "Creates the label in a single create-group call; the group id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Book Club {{run_id}}' label.",
+          "assertions": {
+            "outcome": ["No label named 'Book Club {{run_id}}' remains."],
+            "mechanism": [
+              "Deletes the user label created earlier in this session; does not target a system group."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-and-remove-label-member",
+      "kind": "arrange-act",
+      "description": "Group membership: add a contact to a label and later remove it, element-level (without disturbing other memberships).",
+      "steps": [
+        {
+          "intent": "Add a contact 'Carl Sagan {{run_id}}' with email 'carl.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": ["A contact 'Carl Sagan {{run_id}}' now exists."],
+            "mechanism": [
+              "Single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Create a label called 'Scientists {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A label named 'Scientists {{run_id}}' now exists."],
+            "mechanism": [
+              "Single create-group call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add Carl Sagan {{run_id}} to the 'Scientists {{run_id}}' label.",
+          "assertions": {
+            "outcome": [
+              "Carl Sagan {{run_id}} is now a member of the 'Scientists {{run_id}}' label."
+            ],
+            "mechanism": [
+              "Resolves both the contact id and the label id, then adds membership via an element-level membership-modify call rather than overwriting the contact's full membership list."
+            ]
+          }
+        },
+        {
+          "intent": "Remove Carl Sagan {{run_id}} from the 'Scientists {{run_id}}' label.",
+          "assertions": {
+            "outcome": [
+              "Carl Sagan {{run_id}} is no longer a member of the 'Scientists {{run_id}}' label."
+            ],
+            "mechanism": [
+              "Removes the membership element-level; does not delete the contact or the label to achieve the removal."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Scientists {{run_id}}' label and the contact 'Carl Sagan {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Neither the 'Scientists {{run_id}}' label nor the 'Carl Sagan {{run_id}}' contact remains."
+            ],
+            "mechanism": [
+              "Deletes the label and contact created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-label",
+      "kind": "arrange-act",
+      "description": "Rename a user label (read-modify-write on the group), then delete it.",
+      "steps": [
+        {
+          "intent": "Create a label called 'Reading {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A label named 'Reading {{run_id}}' now exists."],
+            "mechanism": [
+              "Single create-group call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Rename the 'Reading {{run_id}}' label to 'Reading Group {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A label named 'Reading Group {{run_id}}' now exists and no label named 'Reading {{run_id}}' remains — it was renamed, not duplicated."
+            ],
+            "mechanism": [
+              "Updates the existing user label in place (reads its current state/etag, then updates the name) rather than creating a second label."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Reading Group {{run_id}}' label.",
+          "assertions": {
+            "outcome": ["No label named 'Reading Group {{run_id}}' remains."],
+            "mechanism": [
+              "Deletes the label created and renamed earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-system-group-refusal",
+      "kind": "negative",
+      "description": "Refusal: system groups (My Contacts, Starred) cannot be renamed.",
+      "steps": [
+        {
+          "intent": "Rename my system 'My Contacts' group to 'Everyone {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that system groups such as 'My Contacts' cannot be renamed, and does not claim that a rename succeeded."
+            ],
+            "mechanism": [
+              "Does not report a successful group-update against the system group (an attempt that the API rejects is acceptable, but fabricating success is not)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-labels",
+      "kind": "act-only",
+      "description": "Read probe: list the account's contact groups (labels).",
+      "steps": [
+        {
+          "intent": "What contact labels do I have?",
+          "assertions": {
+            "outcome": [
+              "A list of the account's contact groups/labels is returned, each with its name."
+            ],
+            "mechanism": [
+              "Lists contact groups directly; does not fabricate label names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-and-remove-contact-photo",
+      "kind": "arrange-act",
+      "description": "Coverage probe: set a contact's photo from base64 image bytes, then remove it.",
+      "steps": [
+        {
+          "intent": "Add a contact 'Rosalind Franklin {{run_id}}' with email 'rf.{{run_id}}@example.com'.",
+          "assertions": {
+            "outcome": ["A contact 'Rosalind Franklin {{run_id}}' now exists."],
+            "mechanism": [
+              "Single create call; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Set this contact's photo to the following base64-encoded PNG: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='.",
+          "assertions": {
+            "outcome": [
+              "The 'Rosalind Franklin {{run_id}}' contact now has a photo set."
+            ],
+            "mechanism": [
+              "Sends the image as base64 photo bytes to the set-photo call for that contact; does not treat the value as a URL or a local file path."
+            ]
+          }
+        },
+        {
+          "intent": "Remove the photo from 'Rosalind Franklin {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The 'Rosalind Franklin {{run_id}}' contact no longer has a custom photo."
+            ],
+            "mechanism": [
+              "Removes the photo from the contact rather than deleting the contact."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Rosalind Franklin {{run_id}}' contact.",
+          "assertions": {
+            "outcome": [
+              "No contact named 'Rosalind Franklin {{run_id}}' remains."
+            ],
+            "mechanism": [
+              "Deletes the contact created earlier in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-other-contacts",
+      "kind": "act-only",
+      "description": "Read probe: browse the auto-saved 'other contacts' surface.",
+      "steps": [
+        {
+          "intent": "Show me the people I've interacted with but haven't saved as contacts — my 'other contacts'.",
+          "assertions": {
+            "outcome": [
+              "A list of 'other contacts' is returned (it may be empty if there are none)."
+            ],
+            "mechanism": [
+              "Reads the other-contacts surface specifically; does not return saved contacts instead, and does not fabricate entries."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "promote-other-contact",
+      "kind": "discover-act",
+      "description": "Find an 'other contact' and promote it into saved contacts (copyOtherContact). Needs a pre-existing other contact.",
+      "requires": ["google_contacts_other_contact"],
+      "steps": [
+        {
+          "intent": "Find one of my 'other contacts' — someone I've interacted with but not saved.",
+          "assertions": {
+            "outcome": [
+              "At least one 'other contact' is returned, with its name and/or email."
+            ],
+            "mechanism": [
+              "Reads or searches the other-contacts surface; does not invent an other-contact."
+            ]
+          }
+        },
+        {
+          "intent": "Save the first of those other contacts into my saved contacts.",
+          "assertions": {
+            "outcome": [
+              "A saved contact for the first of those other contacts now exists, and the reply reports a saved-contact resource id (a people/... name)."
+            ],
+            "mechanism": [
+              "Uses the copy/promote-other-contact operation on the discovered other-contact rather than creating a brand-new contact from scratch."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "bulk-update-refusal",
+      "kind": "negative",
+      "description": "Refusal: the connector does not do bulk/batch updates across all contacts.",
+      "steps": [
+        {
+          "intent": "Set the company field to 'Acme {{run_id}}' for all of my contacts at once.",
+          "assertions": {
+            "outcome": [
+              "The reply declines, explaining that bulk/batch updates across all contacts aren't supported, and does not claim any contacts were updated."
+            ],
+            "mechanism": [
+              "Does not issue contact-update calls attempting to perform the bulk change."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "directory-lookup-refusal",
+      "kind": "negative",
+      "description": "Refusal: the connector covers personal contacts, not Google Workspace directory lookups.",
+      "steps": [
+        {
+          "intent": "Look up my coworker Dana in our Google Workspace company directory and add their work email to my contacts.",
+          "assertions": {
+            "outcome": [
+              "The reply declines the directory lookup, explaining the connector works with personal contacts rather than the Workspace directory, and does not fabricate a directory result or a coworker's email."
+            ],
+            "mechanism": [
+              "Does not claim to have searched a company directory or invent a directory entry."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "merge-duplicates-refusal",
+      "kind": "negative",
+      "description": "Refusal: the connector does not merge/deduplicate contacts.",
+      "steps": [
+        {
+          "intent": "Find and merge all of my duplicate contacts.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that merging/deduplicating contacts isn't supported and does not claim a merge was performed."
+            ],
+            "mechanism": [
+              "Does not delete or modify contacts in an attempt to merge them."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
