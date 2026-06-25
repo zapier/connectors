@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: batchUpdate-union request types over a
+// batchUpdate-union request types over a
 // paragraph range. CreateParagraphBullets both applies a list to plain
 // paragraphs AND changes the preset of an existing list (per the Docs API "Work
 // with lists" guide), so the flat path is a single request — no delete needed

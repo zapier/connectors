@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (ReplaceImage). Same public-fetch + format rules as insertImage.
+// batchUpdate-union request type (ReplaceImage). Same public-fetch + format rules as insertImage.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (UpdateDocumentStyle). run() assembles the documentStyle from whichever inputs
+// batchUpdate-union request type (UpdateDocumentStyle). run() assembles the documentStyle from whichever inputs
 // are set and builds the matching `fields` mask (including nested paths like
 // pageSize.width). Document-level — no tabId.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";

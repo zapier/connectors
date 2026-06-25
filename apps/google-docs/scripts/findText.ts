@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a multi-step read codegen can't
-// scaffold — no single Docs call does text search, so run() reads the document
-// (includeTabsContent=true) and walks the structural tree (recursing tables and
-// tabs) to return match ranges. This is the index resolver for formatText /
+// Multi-step text search: no single Docs API call performs text search, so run() reads
+// the document (includeTabsContent=true) and walks the structural tree (recursing tables
+// and tabs) to return match ranges. This is the index resolver for formatText /
 // deleteContentRange.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";

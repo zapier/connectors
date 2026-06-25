@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: export is a Drive operation
-// (files.export on www.googleapis.com), not the Docs host codegen scaffolds
-// against. It returns the rendered content as a string.
+// Export is a Drive operation (files.export on www.googleapis.com), not the Docs API —
+// both share the same OAuth credential but target different base URLs.
+// Returns the rendered content as a string.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

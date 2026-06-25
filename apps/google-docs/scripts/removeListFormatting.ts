@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (DeleteParagraphBullets) over a paragraph range. Strips bullets/numbers,
+// batchUpdate-union request type (DeleteParagraphBullets) over a paragraph range. Strips bullets/numbers,
 // leaving the paragraph text. Pairs with createList. Index-neutral.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";

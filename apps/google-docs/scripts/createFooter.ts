@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (CreateFooter). Creates a document-level DEFAULT footer and returns its
+// batchUpdate-union request type (CreateFooter). Creates a document-level DEFAULT footer and returns its
 // segment id — write into it by passing that id as `segmentId` to insertText /
 // formatText. Creating a footer when one already exists is a 400.
 //

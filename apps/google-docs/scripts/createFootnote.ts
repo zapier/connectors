@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (CreateFootnote). Inserts a footnote reference at a body index (shifting
+// batchUpdate-union request type (CreateFootnote). Inserts a footnote reference at a body index (shifting
 // following indices by the reference mark) and returns the new footnote
 // segment id — write the footnote's text by passing that id as `segmentId` to
 // insertText. Footnotes can't be created inside headers/footers/footnotes.

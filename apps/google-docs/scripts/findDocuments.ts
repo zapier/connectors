@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: the Docs API has no list/search, so
-// finding documents is a Drive operation (www.googleapis.com), not the Docs host
-// codegen scaffolds against.
+// The Docs API has no list/search endpoint — finding documents routes to the Drive
+// API (www.googleapis.com) with mimeType filtering on Google Docs files.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

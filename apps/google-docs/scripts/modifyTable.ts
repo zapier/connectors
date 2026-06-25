@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: batchUpdate-union request types that add
+// batchUpdate-union request types that add
 // or remove a table row/column at a cell location. The agent resolves
 // tableStartIndex from getDocument (a table element's startIndex) and names the
 // reference cell by logical rowIndex/columnIndex. Deleting the last row/column

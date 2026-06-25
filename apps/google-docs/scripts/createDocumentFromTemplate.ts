@@ -1,8 +1,6 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a multi-step, cross-host composition
-// codegen can't scaffold — Drive files.copy (www.googleapis.com) to clone the
-// template, then a Docs batchUpdate of ReplaceAllText requests for each
-// {{placeholder}}.
+// Multi-step, cross-host composition: Drive files.copy (www.googleapis.com) clones the
+// template, then a Docs batchUpdate of ReplaceAllText fills each {{placeholder}}.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 

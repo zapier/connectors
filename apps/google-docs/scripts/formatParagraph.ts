@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (UpdateParagraphStyle). run() assembles the paragraphStyle from whichever
+// batchUpdate-union request type (UpdateParagraphStyle). run() assembles the paragraphStyle from whichever
 // inputs are set and builds the matching `fields` mask (shared with the Markdown
 // renderer via lib/paragraph.ts) — the API requires `fields` to name every
 // property being changed; an unset property is left untouched. Index-neutral.

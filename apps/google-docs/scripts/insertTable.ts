@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: the two-phase exception to the
+// Two-phase exception to the
 // one-batchUpdate-Request-per-tool convention. InsertTable creates an empty
 // R×C table; the cell indices aren't knowable until the table exists, so run()
 // inserts the table, re-reads the document to locate the new table's cells, then

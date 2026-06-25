@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (InsertInlineImage). The image is fetched by Google from the URL, not
+// batchUpdate-union request type (InsertInlineImage). The image is fetched by Google from the URL, not
 // uploaded; run() pre-validates the URL and returns the new image's objectId.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";

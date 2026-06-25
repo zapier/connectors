@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (UpdateTextStyle). run() assembles the textStyle from whichever inputs are set
+// batchUpdate-union request type (UpdateTextStyle). run() assembles the textStyle from whichever inputs are set
 // and builds the matching `fields` mask — the API requires `fields` to name
 // every property being changed; an unset property is left untouched.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";

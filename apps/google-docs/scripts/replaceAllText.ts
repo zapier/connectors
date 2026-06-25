@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (ReplaceAllText) posted to the shared :batchUpdate endpoint. run() surfaces
+// batchUpdate-union request type (ReplaceAllText) posted to the shared :batchUpdate endpoint. run() surfaces
 // the occurrencesChanged count the reply carries (0 is a silent no-op).
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";

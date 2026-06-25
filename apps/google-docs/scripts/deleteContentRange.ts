@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Authored by the implementation agent: a batchUpdate-union request type
-// (DeleteContentRange) posted to the shared :batchUpdate endpoint.
+// batchUpdate-union request type (DeleteContentRange) posted to the shared :batchUpdate endpoint.
 import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
