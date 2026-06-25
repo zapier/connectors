@@ -1,6 +1,5 @@
 {
   "name": "@zapier/google-docs-connector",
-  "private": true,
   "description": "Agent-callable Google Docs tools — create, read, export, and find documents; edit text, formatting, images, and page style. Use when the user mentions Google Docs or wants to create, read, search, or edit document content, even if they don't name Google Docs explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -31,7 +30,7 @@
     "prepare": "node cli.js build || bun cli.js build || true"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.1.0",
+    "@zapier/connectors-sdk": "^0.2.0",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
@@ -62,5 +61,9 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "restricted"
   }
 }
