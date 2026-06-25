@@ -4,7 +4,10 @@ import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
 import { GRAPH_BASE, mailboxRoot, outlookFetch } from "../lib/graph.ts";
-import { outgoingMessageSchema } from "../lib/schemas.ts";
+import {
+  outgoingMessageSchema,
+  toGraphOutgoingMessage,
+} from "../lib/schemas.ts";
 
 const inputSchema = z
   .object({
@@ -46,7 +49,9 @@ const definition = defineTool({
   connection: "microsoft-outlook",
   run: async (input, ctx) => {
     const url = `${GRAPH_BASE}${mailboxRoot(input.mailbox)}/sendMail`;
-    const body: Record<string, unknown> = { message: input.message };
+    const body: Record<string, unknown> = {
+      message: toGraphOutgoingMessage(input.message),
+    };
     if (input.saveToSentItems !== undefined) {
       body.saveToSentItems = input.saveToSentItems;
     }

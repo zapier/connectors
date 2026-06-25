@@ -10,7 +10,10 @@ import {
   outlookFetch,
   toListResult,
 } from "../lib/graph.ts";
-import { attachmentListItemSchema } from "../lib/schemas.ts";
+import {
+  attachmentListItemSchema,
+  normalizeAttachment,
+} from "../lib/schemas.ts";
 
 const inputSchema = z
   .object({
@@ -78,7 +81,11 @@ const definition = defineTool({
       url = `${GRAPH_BASE}${path}${query}`;
     }
     const res = await outlookFetch(ctx.fetch, "listAttachments", url);
-    return toListResult(await res.json());
+    const result = toListResult<Record<string, unknown>>(await res.json());
+    return {
+      ...result,
+      items: result.items.map((item) => normalizeAttachment(item)),
+    };
   },
 });
 

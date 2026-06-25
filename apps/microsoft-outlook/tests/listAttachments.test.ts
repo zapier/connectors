@@ -36,7 +36,6 @@ describe("listAttachments: run", () => {
             contentType: "application/pdf",
             size: 1024,
             isInline: false,
-            type: "file",
             "@odata.type": "#microsoft.graph.fileAttachment",
           },
         ],
@@ -56,6 +55,8 @@ describe("listAttachments: run", () => {
     expect(calls[0]?.init?.method).toBeUndefined();
     expect(outputSchema.safeParse(data).success).toBe(true);
     expect(data.items).toHaveLength(1);
+    // `type` is derived from `@odata.type`.
+    expect(data.items[0]?.type).toBe("file");
     expect(data.next_cursor).toBe(NEXT_LINK);
   });
 

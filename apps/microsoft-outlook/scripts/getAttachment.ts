@@ -9,7 +9,7 @@ import {
   outlookFetch,
   parseGraphResponse,
 } from "../lib/graph.ts";
-import { attachmentSchema } from "../lib/schemas.ts";
+import { attachmentSchema, normalizeAttachment } from "../lib/schemas.ts";
 
 const inputSchema = z
   .object({
@@ -49,7 +49,9 @@ const definition = defineTool({
       input.messageId,
     )}/attachments/${encodeURIComponent(input.attachmentId)}`;
     const res = await outlookFetch(ctx.fetch, "getAttachment", url);
-    return parseGraphResponse(res);
+    return normalizeAttachment(
+      await parseGraphResponse<Record<string, unknown>>(res),
+    );
   },
 });
 

@@ -25,10 +25,11 @@ describe("getAttachment: run", () => {
       init?: RequestInit,
     ) => {
       calls.push({ url, init });
+      // Graph tags the kind via `@odata.type`, not a bare `type` field.
       return jsonResponse({
         id: "att1",
         name: "report.pdf",
-        type: "file",
+        "@odata.type": "#microsoft.graph.fileAttachment",
         contentBytes: "AAAA",
       });
     }) as typeof globalThis.fetch;
@@ -45,6 +46,8 @@ describe("getAttachment: run", () => {
     expect(calls[0]?.init?.method).toBeUndefined();
     expect(outputSchema.safeParse(data).success).toBe(true);
     expect(data.contentBytes).toBe("AAAA");
+    // `type` is derived from `@odata.type`.
+    expect(data.type).toBe("file");
   });
 
   it("routes to /users/{upn} when a shared mailbox is supplied", async () => {
@@ -54,7 +57,11 @@ describe("getAttachment: run", () => {
       init?: RequestInit,
     ) => {
       calls.push({ url, init });
-      return jsonResponse({ id: "att1", name: "report.pdf", type: "file" });
+      return jsonResponse({
+        id: "att1",
+        name: "report.pdf",
+        "@odata.type": "#microsoft.graph.fileAttachment",
+      });
     }) as typeof globalThis.fetch;
 
     const { data } = await getAttachmentDefinition.run(

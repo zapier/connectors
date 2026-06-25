@@ -130,8 +130,32 @@ const attachmentBaseSchema = z.object({
   name: z.string(),
   contentType: z.string().optional(),
   size: z.number().optional().describe("Size in bytes."),
-  type: z.string().describe('Attachment kind: "file", "item", or "reference".'),
+  type: z
+    .string()
+    .optional()
+    .describe('Attachment kind: "file", "item", or "reference".'),
 });
+
+/**
+ * Derive the friendly attachment kind from Graph's `@odata.type` discriminator
+ * (e.g. `#microsoft.graph.fileAttachment` -> `file`). Graph does not return a
+ * bare `type` field; it tags each attachment with `@odata.type`, so the
+ * attachment tools map it to the `type` the output schema exposes.
+ */
+export function attachmentKind(odataType: unknown): string | undefined {
+  if (typeof odataType !== "string") return undefined;
+  const match = /#microsoft\.graph\.(file|item|reference)Attachment/i.exec(
+    odataType,
+  );
+  return match ? match[1].toLowerCase() : undefined;
+}
+
+/** Add the derived `type` (from `@odata.type`) to a raw Graph attachment. */
+export function normalizeAttachment<T extends Record<string, unknown>>(
+  attachment: T,
+): T & { type?: string } {
+  return { ...attachment, type: attachmentKind(attachment["@odata.type"]) };
+}
 
 /** Attachment summary returned by listAttachments. */
 export const attachmentListItemSchema = attachmentBaseSchema.extend({
@@ -280,6 +304,30 @@ export const outgoingMessageSchema = z.strictObject({
     .describe("Inline file attachments, each under 3 MB.")
     .optional(),
 });
+
+export type OutgoingMessageInput = z.infer<typeof outgoingMessageSchema>;
+
+/**
+ * Serialize an outgoing message for the Graph wire. Graph's `attachment` is a
+ * polymorphic type: a file attachment must carry the
+ * `@odata.type: "#microsoft.graph.fileAttachment"` discriminator, or Graph
+ * binds it to the abstract base `attachment` (which has no `contentBytes`) and
+ * rejects the send with `RequestBodyRead: The property 'contentBytes' does not
+ * exist on type 'microsoft.graph.attachment'`. We inject it here instead of in
+ * the input schema so the agent-facing schema stays free of wire-only fields.
+ */
+export function toGraphOutgoingMessage(
+  message: OutgoingMessageInput,
+): Record<string, unknown> {
+  if (!message.attachments?.length) return message;
+  return {
+    ...message,
+    attachments: message.attachments.map((attachment) => ({
+      "@odata.type": "#microsoft.graph.fileAttachment",
+      ...attachment,
+    })),
+  };
+}
 
 // — Outgoing event (input) —
 

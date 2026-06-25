@@ -9,7 +9,11 @@ import {
   outlookFetch,
   parseGraphResponse,
 } from "../lib/graph.ts";
-import { outgoingMessageSchema, recipientSchema } from "../lib/schemas.ts";
+import {
+  outgoingMessageSchema,
+  recipientSchema,
+  toGraphOutgoingMessage,
+} from "../lib/schemas.ts";
 
 const inputSchema = z
   .object({
@@ -56,7 +60,7 @@ const definition = defineTool({
     const url = `${GRAPH_BASE}${mailboxRoot(mailbox)}/messages`;
     const res = await outlookFetch(ctx.fetch, "createDraft", url, {
       method: "POST",
-      body: JSON.stringify(message),
+      body: JSON.stringify(toGraphOutgoingMessage(message)),
     });
     return parseGraphResponse(res);
   },
