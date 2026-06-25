@@ -37,26 +37,18 @@ to the public source it was taken from.
     [commentThreads.insert](https://developers.google.com/youtube/v3/docs/commentThreads/insert),
     [comments.insert](https://developers.google.com/youtube/v3/docs/comments/insert),
     [videos.rate](https://developers.google.com/youtube/v3/docs/videos/rate))
-  - `thumbnails.set`: "approximately 50 units."
-    ([thumbnails.set](https://developers.google.com/youtube/v3/docs/thumbnails/set))
   - `captions.list`: **50 units**; `captions.download`: **200 units** (the
     most expensive read in this catalog).
     ([captions.list](https://developers.google.com/youtube/v3/docs/captions/list),
     [captions.download](https://developers.google.com/youtube/v3/docs/captions/download))
-  - `search.list` and `videos.insert` are **no longer charged against the 10,000-unit
-    pool**. As of June 1, 2026 the API "is transitioning to a granular quota system …
-    starting with `videos.insert` and `search.list`," which "will be charged to their
-    own respective quota buckets."
-    ([revision history](https://developers.google.com/youtube/v3/revision_history))
-    The current per-method pages state `search.list` "has a quota cost of 1 unit in
-    the Search Queries quota bucket" and `videos.insert` "has a quota cost of 1 unit in
-    the Video Uploads quota bucket."
-    ([search.list](https://developers.google.com/youtube/v3/docs/search/list),
-    [videos.insert](https://developers.google.com/youtube/v3/docs/videos/insert))
-    Note: the upload cost was reduced "from approximately 1600 units to approximately
-    100 units" on Dec 4, 2025, then moved to its own bucket — older guidance citing
-    1600 units, or search costing 100 units against the main pool, is stale.
-    ([revision history](https://developers.google.com/youtube/v3/revision_history))
+  - `search.list` is **no longer charged against the 10,000-unit pool**. As of June 1,
+    2026 the API "is transitioning to a granular quota system … starting with
+    `videos.insert` and `search.list`," which "will be charged to their own respective
+    quota buckets." The current per-method page states `search.list` "has a quota cost
+    of 1 unit in the Search Queries quota bucket" — older guidance citing 100 units
+    against the main pool is stale.
+    ([revision history](https://developers.google.com/youtube/v3/revision_history),
+    [search.list](https://developers.google.com/youtube/v3/docs/search/list))
 - When the daily quota is exhausted the API returns `quotaExceeded` (403). The error
   docs describe no `Retry-After` header; treat quota exhaustion as non-retryable until
   the daily reset rather than backing off in a loop.
@@ -95,9 +87,6 @@ to the public source it was taken from.
   already exists." This is a post-condition-satisfied state, not a hard failure — the
   user is already subscribed.
   ([subscriptions.insert](https://developers.google.com/youtube/v3/docs/subscriptions/insert))
-- Thumbnail uploads can return `uploadRateLimitExceeded` (429): "The channel has
-  uploaded too many thumbnails recently. Please try the request again later." →
-  short-term back-off. ([thumbnails.set](https://developers.google.com/youtube/v3/docs/thumbnails/set))
 
 ## OAuth scopes & ownership
 
@@ -105,7 +94,6 @@ Scope descriptions (from the consent screen):
 
 - `youtube.readonly` — "View your YouTube account."
 - `youtube` — "Manage your YouTube account."
-- `youtube.upload` — "Manage your YouTube videos."
 - `youtube.force-ssl` — "See, edit, and permanently delete your YouTube videos,
   ratings, comments and captions."
   ([scopes](https://developers.google.com/youtube/v3/guides/auth/installed-apps))
@@ -117,10 +105,6 @@ Scope descriptions (from the consent screen):
   [comments.insert](https://developers.google.com/youtube/v3/docs/comments/insert),
   [captions.list](https://developers.google.com/youtube/v3/docs/captions/list),
   [captions.download](https://developers.google.com/youtube/v3/docs/captions/download))
-- **Uploads and thumbnails accept `youtube.upload`.** `videos.insert` and
-  `thumbnails.set` both list `youtube.upload`.
-  ([videos.insert](https://developers.google.com/youtube/v3/docs/videos/insert),
-  [thumbnails.set](https://developers.google.com/youtube/v3/docs/thumbnails/set))
 - **Ownership:** downloading a caption track "requires the user to have permission to
   edit the video" (the video's owner or an editor), not merely read access.
   ([captions.download](https://developers.google.com/youtube/v3/docs/captions/download))
@@ -266,47 +250,3 @@ Scope descriptions (from the consent screen):
   ([videoCategories resource](https://developers.google.com/youtube/v3/docs/videoCategories))
 - Categories are region-specific; `videoCategories.list` is queried by `regionCode`.
   ([videoCategories.list](https://developers.google.com/youtube/v3/docs/videoCategories/list))
-
-### Uploads (resumable protocol)
-
-`videos.insert` is a media upload, not a plain JSON call: it uses Google's
-**resumable upload protocol** against the upload host
-(`https://www.googleapis.com/upload/youtube/v3/videos`), as a two-step flow.
-
-1. **Start a session.** `POST …/upload/youtube/v3/videos?uploadType=resumable&part=…`
-   with the video resource as a JSON body (`Content-Type: application/json; charset=UTF-8`)
-   plus two headers describing the bytes that follow: `X-Upload-Content-Length`
-   ("The number of bytes that will be uploaded in subsequent requests") and
-   `X-Upload-Content-Type` ("the MIME type of the file that you are uploading").
-   ([resumable upload protocol](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol))
-2. **Read the session URI.** On success "the response will include a `Location` HTTP
-   header that specifies the URI for the resumable session. This is the URI that you
-   will use to upload your video file." Save it.
-   ([resumable upload protocol](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol))
-3. **Upload the bytes.** `PUT` the file data to that session URI; a completed upload
-   returns the created video resource, while an interrupted one returns HTTP 308
-   (Resume Incomplete) so the transfer can be resumed rather than restarted.
-   ([resumable upload protocol](https://developers.google.com/youtube/v3/guides/using_resumable_upload_protocol))
-
-- **Maximum file size: 256GB.** Accepted media MIME types are `video/*` and
-  `application/octet-stream`.
-  ([videos.insert](https://developers.google.com/youtube/v3/docs/videos/insert))
-- **Uploads require a direct token connection, not the Zapier relay.** Step 3 PUTs
-  the file as a binary request body, but the Zapier connection relay carries only
-  string/JSON bodies (`@zapier/zapier-sdk`'s relay `fetch` accepts
-  `string | FormData | URLSearchParams | Record`, never `Uint8Array`/`ArrayBuffer`/
-  `Blob`/streams). So `uploadVideo` (and the thumbnail PUT) only work over a direct
-  token connection (`env:YOUTUBE_TOKEN`); over a `zapier:<id>` connection the binary
-  PUT is rejected and `uploadVideo` throws a clear "not supported over the Zapier
-  relay" error. The metadata calls (session open, etc.) use JSON bodies and are
-  unaffected.
-
-### Thumbnails
-
-- `thumbnails.set` accepts `image/jpeg`, `image/png` (and
-  `application/octet-stream`) with a "Maximum file size: 2MB."
-  ([thumbnails.set](https://developers.google.com/youtube/v3/docs/thumbnails/set))
-- A 403 forbidden is returned when "The authenticated user doesn't have permissions to
-  upload and set custom video thumbnails" — observed in practice for accounts that are
-  not verified, though the API docs phrase this as a permissions, not a "verified",
-  check. ([thumbnails.set](https://developers.google.com/youtube/v3/docs/thumbnails/set))

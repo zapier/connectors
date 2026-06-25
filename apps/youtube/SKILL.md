@@ -1,6 +1,6 @@
 ---
 name: youtube
-description: Agent-callable YouTube tools — search and read videos, upload and update videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, upload, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
+description: Agent-callable YouTube tools — search and read videos, update and delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
 license: Elastic-2.0
 compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
 metadata:
@@ -14,12 +14,12 @@ metadata:
 
 _Independent, unofficial connector for YouTube. Not affiliated with, endorsed by, or sponsored by YouTube. "YouTube" is a trademark of its owner, used only to identify the service this connector works with._
 
-Tools for working with YouTube against the [YouTube Data API v3](https://developers.google.com/youtube/v3) (`https://www.googleapis.com/youtube/v3/`, with uploads on `https://www.googleapis.com/upload/youtube/v3/`): search and read videos, upload / update / delete videos, set thumbnails, like or dislike videos, create and manage playlists and their items, read and post comments, manage subscriptions, and read channel, category, and caption metadata. 24 tools across video discovery, video and playlist management, community engagement, and the read surfaces an agent needs to resolve ids.
+Tools for working with YouTube against the [YouTube Data API v3](https://developers.google.com/youtube/v3) (`https://www.googleapis.com/youtube/v3/`): search and read videos, update or delete videos, like or dislike videos, create and manage playlists and their items, read and post comments, manage subscriptions, and read channel, category, and caption metadata. 22 tools across video discovery, video and playlist management, community engagement, and the read surfaces an agent needs to resolve ids.
 
 ## When to use this connector
 
 - An agent needs to **find or read** video data — search for videos, get a video's full statistics and details, list the videos in a playlist, or read a channel's profile and uploads.
-- An agent needs to **manage videos** — upload a new video, update an existing video's metadata without wiping the fields it didn't touch, set a custom thumbnail, like/dislike, or delete a video it owns.
+- An agent needs to **manage videos** — update an existing video's metadata without wiping the fields it didn't touch, like/dislike, or delete a video it owns.
 - An agent needs to **organize playlists** — create, update, or delete playlists, and add or remove videos.
 - An agent needs to **engage with the community** — read comment threads, post a comment, reply to a thread, or subscribe / unsubscribe to channels.
 
@@ -31,10 +31,8 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | -------------------------------------------------------------------------- | ------------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
 | [`scripts/searchVideos.ts`](scripts/searchVideos.ts)                       | `searchVideos`            | `youtube`   | Search videos by keyword, channel, date, or duration (id + snippet only; separate quota bucket). |
 | [`scripts/getVideo.ts`](scripts/getVideo.ts)                               | `getVideo`                | `youtube`   | Get full details of one or more videos by id — snippet, statistics, contentDetails, status.      |
-| [`scripts/uploadVideo.ts`](scripts/uploadVideo.ts)                         | `uploadVideo`             | `youtube`   | Upload a video file (from a URL) with metadata to the authenticated user's channel.              |
 | [`scripts/updateVideo.ts`](scripts/updateVideo.ts)                         | `updateVideo`             | `youtube`   | Update a video's metadata (read-modify-write — only the fields you pass change).                 |
 | [`scripts/deleteVideo.ts`](scripts/deleteVideo.ts)                         | `deleteVideo`             | `youtube`   | Permanently delete a video you own.                                                              |
-| [`scripts/setVideoThumbnail.ts`](scripts/setVideoThumbnail.ts)             | `setVideoThumbnail`       | `youtube`   | Set or replace a video's custom thumbnail from an image URL (needs thumbnail-upload permission). |
 | [`scripts/rateVideo.ts`](scripts/rateVideo.ts)                             | `rateVideo`               | `youtube`   | Like, dislike, or clear your rating on a video.                                                  |
 | [`scripts/listPlaylists.ts`](scripts/listPlaylists.ts)                     | `listPlaylists`           | `youtube`   | List playlists owned by the user or a channel, or fetch playlists by id.                         |
 | [`scripts/createPlaylist.ts`](scripts/createPlaylist.ts)                   | `createPlaylist`          | `youtube`   | Create a new playlist on the user's channel.                                                     |
@@ -84,6 +82,7 @@ Every script returns a `{ data, meta }` envelope (same shape across the CLI's JS
 - **Report analytics** (views-over-time, watch-time, revenue, demographics). There is no analytics tool. Don't substitute a video's lifetime `statistics` counts and present them as an analytics report.
 - **Moderate comments** (edit, delete, hide, mark as spam, or set moderation status) — only reading, posting, and replying are supported. Replies are single-level: you cannot reply to a reply.
 - **Live-stream** (create or manage broadcasts/streams) or **upload/replace captions** — captions are read-only here (list + download).
+- **Upload videos or set custom thumbnails** — there is no `uploadVideo` or `setVideoThumbnail` tool. These require binary media uploads, which the connection transport does not support.
 - **Administer a channel** (edit channel branding, sections, or settings).
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
@@ -100,7 +99,6 @@ YouTube uses **Google OAuth 2.0** with a single access token, resolved into the 
 - `youtube.readonly` — all read / list tools (search, videos, playlists, playlist items, channels, categories, subscriptions, comment threads).
 - `youtube` — manage tools: playlist create/update/delete, playlist-item add/remove, subscribe/unsubscribe, video update/delete, **and rateVideo** (rating does _not_ need the comment scope).
 - `youtube.force-ssl` — **required** for all comment writes (`postComment`, `replyToComment`) and for **all caption** operations (`listCaptions`, `downloadCaption`).
-- `youtube.upload` — `uploadVideo` and `setVideoThumbnail`.
 
 A request made with an insufficient scope returns **403**; reconnect YouTube with the broader access. A 403 because you don't **own** the resource is a different problem — reconnecting won't help.
 
@@ -159,6 +157,6 @@ When no shipped script matches, read this `SKILL.md`, the [`references/`](refere
 
 ## API quirks worth knowing
 
-| Reference                                                                | Load when                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`references/youtube-api-gotchas.md`](references/youtube-api-gotchas.md) | Before relying on counts, quotas, scopes, pagination, IDs, or any non-obvious response field — covers the `part` model, the per-bucket quota system (search/upload), the error envelope and `reason`→recovery mapping, OAuth scope requirements (`youtube.force-ssl`, `youtube.upload`), counts-as-strings, and per-resource quirks for videos, search, playlists, comments, captions, channels, and subscriptions. |
+| Reference                                                                | Load when                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`references/youtube-api-gotchas.md`](references/youtube-api-gotchas.md) | Before relying on counts, quotas, scopes, pagination, IDs, or any non-obvious response field — covers the `part` model, the per-bucket quota system, the error envelope and `reason`→recovery mapping, OAuth scope requirements (`youtube`, `youtube.force-ssl`), counts-as-strings, and per-resource quirks for videos, search, playlists, comments, captions, channels, and subscriptions. |

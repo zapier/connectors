@@ -3,7 +3,7 @@
 // YouTube partitions every resource into named "parts" (snippet / contentDetails /
 // statistics / status / replies / resourceId). The same resource shapes are returned
 // by both a list tool and the write tool that produces that resource (e.g. Video by
-// getVideo + updateVideo + uploadVideo; Playlist by listPlaylists + createPlaylist +
+// getVideo + updateVideo; Playlist by listPlaylists + createPlaylist +
 // updatePlaylist), so the canonical output shapes live here and every tool imports
 // them. Counts (viewCount/likeCount/subscriberCount/...) come back as STRINGS, not
 // numbers — they are modeled as strings here; do not coerce. likeCount/commentCount
@@ -57,7 +57,7 @@ export const NextPageToken = z
 
 // ---- videos ----
 
-/** The canonical YouTube Video resource (getVideo, updateVideo, uploadVideo). */
+/** The canonical YouTube Video resource (getVideo, updateVideo). */
 export const VideoSchema = z
   .object({
     id: z.string().describe("The 11-char video id."),
@@ -483,7 +483,7 @@ export async function throwForYouTube(
   ) {
     message = `${prefix}: ${reason ?? "rateLimitExceeded"} — short-term rate limit. Back off and retry with jitter.`;
   } else if (res.status === 403 && reason === "insufficientPermissions") {
-    message = `${prefix}: insufficientPermissions — the connection's OAuth scope is too narrow. Reconnect YouTube with the access this tool needs (comment and caption operations require the youtube.force-ssl scope; uploads require youtube.upload).`;
+    message = `${prefix}: insufficientPermissions — the connection's OAuth scope is too narrow. Reconnect YouTube with the access this tool needs (comment and caption operations require the youtube.force-ssl scope).`;
   } else if (res.status === 403) {
     message = `${prefix}: ${reason ?? "forbidden"} — ${apiMessage ?? "access denied"}. This is either a missing OAuth scope (reconnect YouTube with the needed access — comment/caption writes need youtube.force-ssl) or you do not own this resource (reconnecting won't help; you can only modify videos, playlists, and subscriptions you own).`;
   } else if (res.status === 404) {

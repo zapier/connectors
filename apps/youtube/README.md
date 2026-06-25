@@ -2,9 +2,9 @@
 
 _Independent, unofficial connector for YouTube. Not affiliated with, endorsed by, or sponsored by YouTube. "YouTube" is a trademark of its owner, used only to identify the service this connector works with._
 
-Agent-callable YouTube tools — search and read videos, upload and update videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, upload, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
+Agent-callable YouTube tools — search and read videos, update and delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
 
-This connector wraps the [YouTube Data API v3](https://developers.google.com/youtube/v3) (`https://www.googleapis.com/youtube/v3/`, with uploads on the upload host) behind 24 agent-callable tools spanning video discovery and detail, video upload / update / delete, playlist and playlist-item management, comment reading and posting, subscriptions, and the channel / category / caption read surfaces an agent needs to resolve ids. Auth is Google OAuth 2.0 — a single access token whose capabilities are gated by OAuth scope and by resource ownership.
+This connector wraps the [YouTube Data API v3](https://developers.google.com/youtube/v3) (`https://www.googleapis.com/youtube/v3/`) behind 22 agent-callable tools spanning video discovery and detail, video update / delete, playlist and playlist-item management, comment reading and posting, subscriptions, and the channel / category / caption read surfaces an agent needs to resolve ids. Auth is Google OAuth 2.0 — a single access token whose capabilities are gated by OAuth scope and by resource ownership.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
@@ -29,10 +29,8 @@ Auth is one `[<resolver>:]<value>` connection string passed with `--connection`.
 | ------------------------- | ------------------------------------------------------------------------------------------- |
 | `searchVideos`            | Search videos by keyword, channel, date, or duration (id + snippet only; quota-heavy).      |
 | `getVideo`                | Get full details of one or more videos by id — snippet, statistics, contentDetails, status. |
-| `uploadVideo`             | Upload a video file (from a URL) with metadata to the authenticated user's channel.         |
 | `updateVideo`             | Update a video's metadata (read-modify-write — only the fields you pass change).            |
 | `deleteVideo`             | Permanently delete a video you own.                                                         |
-| `setVideoThumbnail`       | Set or replace a video's custom thumbnail from an image URL (verified accounts only).       |
 | `rateVideo`               | Like, dislike, or clear your rating on a video.                                             |
 | `listPlaylists`           | List playlists owned by the user or a channel, or fetch playlists by id.                    |
 | `createPlaylist`          | Create a new playlist on the user's channel.                                                |
@@ -91,13 +89,13 @@ No Zapier account? Use the `env:` resolver — point `--connection` at an env-va
 ## When to use this
 
 - An agent needs to read YouTube data — find videos, pull a video's full statistics and details, enumerate a playlist or a channel's uploads, or read comment threads.
-- An agent needs to manage a creator's own content — upload or update videos, set thumbnails, organize playlists, post or reply to comments, or manage subscriptions.
+- An agent needs to manage a creator's own content — update videos, organize playlists, post or reply to comments, or manage subscriptions.
 - You want a single, scope-gated OAuth surface over the YouTube Data API that resolves ids (channels → uploads playlist, categories, caption tracks) the way an agent reasons about them.
 
 ## When NOT to use this
 
 - **Analytics / reporting** (views-over-time, watch-time, revenue, demographics) — not covered; that's the YouTube Analytics API.
-- **Live streaming, comment moderation, caption upload, or channel administration** — out of scope for v1 (captions are read-only here).
+- **Video upload, custom thumbnails, live streaming, comment moderation, caption upload, or channel administration** — out of scope for v1 (video upload and thumbnails require binary media uploads the connection transport doesn't support; captions are read-only here).
 - **Bulk discovery via search** — `search.list` costs 100 quota units and is eventually consistent; to enumerate a known channel's videos, prefer `getChannel` → `listPlaylistItems` on the uploads playlist.
 
 ## Links

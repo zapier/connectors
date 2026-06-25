@@ -19,12 +19,10 @@ import rateVideoDefinition from "./scripts/rateVideo.ts";
 import removeVideoFromPlaylistDefinition from "./scripts/removeVideoFromPlaylist.ts";
 import replyToCommentDefinition from "./scripts/replyToComment.ts";
 import searchVideosDefinition from "./scripts/searchVideos.ts";
-import setVideoThumbnailDefinition from "./scripts/setVideoThumbnail.ts";
 import subscribeToChannelDefinition from "./scripts/subscribeToChannel.ts";
 import unsubscribeFromChannelDefinition from "./scripts/unsubscribeFromChannel.ts";
 import updatePlaylistDefinition from "./scripts/updatePlaylist.ts";
 import updateVideoDefinition from "./scripts/updateVideo.ts";
-import uploadVideoDefinition from "./scripts/uploadVideo.ts";
 
 const connector = defineConnector({
   scripts: {
@@ -46,12 +44,10 @@ const connector = defineConnector({
     removeVideoFromPlaylist: removeVideoFromPlaylistDefinition,
     replyToComment: replyToCommentDefinition,
     searchVideos: searchVideosDefinition,
-    setVideoThumbnail: setVideoThumbnailDefinition,
     subscribeToChannel: subscribeToChannelDefinition,
     unsubscribeFromChannel: unsubscribeFromChannelDefinition,
     updatePlaylist: updatePlaylistDefinition,
     updateVideo: updateVideoDefinition,
-    uploadVideo: uploadVideoDefinition,
   },
   connectionResolvers,
 });
@@ -76,10 +72,8 @@ export const {
   removeVideoFromPlaylist,
   replyToComment,
   searchVideos,
-  setVideoThumbnail,
   subscribeToChannel,
   unsubscribeFromChannel,
   updatePlaylist,
   updateVideo,
-  uploadVideo,
 } = toFunctions(connector);

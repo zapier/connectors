@@ -5,18 +5,10 @@
   "fixtures": [
     {
       "name": "eval_owned_video",
-      "description": "A video owned by the eval account, used by the update/thumbnail/comment/caption scenarios (the connector can update or download captions only for a video the credential owns, and an upload-per-run is too slow/expensive to provision in-run). The operator uploads one test video once and supplies its id.",
+      "description": "A video owned by the eval account, used by the update/comment/caption scenarios (the connector can update or download captions only for a video the credential owns). The operator uploads one test video once and supplies its id.",
       "env": "EVAL_YOUTUBE_OWNED_VIDEO",
       "default": "eval-owned-video",
-      "expects": "A video owned by the YouTube account the eval connection is bound to, set to public or unlisted, that already has a non-empty title, a non-empty description, at least one tag, and an assigned category, has comments enabled, and carries at least one caption track (e.g. an English track, auto-generated is fine). The eval connection must hold the youtube, youtube.force-ssl, and youtube.upload scopes so the update, comment, thumbnail, and caption operations against it are permitted.",
-      "provision": "operator"
-    },
-    {
-      "name": "eval_video_file_url",
-      "description": "A publicly fetchable URL of a small video file used by the upload-and-delete scenario, which streams the file to YouTube. The operator hosts a short sample clip and supplies its URL.",
-      "env": "EVAL_YOUTUBE_VIDEO_FILE_URL",
-      "default": "https://example.com/eval-sample.mp4",
-      "expects": "A URL that returns a small (well under a few hundred MB) playable video file (e.g. an MP4) over plain HTTPS with no auth, fetchable by the eval runner so it can be streamed to the YouTube upload endpoint.",
+      "expects": "A video owned by the YouTube account the eval connection is bound to, set to public or unlisted, that already has a non-empty title, a non-empty description, at least one tag, and an assigned category, has comments enabled, and carries at least one caption track (e.g. an English track, auto-generated is fine). The eval connection must hold the youtube and youtube.force-ssl scopes so the update, comment, and caption operations against it are permitted.",
       "provision": "operator"
     }
   ],
@@ -290,55 +282,6 @@
             "mechanism": [
               "Resolves the 'Education' category to its category id (e.g. by listing assignable video categories) rather than passing the literal word 'Education' or guessing an id.",
               "Does not clear the existing description: the connector's updateVideo reads the current snippet and merges, so the description survives even when the agent omits it from the tool call (the agent need not restate it)."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "id": "upload-and-delete-video",
-      "kind": "arrange-act",
-      "description": "Cold-start capability probe: upload a private video from a file URL, then delete it. Covers upload plus a real (own-asset) delete.",
-      "requires": ["eval_video_file_url"],
-      "steps": [
-        {
-          "intent": "Upload the video at {{eval_video_file_url}} to my channel as a private video titled 'Eval upload {{run_id}}'.",
-          "assertions": {
-            "outcome": [
-              "A private video titled 'Eval upload {{run_id}}' has been uploaded to the account's channel and its new video id is reported."
-            ],
-            "mechanism": [
-              "Uploads the file from the URL given in the request with private visibility; the resulting video id comes from the upload response, not a hard-coded id."
-            ]
-          }
-        },
-        {
-          "intent": "Delete the video you just uploaded.",
-          "assertions": {
-            "outcome": [
-              "The 'Eval upload {{run_id}}' video no longer exists (cleanup)."
-            ],
-            "mechanism": [
-              "Deletes the video uploaded earlier in this session using its returned id, not an unrelated video."
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "id": "set-video-thumbnail",
-      "kind": "act-only",
-      "description": "Coverage probe for the custom-thumbnail upload, which is gated on account verification; a clean permission refusal is an acceptable outcome, a fabricated success is not.",
-      "requires": ["eval_owned_video"],
-      "steps": [
-        {
-          "intent": "Set the thumbnail of my video {{eval_owned_video}} to the image at https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/PNG_transparency_demonstration_1.png/640px-PNG_transparency_demonstration_1.png",
-          "assertions": {
-            "outcome": [
-              "Either the custom thumbnail of the video given in the request is updated to the supplied image, or the reply clearly explains the account is not permitted to set custom thumbnails (e.g. it needs verification) — and in no case is a successful change reported when none happened."
-            ],
-            "mechanism": [
-              "Targets the video id given in the request using the supplied image URL; does not silently swap in a different video or substitute a different image (a retry with the same image after an error is fine)."
             ]
           }
         }
