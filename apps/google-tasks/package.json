@@ -1,6 +1,5 @@
 {
   "name": "@zapier/google-tasks-connector",
-  "private": true,
   "description": "Agent-callable Google Tasks tools — create, list, update, complete, move, and delete tasks and task lists. Use when the user wants to manage Google Tasks or to-dos, even if they don't name Google Tasks explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -61,5 +60,9 @@
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^5.0.0"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "restricted"
   }
 }
