@@ -1,0 +1,689 @@
+{
+  "skill_name": "microsoft-outlook",
+  "version": "ce5eb75",
+  "description": "Intent-anchored eval scenarios for the microsoft-outlook connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (drafts, folders, events, contacts namespaced by {{run_id}}); discover-act scenarios operate on a pre-existing seeded message via in-envelope read/search primitives (all arms compete); act-only scenarios target an ambient resource (the mailbox, calendar, or profile). Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/shape diagnostics, our-arm-only). Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "outlook_seed_message",
+      "description": "A pre-existing received email in the mailbox the eval credential is bound to, used by the discover-act read/search/reply/forward/attachment scenarios. The connector cannot create an inbound message from another sender (or attach a file to one), so it must be seeded out of band before runs.",
+      "env": "EVAL_OUTLOOK_SEED_MESSAGE",
+      "default": "Eval Seed",
+      "expects": "A message visible to the eval connection in the mailbox the eval credential is bound to, appearing as received from a resolvable sender address (a from address the connection can reply to), with a subject that contains the marker 'Eval Seed' and a non-empty body, and carrying at least one file attachment under 3 MB. The eval connection must be able to read the full message, list and download that attachment, reply to it, and forward it.",
+      "provision": "seed"
+    }
+  ],
+  "evals": [
+    {
+      "id": "whats-my-email",
+      "kind": "act-only",
+      "description": "Profile read (highest read reach): resolve the signed-in user's own email address.",
+      "steps": [
+        {
+          "intent": "What's my own email address on this account?",
+          "assertions": {
+            "outcome": [
+              "The reply states the signed-in user's email address (and may include their display name)."
+            ],
+            "mechanism": [
+              "Reads the signed-in user's profile to resolve the address rather than inventing or guessing one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-email-to-self",
+      "kind": "arrange-act",
+      "description": "Top write (find-then-act): send a test email to the user's own address, which must be resolved first.",
+      "steps": [
+        {
+          "intent": "Send a test email to myself with the subject 'Eval ping {{run_id}}' and the body 'This is an automated eval test.'",
+          "assertions": {
+            "outcome": [
+              "An email with subject 'Eval ping {{run_id}}' and the given body is sent to the signed-in user's own address.",
+              "The reply confirms the email was sent and does not claim a capability that wasn't used."
+            ],
+            "mechanism": [
+              "Resolves the signed-in user's own address (e.g. from the profile) rather than guessing or hard-coding an address.",
+              "Sends exactly one email; does not create unrelated drafts or messages."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-email-and-locate-in-sent",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a one-shot send returns no message id, so locating the sent message afterward requires the draft-then-send path. Outcome graded blind to that mechanism.",
+      "steps": [
+        {
+          "intent": "Send an email to myself with subject 'Eval tracked {{run_id}}' and body 'Track me.', then give me a way to find that exact sent message afterward.",
+          "assertions": {
+            "outcome": [
+              "An email with subject 'Eval tracked {{run_id}}' is sent to the signed-in user's own address.",
+              "The reply identifies the sent message specifically (e.g. by reporting its id or that it is locatable in Sent Items), not merely that 'an email was sent'."
+            ],
+            "mechanism": [
+              "Obtains an identifier for the sent message rather than asserting one exists with no id to back it (the one-shot send path returns no message id).",
+              "Does not fabricate a message id; any id reported comes from a tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-and-send-draft",
+      "kind": "arrange-act",
+      "description": "Draft lifecycle: create a draft, then send the same draft in a later turn.",
+      "steps": [
+        {
+          "intent": "Draft an email to myself with subject 'Eval draft {{run_id}}' and body 'Draft body.' but don't send it yet.",
+          "assertions": {
+            "outcome": [
+              "A draft email with subject 'Eval draft {{run_id}}' addressed to the signed-in user now exists and has not been sent.",
+              "The reply confirms the draft was created and reports something that identifies it."
+            ],
+            "mechanism": [
+              "Creates a draft (an unsent message) rather than sending immediately; the resulting draft id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Now send the draft you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval draft {{run_id}}' message is sent to the signed-in user's own address."
+            ],
+            "mechanism": [
+              "Sends the draft the agent just created in this session rather than composing a new message or sending an unrelated draft."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reply-to-email",
+      "kind": "discover-act",
+      "description": "Head-to-head: find the seeded received message, then reply to its sender.",
+      "requires": ["outlook_seed_message"],
+      "steps": [
+        {
+          "intent": "Find the email whose subject contains '{{outlook_seed_message}}' and show me who it's from.",
+          "assertions": {
+            "outcome": [
+              "The email whose subject contains '{{outlook_seed_message}}' is located and its sender is reported."
+            ],
+            "mechanism": [
+              "Searches or lists messages to locate the message rather than inventing a message id or sender."
+            ]
+          }
+        },
+        {
+          "intent": "Reply to that email with the message 'Thanks, received {{run_id}}.'",
+          "assertions": {
+            "outcome": [
+              "A reply carrying the text 'Thanks, received {{run_id}}.' is sent to the original sender of the message the agent just found."
+            ],
+            "mechanism": [
+              "Replies to the message located in this session (using its id) rather than composing a brand-new email to a guessed address."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "forward-email",
+      "kind": "discover-act",
+      "description": "Head-to-head: find the seeded message and forward it to a named recipient.",
+      "requires": ["outlook_seed_message"],
+      "steps": [
+        {
+          "intent": "Find the email whose subject contains '{{outlook_seed_message}}' and forward it to myself with the note 'FYI {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The email whose subject contains '{{outlook_seed_message}}' is forwarded to the signed-in user's own address, carrying the note 'FYI {{run_id}}'."
+            ],
+            "mechanism": [
+              "Forwards the located message (preserving its original content) rather than composing a new email from scratch.",
+              "Resolves the signed-in user's own address rather than guessing a recipient."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-and-read-email",
+      "kind": "discover-act",
+      "description": "Head-to-head: full-text search for the seeded message, then read its full body.",
+      "requires": ["outlook_seed_message"],
+      "steps": [
+        {
+          "intent": "Search my mail for messages mentioning '{{outlook_seed_message}}' and tell me what the full body of that message says.",
+          "assertions": {
+            "outcome": [
+              "The message whose subject contains '{{outlook_seed_message}}' is found and its full body content is reported back, not just a subject or preview."
+            ],
+            "mechanism": [
+              "Reads the full message body (a get-by-id read) rather than relying only on the truncated preview returned by a list/search call.",
+              "Targets the message id surfaced by the search rather than inventing one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-recent-messages",
+      "kind": "act-only",
+      "description": "Ambient read: list the most recent messages in the mailbox, newest first.",
+      "steps": [
+        {
+          "intent": "Show me my 5 most recent emails.",
+          "assertions": {
+            "outcome": [
+              "Up to 5 recent messages are returned, each with at least a subject and sender, presented newest-first."
+            ],
+            "mechanism": [
+              "Lists messages with a bounded page size rather than fetching the entire mailbox; does not fabricate message contents."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "summarize-unread-messages",
+      "kind": "discover-act",
+      "description": "Find-then-act: narrow to unread messages and summarize them.",
+      "steps": [
+        {
+          "intent": "Summarize my unread emails.",
+          "assertions": {
+            "outcome": [
+              "The reply summarizes only messages that are unread (it does not present already-read mail as unread).",
+              "If there are no unread messages, the reply says so rather than fabricating summaries."
+            ],
+            "mechanism": [
+              "Restricts the result to unread messages via a read-state filter rather than listing all mail and guessing which are unread."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "download-email-attachment",
+      "kind": "discover-act",
+      "description": "Head-to-head, dominant read volume: locate the seeded message and download its file attachment.",
+      "requires": ["outlook_seed_message"],
+      "steps": [
+        {
+          "intent": "The email whose subject contains '{{outlook_seed_message}}' has a file attached. List its attachments and download the file for me.",
+          "assertions": {
+            "outcome": [
+              "The attachment(s) on the message whose subject contains '{{outlook_seed_message}}' are listed with their names.",
+              "The file attachment's contents are retrieved (its bytes/base64 content), not just its metadata."
+            ],
+            "mechanism": [
+              "Lists the message's attachments to obtain the attachment id, then downloads that attachment by id rather than guessing an id.",
+              "Targets the message located in this session rather than an unrelated message."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "categorize-message",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: applying a category must preserve existing categories (a PATCH replaces the categories collection wholesale). Outcome graded blind to the read-merge mechanism.",
+      "steps": [
+        {
+          "intent": "Draft an email to myself with subject 'Eval cat {{run_id}}' and put it in the category 'EvalAlpha {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A draft 'Eval cat {{run_id}}' now exists and carries the category 'EvalAlpha {{run_id}}'."
+            ],
+            "mechanism": [
+              "The draft id used for the categorize step comes from the create result, not a guessed id."
+            ]
+          }
+        },
+        {
+          "intent": "Now also add the category 'EvalBeta {{run_id}}' to that same email, keeping its existing category.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval cat {{run_id}}' message now carries BOTH categories 'EvalAlpha {{run_id}}' and 'EvalBeta {{run_id}}' — the original category was not dropped."
+            ],
+            "mechanism": [
+              "Reads the message's current categories and writes the union, rather than overwriting the categories collection with only the new value."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "flag-and-mark-read",
+      "kind": "arrange-act",
+      "description": "Organize: flag a message for follow-up and mark it read in one update.",
+      "steps": [
+        {
+          "intent": "Draft an email to myself with subject 'Eval flag {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A draft 'Eval flag {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "The draft id comes from the create result, not a hard-coded id."
+            ]
+          }
+        },
+        {
+          "intent": "Flag that email for follow-up and mark it as read.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval flag {{run_id}}' message is now flagged for follow-up and marked read."
+            ],
+            "mechanism": [
+              "Updates the message the agent just created in this session rather than a different message; does not send or delete it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-message-to-folder",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a message id changes when it moves between folders, so follow-up must use the new id. Self-provisions a folder and a draft, then moves it.",
+      "steps": [
+        {
+          "intent": "Create a mail folder named 'Eval Folder {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A mail folder named 'Eval Folder {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one folder; the folder id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Draft an email to myself with subject 'Eval move {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A draft 'Eval move {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": ["The draft id comes from the create result."]
+          }
+        },
+        {
+          "intent": "Move that draft into the 'Eval Folder {{run_id}}' folder, and confirm it now lives there.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval move {{run_id}}' message now resides in the 'Eval Folder {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Moves the message into the folder the agent created earlier in this session, targeting that folder by its id rather than a guessed id.",
+              "For any post-move confirmation, uses the message id returned by the move (which differs from the pre-move id) rather than reusing the stale original id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-email",
+      "kind": "arrange-act",
+      "description": "Destructive (reversible): delete a self-created draft; deletion is a soft move to Deleted Items, not a purge.",
+      "steps": [
+        {
+          "intent": "Draft an email to myself with subject 'Eval del {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A draft 'Eval del {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": ["The draft id comes from the create result."]
+          }
+        },
+        {
+          "intent": "Delete that email.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval del {{run_id}}' message is no longer in its original folder.",
+              "The reply reflects that the message was moved to Deleted Items (a reversible delete), not permanently purged."
+            ],
+            "mechanism": [
+              "Deletes the message the agent just created in this session rather than an unrelated message."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "permanently-delete-email",
+      "kind": "act-only",
+      "description": "Graceful refusal: the connector only soft-deletes (move to Deleted Items); permanent purge is unsupported.",
+      "steps": [
+        {
+          "intent": "Permanently and irreversibly delete every email in my Deleted Items folder so it can never be recovered.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that permanent/irreversible deletion is not supported (only a reversible move to Deleted Items) and does not claim mail was permanently purged."
+            ],
+            "mechanism": [
+              "Does not call a delete tool in an attempt to fake a permanent purge."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-mail-folder",
+      "kind": "arrange-act",
+      "description": "Single-action organize: create a top-level mail folder.",
+      "steps": [
+        {
+          "intent": "Create a new mail folder called 'Receipts {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A mail folder named 'Receipts {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one folder; the id comes from the create result, not a guessed id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "browse-mail-folders",
+      "kind": "act-only",
+      "description": "Ambient read: list the mailbox's mail folders.",
+      "steps": [
+        {
+          "intent": "What mail folders do I have?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the mailbox's mail folders (e.g. Inbox and other top-level folders)."
+            ],
+            "mechanism": [
+              "Lists folders via the connector rather than fabricating folder names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "whats-on-my-calendar",
+      "kind": "act-only",
+      "description": "Guidance-dependent, load-bearing calendar read: 'what's on my calendar' over a date range must expand recurring series into individual occurrences, not list series masters. Outcome graded on the observable result.",
+      "steps": [
+        {
+          "intent": "What's on my calendar between 2026-07-06 and 2026-07-10?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the events occurring in the 2026-07-06 to 2026-07-10 window, with each occurrence of any recurring meeting shown as its own dated instance rather than a single recurrence definition.",
+              "If nothing is scheduled in that window, the reply says so rather than inventing events."
+            ],
+            "mechanism": [
+              "Retrieves events over the requested date range as expanded occurrences rather than listing raw series masters without their dates."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "schedule-meeting",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent write: an event time is a naive local timestamp plus a separate time-zone field (no trailing Z/offset). A request in a named zone must land at that wall-clock time in that zone. Outcome graded on the observable scheduled time.",
+      "steps": [
+        {
+          "intent": "Schedule a 30-minute meeting titled 'Eval sync {{run_id}}' on 2026-07-07 at 3:00 PM Pacific Time.",
+          "assertions": {
+            "outcome": [
+              "An event titled 'Eval sync {{run_id}}' now exists, scheduled to start at 3:00 PM Pacific Time on 2026-07-07 and lasting 30 minutes — i.e. it reads as 3 PM in the Pacific zone, not shifted to a different wall-clock time.",
+              "The reply confirms the meeting and its start time."
+            ],
+            "mechanism": [
+              "Sets the event start as a local wall-clock time with the time zone carried in the dedicated time-zone field, rather than encoding 3 PM as a UTC instant (which would shift the displayed local time)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-attendee-to-event",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: updating attendees replaces the whole attendee list, so adding one must preserve existing invitees. Outcome graded on the resulting attendee set.",
+      "steps": [
+        {
+          "intent": "Create a meeting titled 'Eval invite {{run_id}}' on 2026-07-08 at 10:00 AM Pacific Time for 30 minutes, and invite alice-{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "An event titled 'Eval invite {{run_id}}' now exists on 2026-07-08 with alice-{{run_id}}@example.com as an attendee."
+            ],
+            "mechanism": [
+              "The event id used for follow-up comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Now also add bob-{{run_id}}@example.com to that meeting, keeping the existing attendee.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval invite {{run_id}}' meeting now has BOTH alice-{{run_id}}@example.com and bob-{{run_id}}@example.com as attendees — the original invitee was not removed."
+            ],
+            "mechanism": [
+              "Reads the event's current attendees and writes the combined list, rather than overwriting the attendee list with only the new invitee."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reschedule-event",
+      "kind": "arrange-act",
+      "description": "Update lifecycle: create an event, then change its start time.",
+      "steps": [
+        {
+          "intent": "Create a meeting titled 'Eval reschedule {{run_id}}' on 2026-07-09 at 9:00 AM Pacific Time for 30 minutes.",
+          "assertions": {
+            "outcome": [
+              "An event titled 'Eval reschedule {{run_id}}' now exists starting at 9:00 AM Pacific Time on 2026-07-09."
+            ],
+            "mechanism": ["The event id comes from the create result."]
+          }
+        },
+        {
+          "intent": "Move that meeting to 11:00 AM Pacific Time the same day.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval reschedule {{run_id}}' meeting now starts at 11:00 AM Pacific Time on 2026-07-09."
+            ],
+            "mechanism": [
+              "Updates the event the agent just created in this session rather than creating a second event or editing a different one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cancel-event",
+      "kind": "arrange-act",
+      "description": "Destructive (cancellation notifies attendees): create a meeting with an attendee, then cancel it.",
+      "steps": [
+        {
+          "intent": "Create a meeting titled 'Eval cancel {{run_id}}' on 2026-07-10 at 2:00 PM Pacific Time for 30 minutes, inviting carol-{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "An event titled 'Eval cancel {{run_id}}' now exists on 2026-07-10 with carol-{{run_id}}@example.com invited."
+            ],
+            "mechanism": ["The event id comes from the create result."]
+          }
+        },
+        {
+          "intent": "Cancel that meeting.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval cancel {{run_id}}' meeting is cancelled and no longer appears as an active event on the calendar."
+            ],
+            "mechanism": [
+              "Cancels/deletes the event the agent just created in this session rather than a different event; does not cancel unrelated meetings."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-calendars",
+      "kind": "act-only",
+      "description": "Ambient read: list the user's calendars.",
+      "steps": [
+        {
+          "intent": "What calendars do I have?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the user's calendars (at minimum the default calendar)."
+            ],
+            "mechanism": [
+              "Lists calendars via the connector rather than fabricating calendar names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-contact",
+      "kind": "arrange-act",
+      "description": "Single-action write: create a personal contact.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Dana Eval {{run_id}}' with the email dana-{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A personal contact named 'Dana Eval {{run_id}}' with email dana-{{run_id}}@example.com now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one contact; the contact id comes from the create result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-contact-disambiguation",
+      "kind": "arrange-act",
+      "description": "Disambiguation + guidance-dependent: two contacts share a display name (the agent must ask which), and updating a phone must not wipe the contact's existing email (array fields replace).",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Sam Eval {{run_id}}' with email sam1-{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A contact named 'Sam Eval {{run_id}}' with email sam1-{{run_id}}@example.com now exists."
+            ],
+            "mechanism": [
+              "Creates exactly one contact; the id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add another contact also named 'Sam Eval {{run_id}}' but with email sam2-{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A second contact named 'Sam Eval {{run_id}}' with email sam2-{{run_id}}@example.com now exists, distinct from the first."
+            ],
+            "mechanism": [
+              "Creates a new contact rather than overwriting the existing 'Sam Eval {{run_id}}' contact."
+            ]
+          }
+        },
+        {
+          "intent": "Set the phone number for the contact named 'Sam Eval {{run_id}}' to +1-555-0100.",
+          "assertions": {
+            "outcome": [
+              "Because two contacts named 'Sam Eval {{run_id}}' match, the reply asks which one is meant (listing a distinguishing detail such as their differing email addresses) rather than silently picking one or editing both."
+            ],
+            "mechanism": [
+              "Does not write the phone number to either contact before the ambiguity is resolved, and does not update all matching contacts at once.",
+              "If it had updated a single resolved contact, it would have preserved that contact's existing email address rather than replacing the email collection — but here it correctly stops to disambiguate first."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-contact",
+      "kind": "arrange-act",
+      "description": "Destructive: create a personal contact, then delete it.",
+      "steps": [
+        {
+          "intent": "Add a contact named 'Temp Eval {{run_id}}' with email temp-{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A contact named 'Temp Eval {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": ["The contact id comes from the create result."]
+          }
+        },
+        {
+          "intent": "Delete that contact.",
+          "assertions": {
+            "outcome": ["The 'Temp Eval {{run_id}}' contact no longer exists."],
+            "mechanism": [
+              "Deletes the contact the agent just created in this session rather than an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "watch-for-new-mail",
+      "kind": "act-only",
+      "description": "Graceful refusal: the connector is request/response only — there are no triggers/subscriptions for incoming mail.",
+      "steps": [
+        {
+          "intent": "Set up a notification so I get alerted automatically whenever a new email arrives in my inbox.",
+          "assertions": {
+            "outcome": [
+              "The reply explains it cannot watch for or be notified of new mail (no trigger/subscription capability) and does not claim a notification or watch was set up."
+            ],
+            "mechanism": [
+              "Does not pretend to subscribe by repeatedly polling the message list and presenting that as an automatic notification."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-large-attachment",
+      "kind": "act-only",
+      "description": "Graceful refusal: only inline attachments under 3 MB are supported; large-file upload sessions are not.",
+      "steps": [
+        {
+          "intent": "Email myself and attach the 25 MB video file from my computer.",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear it cannot attach a file that large (the supported limit is under 3 MB, and it has no access to a file on the user's computer) and does not claim a 25 MB attachment was sent."
+            ],
+            "mechanism": [
+              "Does not send an email falsely claiming the large attachment is included."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "access-group-calendar",
+      "kind": "act-only",
+      "description": "Graceful refusal: group/shared team calendars and directory groups are not exposed (only the user's own calendars and shared mailboxes).",
+      "steps": [
+        {
+          "intent": "Show me what's on the Marketing team's shared group calendar this week.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that group/shared team calendars are not accessible through this connector and does not fabricate events for a group calendar."
+            ],
+            "mechanism": [
+              "Does not substitute the user's own personal calendar and present it as the Marketing group calendar."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

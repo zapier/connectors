@@ -1,0 +1,69 @@
+{
+  "name": "@zapier/microsoft-outlook-connector",
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "description": "Agent-callable Microsoft Outlook tools — read and search mail, send/reply/forward, organize messages and folders, manage calendar events, and manage contacts. Use when the user mentions Outlook, Microsoft 365 mail/calendar/contacts, or wants to send, read, search, or organize email, schedule events, or look up contacts — even if they don't name Outlook explicitly.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/microsoft-outlook-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "preflight.sh",
+    "SKILL.md",
+    "README.md",
+    "LICENSE",
+    "NOTICE.md",
+    "references/",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepare": "node cli.js build || bun cli.js build || true"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.1.0",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk": ">=0.59.0 <1.0.0"
+  },
+  "keywords": [
+    "microsoft-outlook",
+    "outlook",
+    "email",
+    "calendar",
+    "contacts",
+    "microsoft-365",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/microsoft-outlook"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
