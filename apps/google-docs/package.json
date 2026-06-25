@@ -23,7 +23,8 @@
     "README.md",
     "LICENSE",
     "references/",
-    "NOTICE.md"
+    "NOTICE.md",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsup",
