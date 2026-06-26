@@ -2,7 +2,7 @@
 name: google-calendar
 description: Agent-callable Google Calendar tools — create, update, move, search, and delete events, manage calendars, check free/busy availability, resolve event colors, and manage calendar sharing. Use when the user mentions Google Calendar or wants to schedule, find, reschedule, or share events and calendars — including requests that do not name Google Calendar explicitly, e.g. "put a meeting on my calendar Tuesday 3pm" or "am I free Friday afternoon".
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Google Calendar
   source: https://github.com/zapier/connectors/blob/main/apps/google-calendar/SKILL.md
@@ -25,22 +25,15 @@ Tools for managing Google Calendar — create, read, update, move, and delete ev
 
 ## Using this skill
 
-### 0. Pre-flight and auth
+### 0. Setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session, then run scripts directly — don't re-run it before every call:
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` self-checks readiness: if dependencies aren't installed it prints `CONNECTOR_SETUP: NEEDS_ACTION` with the exact install command to run. Discover any script's inputs and connections with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the exact next step.
-
-- **Exit `0` (`READY`)** — follow `PREFLIGHT_RECOMMENDATION`: it gives the exact `--help` command to run on the script you intend to use (e.g. `node /path/scripts/listEvents.ts --help`). The `--help` output reports BOTH the script's JSON-Schema input contract AND auth status — it annotates each connection's env vars `[set]`/`[not set]`, marks the recommended option `[READY — use this]`, and lists optional packages with their install state. See [Auth](#auth) for how to obtain each credential. If a script call later fails with a network error, this sandbox blocks egress — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`).
-- **Exit `1` (`NEEDS_ACTION`)** — follow `PREFLIGHT_RECOMMENDATION`: it spells out the single self-verifying install step (e.g. `npm install`) and the exact `--help` command to run afterward.
-
-**Match the package runner to `PREFLIGHT_RUNNER`** — wherever this skill shows `npx`, substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`.
-
-**Always learn a script's input contract before calling it via `--help` — never guess field names, casing, or types.** `--help` renders the `inputSchema` as JSON Schema and lists the connection flags + resolvers. Guessing the payload (e.g. passing `start` as a bare string instead of `{ dateTime, timeZone }`) just produces a `ZodError` and wastes a round-trip.
+The `--help` output reports the script's JSON-Schema input contract and the connection flag(s) it reads. See [Auth](#auth) for how to obtain each credential.
 
 ### 1. Execute scripts directly
 
@@ -57,7 +50,7 @@ GOOGLE_CALENDAR_ACCESS_TOKEN=ya29... ./scripts/listEvents.ts '{"calendarId":"pri
 ./scripts/createEvent.ts --help
 ```
 
-**Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory.** Node 22.18+ strips TypeScript natively, so the shebang stays minimal (`#!/usr/bin/env node`).
+**Prerequisites: Node.js 22.18+ on `PATH`, plus `npm install` once in this directory.** Node 22.18+ strips TypeScript natively, so the shebang stays minimal (`#!/usr/bin/env node`).
 
 ### 2. Use the package's CLI
 
@@ -67,7 +60,7 @@ npx @zapier/google-calendar-connector --help                  # all scripts
 npx @zapier/google-calendar-connector run createEvent --help  # per-script schema + resolvers
 ```
 
-Same scripts as (1), different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. **Caveat:** sandboxed harnesses may block `npx`/`bunx`; if so, fall back to (1).
+Same scripts as (1), different entry point. **Caveat:** sandboxed harnesses may block `npx`; if so, fall back to (1).
 
 ### 3. Use as a recipe
 

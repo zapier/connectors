@@ -21,7 +21,6 @@
     "cli.js",
     "*.ts",
     "scripts/",
-    "preflight.sh",
     "SKILL.md",
     "README.md",
     "LICENSE",
@@ -29,8 +28,7 @@
     "NOTICE"
   ],
   "scripts": {
-    "build": "tsup",
-    "prepare": "node cli.js build || bun cli.js build || true"
+    "build": "tsup"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.2.0",
@@ -60,9 +58,5 @@
     "type": "git",
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-calendar"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
   }
 }
