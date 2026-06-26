@@ -21,7 +21,7 @@ npx skills zapier/connectors --skill notion
 
 Credentials are environment-variable only (never passed on argv). Pass auth as one connection string with `--connection [<resolver>:]<value>`: `env:NOTION_TOKEN` reads a Notion token (internal-integration secret or public-integration OAuth token) from the environment, or `zapier:<connection-id>` routes through Zapier-managed auth (no third-party secret enters the agent's environment); see [`SKILL.md`](SKILL.md#auth) for the capabilities gating, the per-resource sharing requirement, and how to find a connection ID.
 
-Requires Node.js 22.18+ or Bun 1.x on `PATH`.
+Requires Node.js 22.18+ on `PATH`.
 
 ## Tools
 
