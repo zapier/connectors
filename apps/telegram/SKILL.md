@@ -2,7 +2,7 @@
 name: telegram
 description: Agent-callable Telegram bot tools — send messages, media, locations, contacts, and polls; edit, delete, forward, copy, and pin messages; resolve chats, members, and files. Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content — including requests that don't name Telegram explicitly, e.g. "message the team channel", "post this update to the group".
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Telegram
   source: https://github.com/zapier/connectors/blob/main/apps/telegram/SKILL.md
@@ -83,15 +83,15 @@ If no connection is passed the script fails with an actionable error listing the
 
 **If these tools are already available to you as callable tools, use them directly.** When your runtime has loaded this connector as tools (e.g. MCP tools named `telegram_<tool>` / `mcp__telegram__<tool>`, or function-calling tools), **call the tool directly with its JSON input** — that is the primary path. Auth is already wired into the loaded tool: do **not** shell out to the CLI, do **not** set or ask the user for `TELEGRAM_BOT_TOKEN`, and do **not** pass a `--connection` flag. The CLI / script-execution methods below (§§0–2) are only for **standalone terminal use** when these tools are _not_ already exposed to you; reach for them only if you have no loaded `telegram` tool to call.
 
-### 0. Pre-flight
+### 0. Setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session, then run scripts directly:
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` self-checks readiness: if dependencies aren't installed it prints `CONNECTOR_SETUP: NEEDS_ACTION` with the exact install command to run. Discover any script's inputs and connections with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth. Read `PREFLIGHT_STATUS` first (the verdict token); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`); `PREFLIGHT_RECOMMENDATION` is the exact next command. On exit `1` (`NEEDS_ACTION`), follow the recommendation's single install step, then re-run `--help`.
+The `--help` output reports the script's JSON-Schema input contract and the connection flag(s) it reads. See [Auth](#auth) for how to obtain each credential.
 
 ### 1. Execute scripts directly
 
@@ -108,7 +108,7 @@ TELEGRAM_BOT_TOKEN=123:ABC ./scripts/sendMessage.ts '{"chat_id":"@my_channel","t
 ./scripts/getMe.ts '{}' --connection zapier:conn_xxx
 ```
 
-`--help` prints the script's JSON-Schema input contract, annotates each connection's env vars as `[set]` / `[not set]`, marks the recommended auth option `[READY — use this]`, and lists optional packages with their install state. Match the runner to `PREFLIGHT_RUNNER` (use `bun`/`bunx` when it says `bun`).
+`--help` prints the script's JSON-Schema input contract, annotates each connection's env vars as `[set]` / `[not set]`, marks the recommended auth option `[READY — use this]`, and lists optional packages with their install state.
 
 ### 2. Use the package's CLI
 
@@ -117,7 +117,7 @@ TELEGRAM_BOT_TOKEN=123:ABC npx @zapier/telegram-connector run sendMessage '{"cha
 npx @zapier/telegram-connector run sendMessage --help    # per-script schema + resolvers
 ```
 
-Same scripts as (1), different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. If a sandbox blocks `npx`/`bunx`, fall back to (1).
+Same scripts as (1), different entry point. If a sandbox blocks `npx`, fall back to (1).
 
 ### 3. Use as a recipe
 
