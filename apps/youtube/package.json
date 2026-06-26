@@ -30,7 +30,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepare": "node cli.js prepare || true"
+    "prepare": "node cli.js build || bun cli.js build || true"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.1.0",
