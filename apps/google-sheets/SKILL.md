@@ -2,7 +2,7 @@
 name: google-sheets
 description: Agent-callable Google Sheets tools — read and write spreadsheet data as rows or raw cells, manage worksheets and columns, and apply formatting, sorting, and validation. Use when the user mentions Google Sheets or wants to read, add, update, look up, or organize spreadsheet data, even if they don't name Sheets explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Google Sheets
   source: https://github.com/zapier/connectors/blob/main/apps/google-sheets/SKILL.md
@@ -89,15 +89,15 @@ If asked for any of these, tell the user it's unsupported and stop.
 
 ## Using this skill
 
-### 0. Pre-flight and auth
+### 0. Setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session, then run scripts directly. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that).
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` self-checks readiness: if dependencies aren't installed it prints `CONNECTOR_SETUP: NEEDS_ACTION` with the exact install command to run. Discover any script's inputs and connections with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-Read `PREFLIGHT_STATUS` (the verdict) and `PREFLIGHT_RUNNER` (the runtime). On `READY`, follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next. On `NEEDS_ACTION`, it spells out the single install step.
+The `--help` output reports the script's JSON-Schema input contract and the connection flag(s) it reads. See [Auth](#auth) for how to obtain each credential.
 
 ### 1. Execute scripts directly
 
@@ -116,7 +116,7 @@ GOOGLE_SHEETS_ACCESS_TOKEN=ya29.xxx ./scripts/lookupRow.ts \
 ./scripts/createRow.ts '{"spreadsheet":"1AbC...","worksheet":"Sheet1","values":{"Name":"Sam","Status":"Open"}}' --connection zapier:<connection-id>
 ```
 
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory.
+Prerequisites: Node.js 22.18+ on `PATH`, plus `npm install` once in this directory.
 
 ### 2. Use the package's CLI
 
@@ -125,7 +125,7 @@ GOOGLE_SHEETS_ACCESS_TOKEN=ya29.xxx npx @zapier/google-sheets-connector run getV
 npx @zapier/google-sheets-connector run lookupRow --help    # per-script schema + resolvers
 ```
 
-Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
+Some harnesses block `npx` — fall back to (1).
 
 ### 3. Use as a recipe
 
