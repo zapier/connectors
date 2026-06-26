@@ -2,7 +2,7 @@
 name: youtube
 description: Agent-callable YouTube tools — search and read videos, update and delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: YouTube
   source: https://github.com/zapier/connectors/blob/main/apps/youtube/SKILL.md
@@ -106,19 +106,15 @@ If no connection is passed the script fails with an actionable error telling you
 
 ## Using this skill
 
-### 0. Pre-flight and auth
+### 0. Setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` self-checks readiness: if dependencies aren't installed it prints `CONNECTOR_SETUP: NEEDS_ACTION` with the exact install command to run. Discover any script's inputs and connections with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next. The `--help` output renders `inputSchema` as JSON Schema, lists the connection flag(s) the script reads and every resolver each accepts, and tells you exactly what to provide. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
-
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward.
-
-The three invocation paths below all assume the pre-flight reported `READY`.
+The `--help` output reports the script's JSON-Schema input contract and the connection flag(s) it reads. See [Auth](#auth) for how to obtain each credential.
 
 ### 1. Execute scripts directly
 
@@ -135,7 +131,7 @@ YOUTUBE_ACCESS_TOKEN=ya29.xxx ./scripts/getVideo.ts '{"id":"dQw4w9WgXcQ"}' --con
 ./scripts/searchVideos.ts '{"q":"lo-fi beats"}' --connection zapier:conn_xxx
 ```
 
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
+Prerequisites: Node.js 22.18+ on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` when needed — all forms run the same script body.
 
 ### 2. Use the package's CLI
 
@@ -145,7 +141,7 @@ npx @zapier/youtube-connector --help                  # all scripts
 npx @zapier/youtube-connector run getVideo --help     # per-script schema + resolvers
 ```
 
-Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
+Same scripts, different entry point. Some harnesses block `npx` — fall back to (1).
 
 ### 3. Use as a recipe
 
