@@ -2,7 +2,7 @@
 name: trello
 description: Agent-callable Trello tools — create and update cards, manage boards, lists, labels, checklists, and search. Use when the user mentions Trello or wants to create cards, move tasks, or manage boards, even if they do not name Trello explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Trello
   source: https://github.com/zapier/connectors/blob/main/apps/trello/SKILL.md
@@ -23,17 +23,17 @@ Tools for working with Trello against the [Trello REST API](https://developer.at
 - An agent needs to **look up Trello resources by name** — find boards, lists, labels, or checklists before writing.
 - An agent needs to **search cards** or read board/list/card detail for planning or reporting.
 
-## Step 0 — pre-flight and auth
+## Step 0 — setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point; discover any script's inputs and connections by running it with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
+`cli.js` self-checks readiness before running. If dependencies aren't installed it prints a line starting `CONNECTOR_SETUP: NEEDS_ACTION` followed by `CONNECTOR_SETUP_RECOMMENDATION:` with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run the `--help` command.
 
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
+The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Run scripts against this local path — never `npx` (a sandbox that blocked the dep install may also block registry fetches).
 
 ## Auth
 
@@ -91,7 +91,7 @@ If asked for any of these, tell the user it's unsupported and stop — don't rea
 
 ## Using this skill
 
-The three invocation paths below all assume the pre-flight (Step 0) reported `READY`.
+The three invocation paths below all assume `npm install` has completed.
 
 ### 1. Execute scripts directly
 
@@ -108,7 +108,7 @@ When the agent has shell access to the installed directory, run a script file st
 TRELLO_API_KEY=xxx TRELLO_TOKEN=yyy ./scripts/listBoards.ts '{}' --connection env:TRELLO
 ```
 
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
+Prerequisites: Node.js 22.18+ on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` when needed — all forms run the same script body.
 
 ### 2. Use the package's CLI
 
@@ -118,7 +118,7 @@ npx @zapier/trello-connector --help                      # all scripts
 npx @zapier/trello-connector run createCard --help       # per-script schema + resolvers
 ```
 
-Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
+Same scripts, different entry point. Some harnesses block `npx` — fall back to (1).
 
 ### 3. Use as a recipe
 
