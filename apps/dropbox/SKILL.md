@@ -2,7 +2,7 @@
 name: dropbox
 description: Agent-callable Dropbox tools — upload, organize, find, and share files and folders. Use when the user wants to manage Dropbox content (save, move, search, share, list, or read files), including requests that don't name Dropbox explicitly, e.g. "save this report to my cloud storage" or "share that folder with Sam".
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Dropbox
   source: https://github.com/zapier/connectors/blob/main/apps/dropbox/SKILL.md
@@ -23,17 +23,17 @@ Tools for working with files and folders in Dropbox — upload and write files, 
 - An agent needs to read a text file's contents inline, or hand off a file's bytes via a temporary or durable link.
 - An agent needs to share a file/folder, change link settings, or manage who can access a shared folder.
 
-## Step 0 — pre-flight and auth
+## Step 0 — setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point; discover any script's inputs and connections by running it with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output shows which auth options are ready (credentials set), marks the recommended one `[READY — use this]`, lists any optional packages still needed, and tells you exactly what to provide if no option is ready yet. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
+`cli.js` self-checks readiness before running. If dependencies aren't installed it prints a line starting `CONNECTOR_SETUP: NEEDS_ACTION` followed by `CONNECTOR_SETUP_RECOMMENDATION:` with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run the `--help` command.
 
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
+The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Run scripts against this local path — never `npx` (a sandbox that blocked the dep install may also block registry fetches).
 
 ## Scripts
 
@@ -105,7 +105,6 @@ Provide one of two credentials via environment variable (no CLI flags). Prefer t
   **Finding the connection ID** (the connections UI doesn't show IDs):
   1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
   2. `npx @zapier/zapier-sdk-cli list-connections DropBoxCLIAPI` — prints `title (connection ID)` per matching connection. Use `DropBoxCLIAPI` exactly (note the capital B). Add `--json` for machine-readable output.
-  3. Substitute `bunx` for `npx` when `PREFLIGHT_RUNNER` is `bun`.
 
 - **`DROPBOX_ACCESS_TOKEN`** _(fallback, direct mode)_ — a Dropbox access token from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it.** A static `DROPBOX_ACCESS_TOKEN` from a Dropbox app is short-lived and stops working after a few hours — re-mint it, or use the Zapier-managed path above, which handles rotation for you. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
 
@@ -113,7 +112,7 @@ If neither env var is set the script reports the missing credentials via `--help
 
 ## Using this skill
 
-The three invocation paths below assume the pre-flight (Step 0) reported `READY`.
+The three invocation paths below assume `npm install` has completed.
 
 ### 1. Execute scripts directly
 
@@ -133,9 +132,8 @@ DROPBOX_ACCESS_TOKEN=sl.xxx ./scripts/listFolder.ts '{"path":""}'
 `--help` renders the script's `inputSchema` as JSON Schema and reports each auth option's env-var status (`[set]`/`[not set]`, recommended option `[READY — use this]`). Run it before constructing input — guessing the payload (e.g. passing `"/"` instead of `""` for the root, or `limit` as a string) just produces a `ZodError` and wastes a round-trip.
 
 ```bash
-# Pin the runtime explicitly when needed (both run the same source):
+# Pin the runtime explicitly when needed:
 DROPBOX_ACCESS_TOKEN=sl.xxx node scripts/getFileMetadata.ts '{"path":"/Docs/report.pdf"}'
-DROPBOX_ACCESS_TOKEN=sl.xxx bun  scripts/getFileMetadata.ts '{"path":"/Docs/report.pdf"}'
 ```
 
 ### 2. Use the package's CLI
@@ -146,7 +144,7 @@ npx @zapier/dropbox-connector --help                       # all scripts
 npx @zapier/dropbox-connector run searchFiles --help        # per-script schema + env vars
 ```
 
-The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1). Use `bunx` instead of `npx` when `PREFLIGHT_RUNNER` is `bun`. Sandboxed runtimes may block `npx`/`bunx`; if so, fall back to (1).
+The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1). Sandboxed runtimes may block `npx`; if so, fall back to (1).
 
 ### 3. Use as a recipe
 
