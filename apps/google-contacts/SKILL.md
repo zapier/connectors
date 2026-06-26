@@ -2,7 +2,7 @@
 name: google-contacts
 description: Agent-callable Google Contacts tools — create, find, update, and delete contacts, manage contact groups (labels) and membership, and read auto-saved other contacts. Use when the user mentions Google Contacts or wants to look up, save, or organize people — including requests that don't name Google Contacts explicitly, e.g. add Jane to my contacts, find Bob's email.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Google Contacts
   source: https://github.com/zapier/connectors/blob/main/apps/google-contacts/SKILL.md
@@ -79,19 +79,15 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI
 
 ## Using this skill
 
-### 0. Pre-flight and auth
+### 0. Setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` self-checks readiness: if dependencies aren't installed it prints `CONNECTOR_SETUP: NEEDS_ACTION` with the exact install command to run. Discover any script's inputs and connections with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
-
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
-
-The three invocation paths below all assume the pre-flight reported `READY`. See **Auth** above for the two ways to supply the connection.
+The `--help` output reports the script's JSON-Schema input contract and the connection flag(s) it reads. See [Auth](#auth) for how to obtain each credential.
 
 ### 1. Execute scripts directly
 
@@ -108,7 +104,7 @@ GOOGLE_CONTACTS_ACCESS_TOKEN=ya29.xxx ./scripts/searchContacts.ts '{"query":"Ada
 ./scripts/getContact.ts '{"resourceName":"people/c123"}' --connection zapier:<connection-id>
 ```
 
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
+Prerequisites: Node.js 22.18+ on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` when needed — all forms run the same script body.
 
 ### 2. Use the package's CLI
 
@@ -118,7 +114,7 @@ npx @zapier/google-contacts-connector --help                     # all scripts
 npx @zapier/google-contacts-connector run searchContacts --help  # per-script schema + resolvers
 ```
 
-Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun` (a `bun` verdict often means no usable npm). Some harnesses block `npx`/`bunx` — fall back to (1).
+Same scripts, different entry point. Some harnesses block `npx` — fall back to (1).
 
 ### 3. Use as a recipe
 
