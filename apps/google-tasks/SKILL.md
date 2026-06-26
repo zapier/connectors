@@ -2,7 +2,7 @@
 name: google-tasks
 description: Agent-callable Google Tasks tools — create, list, update, complete, move, and delete tasks and task lists. Use when the user wants to manage Google Tasks or to-dos, even if they don't name Google Tasks explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   source: https://github.com/zapier/connectors/blob/main/apps/google-tasks/SKILL.md
   title: Google Tasks
@@ -16,17 +16,17 @@ _Independent, unofficial connector for Google Tasks. Not affiliated with, endors
 
 Agent-callable tools for Google Tasks (the [Google Tasks API v1](https://developers.google.com/workspace/tasks/reference/rest)). Manage **task lists** (list, get, create, rename, delete) and **tasks** (list, find by title, get, create, update, complete/reopen, reorder/reparent/move, delete, and clear completed). Authenticate once with a Zapier-managed Google connection (recommended) or a direct OAuth token. The connector exposes the full task surface as 13 single-purpose tools with stable, predictable I/O — no triggers (it is non-polling).
 
-## Step 0 — pre-flight and auth
+## Step 0 — setup and auth
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point; discover any script's inputs and connections by running it with `--help`:
 
 ```bash
-./preflight.sh
+node cli.js run <tool-name> --help
 ```
 
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
+`cli.js` self-checks readiness before running. If dependencies aren't installed it prints a line starting `CONNECTOR_SETUP: NEEDS_ACTION` followed by `CONNECTOR_SETUP_RECOMMENDATION:` with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run the `--help` command.
 
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
+The `--help` output lists the connection flag(s) the script reads and every resolver each accepts — value shape and auto-claim behavior. Run scripts against this local path — never `npx` (a sandbox that blocked the dep install may also block registry fetches).
 
 ## When to use this connector
 
@@ -88,8 +88,6 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI
 ```bash
 npx @zapier/google-tasks-connector run <tool-name> '{ ... }' --connection [<resolver>:]<value>
 ```
-
-When `PREFLIGHT_RUNNER` is `bun`, use `bunx` instead of `npx` — match the package runner to the runtime the pre-flight picked (a `bun` verdict often means no usable npm).
 
 ## API quirks worth knowing
 
