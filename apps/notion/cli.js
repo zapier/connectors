@@ -33,7 +33,7 @@ if (!process.versions.bun) {
     bail(
       `this Node (v${process.versions.node}) can't run the TypeScript source — ` +
         `native type-stripping needs Node 22.18+. Upgrade Node, or run with Bun: ` +
-        `\`bun ${join(dir, "cli.js")} <tool> --help\`.`,
+        `\`bun ${join(dir, "cli.js")} --help\`.`,
     );
   }
 }
@@ -98,10 +98,9 @@ function dependenciesRecommendation() {
 }
 
 function bail(recommendation) {
-  console.error("CONNECTOR_SETUP: NEEDS_ACTION");
   console.error(
-    `CONNECTOR_SETUP_RECOMMENDATION: ${recommendation} ` +
-      `Then run \`node ${join(dir, "cli.js")} <tool> --help\` to discover arguments and credentials.`,
+    `Connector setup needed: ${recommendation} ` +
+      `Then run \`node ${join(dir, "cli.js")} --help\` to list its scripts.`,
   );
   process.exit(1);
 }
