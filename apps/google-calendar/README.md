@@ -6,24 +6,56 @@ Agent-callable [Google Calendar](https://developers.google.com/workspace/calenda
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
+## When to use this
+
+- Scheduling, finding, rescheduling, moving, or cancelling Google Calendar events from an agent.
+- Checking when someone is busy or free across one or more calendars before proposing a time.
+- Listing or creating calendars, reading a calendar's timezone, or managing who a calendar is shared with.
+
+## When NOT to use this
+
+- Real-time event triggers / push notifications (new-event, event-updated) — this connector is request/response only; use a Zapier trigger or the Calendar watch API.
+- Renaming or deleting calendars, clearing all events at once, or importing externally-originated events — these are intentionally out of scope.
+- Gmail, Google Drive, or other Google products — use their dedicated connectors.
+
 ## Install
 
 ```bash
-# Run a tool with zero install — npx fetches the package on first use
-GOOGLE_CALENDAR_ACCESS_TOKEN=xxx npx @zapier/google-calendar-connector run listEvents '{"calendarId":"primary"}' --connection env:GOOGLE_CALENDAR_ACCESS_TOKEN
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/google-calendar-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
-# Install as a dependency to import the tools in your own code
+# Install as a dependency to import the functions in your own code
 npm install @zapier/google-calendar-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill google-calendar
 ```
 
-Credentials are environment-variable only (never passed on argv — the `--connection` value names the env var, not the secret). Use `--connection zapier:<connection-id>` with `GOOGLE_CALENDAR_ZAPIER_CONNECTION_ID` to route through Zapier-managed auth (recommended — Zapier refreshes the OAuth token transparently); direct `env:GOOGLE_CALENDAR_ACCESS_TOKEN` tokens expire ~1 hour after issue and are not refreshed. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
-## Tools
+### MCP server
 
-| Tool                 | Description                                                                                   |
+Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
+
+<!-- prettier-ignore -->
+```jsonc
+// e.g. claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "google-calendar": {
+      "command": "npx",
+      "args": ["@zapier/google-calendar-connector", "mcp"]
+    }
+  }
+}
+```
+
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+
+## Scripts
+
+| Script               | Description                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------------- |
 | `createEvent`        | Create an event (timed/all-day, recurring, attendees, reminders, color, Google Meet).         |
 | `quickAddEvent`      | Create an event from a natural-language phrase (lossy — title + time only).                   |
@@ -43,9 +75,11 @@ Credentials are environment-variable only (never passed on argv — the `--conne
 | `createAclRule`      | Share a calendar with a user/group/domain at a role (requires `owner`).                       |
 | `deleteAclRule`      | Remove a sharing rule / revoke access (requires `owner`).                                     |
 
-Run `npx @zapier/google-calendar-connector run <toolName> --help` to see any tool's exact input contract + which auth env vars are set.
+Run `npx @zapier/google-calendar-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
+
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
 
 ```ts
 import { createEvent } from "@zapier/google-calendar-connector";
@@ -70,45 +104,11 @@ const { data, meta } = await createEvent(
 // what validation did. Pass { skipOutputDataValidation: true } to receive the raw API output.
 ```
 
-## MCP Server
-
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
-
-<!-- prettier-ignore -->
-```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
-{
-  "mcpServers": {
-    "google-calendar": {
-      "command": "npx",
-      "args": ["@zapier/google-calendar-connector", "mcp"],
-      "env": {
-        "GOOGLE_CALENDAR_ZAPIER_CONNECTION_ID": "<connection-id>"
-      }
-    }
-  }
-}
-```
-
-Swap `GOOGLE_CALENDAR_ZAPIER_CONNECTION_ID` for `GOOGLE_CALENDAR_ACCESS_TOKEN` if you don't have a Zapier account.
-
-## When to use this
-
-- Scheduling, finding, rescheduling, moving, or cancelling Google Calendar events from an agent.
-- Checking when someone is busy or free across one or more calendars before proposing a time.
-- Listing or creating calendars, reading a calendar's timezone, or managing who a calendar is shared with.
-
-## When NOT to use this
-
-- Real-time event triggers / push notifications (new-event, event-updated) — this connector is request/response only; use a Zapier trigger or the Calendar watch API.
-- Renaming or deleting calendars, clearing all events at once, or importing externally-originated events — these are intentionally out of scope.
-- Gmail, Google Drive, or other Google products — use their dedicated connectors.
-
 ## Links
 
-- [Google Calendar API v3 reference](https://developers.google.com/workspace/calendar/api/v3/reference) — vendor API docs
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-calendar)
+- [Google Calendar API v3 reference](https://developers.google.com/workspace/calendar/api/v3/reference) — vendor API docs
 
 ## Legal
 
