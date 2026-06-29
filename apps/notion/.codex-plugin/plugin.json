@@ -1,5 +1,5 @@
 {
-  "name": "notion",
+  "name": "zapier-notion",
   "version": "0.1.2",
   "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
   "author": {
