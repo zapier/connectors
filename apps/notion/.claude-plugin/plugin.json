@@ -1,10 +1,11 @@
 {
   "name": "zapier-notion",
-  "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
+  "description": "Notion tools for Claude Code — search pages and databases, read and create pages, query data sources, and edit content. Built and maintained by Zapier.",
   "version": "0.1.2",
   "author": {
     "name": "Zapier",
-    "email": "support@zapier.com"
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
   },
   "homepage": "https://github.com/zapier/connectors/tree/main/apps/notion",
   "repository": "https://github.com/zapier/connectors",
@@ -16,5 +17,6 @@
     "connector",
     "zapier",
     "productivity"
-  ]
+  ],
+  "mcpServers": "./.mcp.json"
 }
