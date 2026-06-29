@@ -20,8 +20,8 @@ Use this connector when an agent needs to create or update Trello cards, organiz
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export <ENV_VAR>=xxx
-npx @zapier/trello-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
+export <ENV_VAR_PREFIX>_API_KEY=xxx <ENV_VAR_PREFIX>_TOKEN=yyy
+npx @zapier/trello-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR_PREFIX>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/trello-connector
@@ -30,7 +30,7 @@ npm install @zapier/trello-connector
 npx skills zapier/connectors --skill trello
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR_PREFIX>` reads the API key and token from `$<ENV_VAR_PREFIX>_API_KEY` and `$<ENV_VAR_PREFIX>_TOKEN` (they stay in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -49,7 +49,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR_PREFIX>"` with `"env": { "<ENV_VAR_PREFIX>_API_KEY": "xxx", "<ENV_VAR_PREFIX>_TOKEN": "yyy" }`) to `args` to set a default.
 
 ## Scripts
 
@@ -104,7 +104,7 @@ Run `npx @zapier/trello-connector@latest run <script> --help` to see any script'
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR_PREFIX>" }`.
 
 ```ts
 import { listBoards } from "@zapier/trello-connector";
