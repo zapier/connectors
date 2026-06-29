@@ -1,0 +1,20 @@
+{
+  "name": "notion",
+  "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
+  "version": "0.1.2",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/notion",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "notion",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "productivity"
+  ]
+}
