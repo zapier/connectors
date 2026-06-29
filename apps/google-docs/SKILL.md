@@ -16,7 +16,7 @@ _Independent, unofficial connector for Google Docs. Not affiliated with, endorse
 
 Tools for working with Google Docs against the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content, and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for the find / export / copy-template / folder operations the Docs API doesn't provide. 22 tools: create documents (blank, from text/Markdown, or from a template), read a document's structured content and tabs, export it as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character and paragraph formatting, make bulleted/numbered lists, insert and edit tables, create headers / footers / footnotes, insert and replace inline images, and set page/margin/background style.
 
-## When to use this connector
+## When to use this
 
 - An agent needs to **create** a document — blank, from initial text or Markdown, or by filling a `{{placeholder}}` template, optionally in a specific Drive folder.
 - An agent needs to **read** a document — its structured content + edit indices (`getDocument`), clean text/Markdown (`exportDocument`), or to find documents by name (`findDocuments`) and locate text (`findText`).
@@ -24,11 +24,23 @@ Tools for working with Google Docs against the [Google Docs API v1](https://deve
 - An agent needs to **format or restyle** — apply character formatting; make bulleted or numbered lists (`createList`); set paragraph style — headings, alignment, line spacing, indentation (`formatParagraph`); insert/replace inline images; or set page size / margins / background.
 - An agent needs to **structure the document** — insert a table and fill its cells (`insertTable`), add/remove table rows or columns (`modifyTable`), create a header or footer with its text (`createHeader` / `createFooter`) and style it by passing the returned `segmentId` to `formatText`, or add a footnote (`createFootnote`) and write its body via `insertText` targeting the returned `segmentId`.
 
+## Setup
+
+This is an [agentskills.io](https://agentskills.io) skill.
+
+**If this connector is already exposed to you as callable tools** (e.g. `mcp__google-docs__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+
+If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill google-docs` (or your harness's own skill-install mechanism), then continue here.
+
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
+
+`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+
 ## Scripts
 
-One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract. All tools use the single connection `google-docs` (one OAuth credential authorizes both the Docs and Drive hosts).
+All scripts use the single `google-docs` connection (one OAuth credential authorizes both the Docs and Drive hosts).
 
-| Script                                                                           | Tool name                    | Connections   | Description                                                                                |
+| Script                                                                           | Script name                  | Connections   | Description                                                                                |
 | -------------------------------------------------------------------------------- | ---------------------------- | ------------- | ------------------------------------------------------------------------------------------ |
 | [`scripts/createDocument.ts`](scripts/createDocument.ts)                         | `createDocument`             | `google-docs` | Create a new document, optionally with initial text/Markdown and in a folder.              |
 | [`scripts/createDocumentFromTemplate.ts`](scripts/createDocumentFromTemplate.ts) | `createDocumentFromTemplate` | `google-docs` | Copy a template document and fill its `{{placeholder}}` tokens.                            |
@@ -53,21 +65,43 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/createFooter.ts`](scripts/createFooter.ts)                             | `createFooter`               | `google-docs` | Create the default footer with its text; returns the segmentId for styling via formatText. |
 | [`scripts/createFootnote.ts`](scripts/createFootnote.ts)                         | `createFootnote`             | `google-docs` | Insert a footnote reference; returns its segmentId for insertText.                         |
 
-**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/google-docs-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag(s) and available resolvers.
+## Auth
+
+Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+
+The connector uses a single Google **OAuth 2.0** access token (auto-refreshed), resolved into the one `google-docs` connection slot. The same credential authorizes both the Docs and Drive hosts; the granted **scopes** decide capability.
+
+- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Google Docs connection; the Zapier auth / retries / governance layer injects the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the id with `npx @zapier/zapier-sdk-cli list-connections GoogleDocsCLIAPI`.
+- **`env:GOOGLE_DOCS_ACCESS_TOKEN`** _(direct)_ — read the OAuth access token from the named environment variable (the token stays in `env`, never on argv).
+
+**Scopes are load-bearing.** The full catalog needs `https://www.googleapis.com/auth/documents` (read/write document content) **plus** `https://www.googleapis.com/auth/drive` (the find / export / copy-template / folder operations act on arbitrary existing documents, which the narrower `drive.file` scope cannot reach). A read-only connection can use `documents.readonly` + `drive.readonly` (covers `getDocument` / `findDocuments` / `exportDocument`, no writes). A `403 insufficient authentication scopes` means reconnect with edit access; a `403 caller does not have permission` means you have view-only access to that specific document (a sharing problem, not a reconnect).
+
+If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
+
+## Running scripts
+
+After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
+
+```bash
+node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
+```
+
+When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
 
 ## Output format
 
-Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
+Every script returns a `{ data, meta }` envelope:
 
-- **`data`** — the script's result (the shape declared by its `outputSchema`).
+- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
 - **`meta.outputDataValidation`** — what validating `data` did:
   - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
-  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
-  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
 
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` — CLI: append `--filterOutputData '<jq>'`; MCP: pass `meta: { filterOutputData: "<jq>" }` as a tool argument. The jq runs against `data` only, NOT the `{ data, meta }` envelope. The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated. The imported SDK has no `filterOutputData` option — reshape the returned `data` in code instead.
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## Disambiguation & refusals
 
@@ -85,64 +119,6 @@ This also applies to index positions: indices from `getDocument` / `findText` go
 - **Export to PDF, DOCX, or HTML as inline content.** `exportDocument` returns plain text or Markdown only; PDF, DOCX, and HTML need a Drive download link (Drive only offers HTML as a zipped Web Page bundle, not inline `text/html`).
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
-
-## Auth
-
-The connector uses a single Google **OAuth 2.0** access token (auto-refreshed), resolved into the one `google-docs` connection slot. The same credential authorizes both the Docs and Drive hosts; the granted **scopes** decide capability. Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). Two resolvers:
-
-- **`env:<ENV_VAR>`** — direct mode. Read the OAuth access token from the named environment variable (conventionally `env:GOOGLE_DOCS_ACCESS_TOKEN`, with the token exported in `GOOGLE_DOCS_ACCESS_TOKEN`; the token stays in `env`, never on argv).
-- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Google Docs connection; the Zapier auth / retries / governance layer injects the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections GoogleDocsCLIAPI`.
-
-**Scopes are load-bearing.** The full catalog needs `https://www.googleapis.com/auth/documents` (read/write document content) **plus** `https://www.googleapis.com/auth/drive` (the find / export / copy-template / folder operations act on arbitrary existing documents, which the narrower `drive.file` scope cannot reach). A read-only connection can use `documents.readonly` + `drive.readonly` (covers `getDocument` / `findDocuments` / `exportDocument`, no writes). A `403 insufficient authentication scopes` means reconnect with edit access; a `403 caller does not have permission` means you have view-only access to that specific document (a sharing problem, not a reconnect).
-
-If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
-
-## Using this skill
-
-### 0. Setup and auth
-
-This connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` self-checks readiness: if dependencies aren't installed it prints `CONNECTOR_SETUP: NEEDS_ACTION` with the exact install command to run. Discover any script's inputs and connections with `--help`:
-
-```bash
-node cli.js run <tool-name> --help
-```
-
-The `--help` output reports the script's JSON-Schema input contract and the connection flag(s) it reads. See [Auth](#auth) for how to obtain each credential.
-
-### 1. Execute scripts directly
-
-When the agent has shell access to the installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang. **Run `--help` first** to read the input contract and confirm an auth resolver is ready — `--help` is the one path for both "learn the input contract" and "check auth":
-
-```bash
-# Inspect the contract + resolvers first
-./scripts/getDocument.ts --help
-
-# Then invoke (direct token — token stays in env)
-GOOGLE_DOCS_ACCESS_TOKEN=ya29.xxx ./scripts/getDocument.ts '{"documentId":"1AbC..."}' --connection env:GOOGLE_DOCS_ACCESS_TOKEN
-
-# Or route through a Zapier connection
-./scripts/findDocuments.ts '{"name":"Q4 plan"}' --connection zapier:conn_xxx
-```
-
-Prerequisites: Node.js 22.18+ on `PATH`, plus `npm install` once in this directory.
-
-### 2. Use the package's CLI
-
-```bash
-GOOGLE_DOCS_ACCESS_TOKEN=ya29.xxx npx @zapier/google-docs-connector run getDocument '{"documentId":"1AbC..."}' --connection env:GOOGLE_DOCS_ACCESS_TOKEN
-npx @zapier/google-docs-connector --help                       # all scripts
-npx @zapier/google-docs-connector run getDocument --help       # per-script schema + resolvers
-```
-
-Same scripts, different entry point. Some harnesses block `npx` — fall back to (1).
-
-### 3. Use as a recipe
-
-When no shipped script matches, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"google-docs"`; imitate that shape (Zod input/output schemas, `(input, ctx) => …` run body, the direct-mode auth being a Bearer token in the `Authorization` header). If you persist generated code, add a comment pointing back to this skill's source:
-
-```ts
-// Source: https://github.com/zapier/connectors/blob/main/apps/google-docs/SKILL.md
-```
 
 ## API quirks worth knowing
 
