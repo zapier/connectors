@@ -2,28 +2,60 @@
 
 _Independent, unofficial connector for Google Tasks. Not affiliated with, endorsed by, or sponsored by Google Tasks. "Google Tasks" is a trademark of its owner, used only to identify the service this connector works with._
 
-Agent-callable tools for [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) — manage task lists and tasks end to end: create, list, find by title, get, update (complete/reopen), reorder, reparent, move between lists, and delete tasks; create, rename, and delete task lists; and clear completed tasks. Wraps the Google Tasks API v1 over Google OAuth 2.0 — authenticate once with a Zapier-managed connection (recommended, auto-refreshing) or a direct OAuth token. 13 single-purpose tools with stable, predictable I/O; no triggers.
+Agent-callable tools for [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) — manage task lists and tasks end to end: create, list, find by title, get, update (complete/reopen), reorder, reparent, move between lists, and delete tasks; create, rename, and delete task lists; and clear completed tasks. Wraps the Google Tasks API v1 over Google OAuth 2.0 — authenticate once with a Zapier-managed connection (recommended, auto-refreshing) or a direct OAuth token. 13 single-purpose scripts with stable, predictable I/O; no triggers.
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
+
+## When to use this
+
+- Managing a user's Google Tasks: capturing to-dos, organizing them into lists and subtasks, marking them done, and cleaning up.
+- Resolving a task or list by name to an id before acting on it (`findTask` / `listTaskLists`), then updating, moving, or deleting it.
+- Read-then-act task workflows where you want predictable, validated JSON rather than a polling trigger.
+
+## When NOT to use this
+
+- **Recurring tasks** — the Google Tasks API has no recurrence fields; create/edit recurrence in the Google Tasks app, not here.
+- **Task times / reminders** — `due` is date-only (the time is discarded); there's no time-of-day or reminder field in the API.
+- **Change notifications** — this is a non-trigger connector; it does not watch for new/changed tasks.
 
 ## Install
 
 ```bash
-# Run a tool with zero install — npx fetches the package on first use
-GOOGLE_TASKS_ACCESS_TOKEN=xxx npx @zapier/google-tasks-connector run <toolName> '{ ... }' --connection env:GOOGLE_TASKS_ACCESS_TOKEN
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/google-tasks-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
-# Install as a dependency to import the tools in your own code
+# Install as a dependency to import the functions in your own code
 npm install @zapier/google-tasks-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill google-tasks
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment — store the id in `GOOGLE_TASKS_ZAPIER_CONNECTION_ID` and pass `--connection "zapier:$GOOGLE_TASKS_ZAPIER_CONNECTION_ID"` if you like), and `--connection env:GOOGLE_TASKS_ACCESS_TOKEN` reads a direct Google OAuth token from `$GOOGLE_TASKS_ACCESS_TOKEN` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
-## Tools
+### MCP server
 
-| Tool                  | Description                                                                           |
+Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
+
+<!-- prettier-ignore -->
+```jsonc
+// e.g. claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "google-tasks": {
+      "command": "npx",
+      "args": ["@zapier/google-tasks-connector", "mcp"]
+    }
+  }
+}
+```
+
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+
+## Scripts
+
+| Script                | Description                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------- |
 | `listTaskLists`       | List the user's task lists (id + title).                                              |
 | `getTaskList`         | Get a single task list by id.                                                         |
@@ -39,9 +71,11 @@ Auth is one `[<resolver>:]<value>` connection string passed with `--connection`.
 | `deleteTask`          | Permanently delete a task.                                                            |
 | `clearCompletedTasks` | Hide all completed tasks in a list (recoverable).                                     |
 
-Run `npx @zapier/google-tasks-connector run <toolName> --help` to see any tool's exact input contract + the available resolvers.
+Run `npx @zapier/google-tasks-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
+
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
 
 ```ts
 import { createTask } from "@zapier/google-tasks-connector";
@@ -54,42 +88,11 @@ const { data } = await createTask(
 // data → the created task: { id, title, status, due, ... }
 ```
 
-## MCP Server
-
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
-
-<!-- prettier-ignore -->
-```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
-{
-  "mcpServers": {
-    "google-tasks": {
-      "command": "npx",
-      "args": ["@zapier/google-tasks-connector", "mcp", "--connection", "zapier:<connection-id>"],
-    }
-  }
-}
-```
-
-No Zapier account? Use the `env:` resolver — point `--connection` at an env-var name and keep the token in `env`: `"args": ["@zapier/google-tasks-connector", "mcp", "--connection", "env:GOOGLE_TASKS_ACCESS_TOKEN"]` with `"env": { "GOOGLE_TASKS_ACCESS_TOKEN": "xxx" }`.
-
-## When to use this
-
-- Managing a user's Google Tasks: capturing to-dos, organizing them into lists and subtasks, marking them done, and cleaning up.
-- Resolving a task or list by name to an id before acting on it (`findTask` / `listTaskLists`), then updating, moving, or deleting it.
-- Read-then-act task workflows where you want predictable, validated JSON rather than a polling trigger.
-
-## When NOT to use this
-
-- **Recurring tasks** — the Google Tasks API has no recurrence fields; create/edit recurrence in the Google Tasks app, not here.
-- **Task times / reminders** — `due` is date-only (the time is discarded); there's no time-of-day or reminder field in the API.
-- **Change notifications** — this is a non-trigger connector; it does not watch for new/changed tasks.
-
 ## Links
 
-- [Google Tasks API reference](https://developers.google.com/workspace/tasks/reference/rest)
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-tasks)
+- [Google Tasks API reference](https://developers.google.com/workspace/tasks/reference/rest)
 
 ## Legal
 
