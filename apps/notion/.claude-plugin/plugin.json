@@ -1,6 +1,6 @@
 {
   "name": "zapier-notion",
-  "description": "Notion tools for Claude Code — search pages and databases, read and create pages, query data sources, and edit content. Built and maintained by Zapier.",
+  "description": "Notion tools for Claude Code. Built and maintained by Zapier.",
   "version": "0.1.2",
   "author": {
     "name": "Zapier",

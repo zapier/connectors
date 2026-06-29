@@ -1,7 +1,7 @@
 {
   "name": "zapier-notion",
   "version": "0.1.2",
-  "description": "Notion tools for Codex — search, read, create, query, and edit Notion content. Built and maintained by Zapier.",
+  "description": "Notion tools for Codex. Built and maintained by Zapier.",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
