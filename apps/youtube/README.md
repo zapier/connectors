@@ -4,8 +4,6 @@ _Independent, unofficial connector for YouTube. Not affiliated with, endorsed by
 
 Agent-callable scripts for the [YouTube Data API v3](https://developers.google.com/youtube/v3) (`https://www.googleapis.com/youtube/v3/`): search and read videos, update or delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata — 22 scripts spanning video discovery and detail, playlist management, community engagement, and the read surfaces an agent needs to resolve ids. Auth is Google OAuth 2.0 — a single access token whose capabilities are gated by OAuth scope and by resource ownership.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - An agent needs to read YouTube data — find videos, pull a video's full statistics and details, enumerate a playlist or a channel's uploads, or read comment threads.
@@ -19,6 +17,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - **Bulk discovery via search** — `search.list` costs 100 quota units and is eventually consistent; to enumerate a known channel's videos, prefer `getChannel` → `listPlaylistItems` on the uploads playlist.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
@@ -99,8 +99,8 @@ const { data } = await getVideo(
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [YouTube Data API v3 reference](https://developers.google.com/youtube/v3)
 - [Source](https://github.com/zapier/connectors/tree/main/apps/youtube)
+- [YouTube Data API v3 reference](https://developers.google.com/youtube/v3)
 
 ## Legal
 
