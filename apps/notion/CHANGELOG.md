@@ -1,5 +1,11 @@
 # @zapier/notion-connector
 
+## 0.2.3
+
+### Patch Changes
+
+- 868363e: Add Claude Code and Codex plugin manifests to the Notion connector. Proof of concept for distributing connectors as installable plugins via the central `zapier/marketplace` entry point.
+
 ## 0.2.2
 
 ### Patch Changes
