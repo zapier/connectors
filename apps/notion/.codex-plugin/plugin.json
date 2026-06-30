@@ -1,0 +1,40 @@
+{
+  "name": "zapier-notion",
+  "version": "0.1.2",
+  "description": "Notion tools for Codex. Built and maintained by Zapier.",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/notion",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "notion",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "productivity"
+  ],
+  "skills": ".",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Notion (by Zapier)",
+    "shortDescription": "Search, read, create, and edit Notion content from your agent.",
+    "longDescription": "Agent-callable Notion tools — search pages and databases, read and create pages, query data sources, append content, manage schemas, and post comments. An independent, unofficial connector built by Zapier; not affiliated with or endorsed by Notion.",
+    "developerName": "Zapier",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read", "Write"],
+    "websiteURL": "https://zapier.com",
+    "privacyPolicyURL": "https://zapier.com/privacy",
+    "termsOfServiceURL": "https://zapier.com/legal",
+    "defaultPrompt": [
+      "Search my Notion workspace and summarize what you find",
+      "Create a Notion page from these meeting notes",
+      "Query the database for rows matching this filter"
+    ],
+    "brandColor": "#FF4F00"
+  }
+}
