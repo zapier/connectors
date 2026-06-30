@@ -4,8 +4,6 @@ _Independent, unofficial connector for Google Calendar. Not affiliated with, end
 
 Agent-callable [Google Calendar](https://developers.google.com/workspace/calendar/api/v3/reference) tools. Create, read, update, move, and delete events; search a calendar; list and create calendars; check free/busy availability; resolve the event-color palette; and manage calendar sharing (ACL) — all over the Google Calendar API v3. Authentication is OAuth 2.0 over a single connection; capability is gated by scope and by each calendar's access role, not by token type. Use it when an agent needs to schedule, find, reschedule, or share calendar events and availability.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - Scheduling, finding, rescheduling, moving, or cancelling Google Calendar events from an agent.
@@ -19,6 +17,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - Gmail, Google Drive, or other Google products — use their dedicated connectors.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
