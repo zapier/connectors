@@ -4,8 +4,6 @@ _Independent, unofficial connector for Google Contacts. Not affiliated with, end
 
 Agent-callable tools for Google Contacts, wrapping the [Google People API](https://developers.google.com/people/api/rest). It lets an agent create, read, update, and delete a person's contacts; search contacts by name, email, or phone; set or remove contact photos; create and manage contact groups (labels) and their membership; and browse the auto-saved "other contacts" surface. Authentication is OAuth 2.0 — either a Zapier-managed connection (recommended) or a direct Google access token.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 Use this connector to manage a person's own Google Contacts — saving and finding people, editing their details, organizing them into groups/labels, and turning auto-saved "other contacts" into real contacts. It's the right pick for contact-CRUD, contact search, and label management against a single Google account over the People API.
@@ -17,6 +15,8 @@ Use this connector to manage a person's own Google Contacts — saving and findi
 - **Contact merge/dedupe** — not supported by these tools.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
@@ -93,8 +93,8 @@ const { data } = await searchContacts(
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Google People API reference](https://developers.google.com/people/api/rest) — the upstream API this connector wraps
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-contacts)
+- [Google People API reference](https://developers.google.com/people/api/rest) — the upstream API this connector wraps
 
 ## Legal
 

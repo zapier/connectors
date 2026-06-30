@@ -4,8 +4,6 @@ _Independent, unofficial connector for Google Tasks. Not affiliated with, endors
 
 Agent-callable tools for [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) — manage task lists and tasks end to end: create, list, find by title, get, update (complete/reopen), reorder, reparent, move between lists, and delete tasks; create, rename, and delete task lists; and clear completed tasks. Wraps the Google Tasks API v1 over Google OAuth 2.0 — authenticate once with a Zapier-managed connection (recommended, auto-refreshing) or a direct OAuth token. 13 single-purpose scripts with stable, predictable I/O; no triggers.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - Managing a user's Google Tasks: capturing to-dos, organizing them into lists and subtasks, marking them done, and cleaning up.
@@ -19,6 +17,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - **Change notifications** — this is a non-trigger connector; it does not watch for new/changed tasks.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use

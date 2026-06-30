@@ -4,8 +4,6 @@ _Independent, unofficial connector for Google Ads. Not affiliated with, endorsed
 
 Agent-callable Google Ads tools — search campaigns, ad groups, and ads via GAQL, build performance reports, manage campaign status and budgets, and set up conversion tracking. It wraps the [Google Ads REST API](https://developers.google.com/google-ads/api/rest/overview) (v23): reads run as GAQL (Google Ads Query Language) queries; writes go through the per-resource mutate endpoints. Capabilities span account-hierarchy navigation, reading campaigns / ad groups / ads, performance reporting, and managing campaign status, budgets, and conversion actions. Auth is Google OAuth 2.0 (the `adwords` scope) plus an app-level developer token — both supplied by Zapier-managed auth, or directly via two env vars.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - Reading and reporting on a Google Ads account: list campaigns / ad groups / ads, run arbitrary GAQL queries, or build metric reports over a date range.
@@ -19,6 +17,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - **Bulk data export / warehousing** — for large historical pulls, use the Google Ads API client libraries directly with `searchStream`.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use

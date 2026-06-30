@@ -4,8 +4,6 @@ _Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by
 
 Agent-callable Dropbox tools — upload, organize, find, and share files and folders. This connector wraps the [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) with 21 tools spanning file writes (upload, create/append text), organization (move, copy, delete, create folders), navigation and search, inline content reading, shared links, shared-folder membership, and file requests. Auth is a single Dropbox OAuth2 connection — capability is gated by the scopes granted at connect time, and the recommended Zapier-managed path rotates the short-lived access token for you.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 Reach for this connector when an agent needs to manage Dropbox files and folders: saving generated content, organizing or cleaning up a folder, finding a file before acting on it, reading a text file inline, or sharing files/folders with people. It returns clean file metadata and resolves shared-link recovery, large-file uploads, and team-space targeting for you.
@@ -17,6 +15,8 @@ Reach for this connector when an agent needs to manage Dropbox files and folders
 - **Dropbox Business/team admin** (member management, team folders, groups) and **Dropbox Paper** — out of scope here.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use

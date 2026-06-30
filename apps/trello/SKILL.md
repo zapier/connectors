@@ -142,6 +142,10 @@ Every script returns a `{ data, meta }` envelope:
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated script to approximate it.
 
-## API quirks worth knowing
+## References
 
-See [references/trello-api-gotchas.md](references/trello-api-gotchas.md) — load before search-heavy flows, rate-limit-sensitive loops, or any write that needs id resolution (lists, boards, labels).
+Load the matching reference file before working in that area:
+
+| Reference                                                            | Covers                                                                          | Load it when                                                                                                         |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| [references/trello-api-gotchas.md](references/trello-api-gotchas.md) | Trello API behavior, id resolution patterns, rate limits, and search DSL quirks | Before search-heavy flows, rate-limit-sensitive loops, or any write that needs id resolution (lists, boards, labels) |

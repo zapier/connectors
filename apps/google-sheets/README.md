@@ -4,8 +4,6 @@ _Independent, unofficial connector for Google Sheets. Not affiliated with, endor
 
 Agent-callable Google Sheets tools that operate on the data _inside_ a spreadsheet. It wraps the [Google Sheets API v4](https://developers.google.com/workspace/sheets/api/reference/rest) (with spreadsheet discovery via the [Google Drive API](https://developers.google.com/drive/api/reference/rest/v3/files/list)) and exposes two surfaces: a **record surface** — rows as objects keyed by their column headers, for "log this row", "update the status", "look up the customer" jobs — and a **cell surface** — raw A1-addressed values for formulas, precise numeric/text control, and arbitrary ranges. It also manages spreadsheet/worksheet structure and presentation (formatting, sorting, validation). Auth is Google OAuth 2.0 — recommended via a Zapier-managed connection (which also handles token refresh).
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - An agent needs to **read, search, or write data inside a Google spreadsheet** — append/update rows, look up a record by a column value, read or write specific cells or ranges, or pull a window of rows.
@@ -18,6 +16,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - **Event triggers** ("when a new row is added…") — connectors are non-trigger; use a Zapier trigger for change detection.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
