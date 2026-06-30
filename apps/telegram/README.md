@@ -4,8 +4,6 @@ _Independent, unofficial connector for Telegram. Not affiliated with, endorsed b
 
 Agent-callable scripts for a **Telegram bot**, wrapping the [Telegram Bot API](https://core.telegram.org/bots/api). Send messages, media (photo/document/video/audio), locations, contacts, and polls; edit, delete, forward, copy, and pin messages; and resolve the chats, members, and files a bot interacts with — 21 scripts in all. Every script acts as the bot (the bot must be a member of any chat it messages), and auth is a single bot token from [@BotFather](https://core.telegram.org/bots/features#botfather), supplied via the environment (direct) or a Zapier-managed connection (recommended). Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - A Telegram **bot** needs to send or manage messages in chats it belongs to — post updates/media/polls to a channel or group, edit/delete/pin its own messages, or forward/copy between chats.
@@ -18,6 +16,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - **Uploading local-disk files** — media is sent by HTTPS URL or an existing Telegram `file_id`, not from a local path.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
