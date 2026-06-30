@@ -28,7 +28,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.1.0",
+    "@zapier/connectors-sdk": "^0.2.2",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
@@ -55,7 +55,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-tasks"
   },
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   }
