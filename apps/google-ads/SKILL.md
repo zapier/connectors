@@ -100,8 +100,10 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## API quirks worth knowing
+## References
 
-| Reference                                                                    | Load when                                                                                                                                                                                                                                                                                 |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [references/google-ads-api-gotchas.md](references/google-ads-api-gotchas.md) | Before composing a GAQL query, working with money fields (micros), setting campaign status, or interpreting a Google Ads API error — the cross-cutting behaviors (auth headers, account hierarchy, GAQL, micros, mutate semantics, errors, rate limits, conversion tracking, versioning). |
+Load the matching reference file before working in that area:
+
+| Reference                                                                    | Covers                                                                                                                 | Load it when                                                                                                                        |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [references/google-ads-api-gotchas.md](references/google-ads-api-gotchas.md) | Auth headers, account hierarchy, GAQL, micros, mutate semantics, errors, rate limits, conversion tracking, versioning. | Before composing a GAQL query, working with money fields (micros), setting campaign status, or interpreting a Google Ads API error. |
