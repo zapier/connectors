@@ -4,8 +4,6 @@ _Independent, unofficial connector for Microsoft Outlook. Not affiliated with, e
 
 Agent-callable Microsoft Outlook tools that wrap the [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/api/overview) v1.0 for a single user's mailbox: read and search mail, compose/send/reply/forward, organize messages (read state, flag, importance, categories, move, copy, delete), browse mail folders and attachments, manage calendar events, and manage personal contacts — 30 scripts across mail, folders, categories, calendar, and contacts. Use when the user mentions Outlook, Microsoft 365 mail/calendar/contacts, or wants to send, read, search, or organize email, schedule events, or look up contacts — even if they don't name Outlook explicitly. Every call authorizes with a single OAuth 2.0 bearer token, supplied either through Zapier-managed auth or as a direct Graph access token.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 - An agent needs to act on one user's Outlook mailbox: read or search mail, send/reply/forward, organize messages and folders, work with attachments, manage calendar events, or manage personal contacts.
@@ -18,6 +16,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 - **Group/shared _calendars_, distribution lists, mailbox rules, or auto-replies** — out of scope. (Shared _mailboxes_ are supported via the `mailbox` input.)
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
