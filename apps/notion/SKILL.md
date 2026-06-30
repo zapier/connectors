@@ -120,7 +120,7 @@ Every script returns a `{ data, meta }` envelope:
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
 
-## API quirks worth knowing
+## References
 
 Load the matching reference file before working in that area:
 
