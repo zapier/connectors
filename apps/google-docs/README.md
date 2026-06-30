@@ -4,8 +4,6 @@ _Independent, unofficial connector for Google Docs. Not affiliated with, endorse
 
 Agent-callable Google Docs tools wrapping the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for find / export / copy-template / folder operations: create documents (blank, from text/Markdown, or from a template), read structured content and tabs, export as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character and paragraph formatting, make bulleted/numbered lists, insert and edit tables, create headers/footers/footnotes, insert and replace inline images, and set page style. 22 tools. Auth is a single Google OAuth 2.0 access token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 Reach for this connector when an agent needs to act on Google Docs documents directly: drafting a new document from text or Markdown, filling a templated document, reading a document's content (prefer `exportDocument` markdown for reading, `getDocument` for editing at a position), or making targeted edits — text, find-and-replace, formatting, images, or page style. `findDocuments` resolves a human-named document to the id every other tool needs.
@@ -18,6 +16,8 @@ Reach for this connector when an agent needs to act on Google Docs documents dir
 - **Polling for document changes** — connectors are non-trigger; there is no change feed.
 
 ## Install
+
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
