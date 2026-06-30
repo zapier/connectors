@@ -116,6 +116,10 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## API quirks worth knowing
+## References
 
-See [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) for the durable per-app knowledge — the Stone `.tag` union shape, the `error_summary` error model and read-vs-write not-found asymmetry, path rules (root is `""`, not `"/"`), cursor pagination via sibling `/continue` endpoints, rate limits + namespace write-locking, the upload-session flow, shared-link recovery, and team-space targeting via `namespace_id`.
+Load the matching reference file before working in that area:
+
+| Reference                                                                | Covers                                                                                                                                                                                                                                                                                                        | Load it when                                                                  |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) | Stone `.tag` union shape, `error_summary` error model, read-vs-write not-found asymmetry, path rules (root is `""` not `"/"`), cursor pagination via sibling `/continue` endpoints, rate limits + namespace write-locking, upload-session flow, shared-link recovery, team-space targeting via `namespace_id` | Before making any direct Dropbox API calls or debugging unexpected API errors |
