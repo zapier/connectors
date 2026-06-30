@@ -1,6 +1,6 @@
 {
   "name": "@zapier/youtube-connector",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publishConfig": {
     "access": "public"
   },
@@ -31,7 +31,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.1.0",
+    "@zapier/connectors-sdk": "^0.2.2",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
