@@ -17,7 +17,6 @@
     "cli.js",
     "*.ts",
     "scripts/",
-    "preflight.sh",
     "SKILL.md",
     "README.md",
     "NOTICE",
@@ -25,8 +24,7 @@
     "references/"
   ],
   "scripts": {
-    "build": "tsup",
-    "prepare": "node cli.js build || bun cli.js build || true"
+    "build": "tsup"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.2.0",
@@ -51,10 +49,6 @@
     "type": "git",
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-ads"
-  },
-  "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
   },
   "version": "0.1.1",
   "publishConfig": {

@@ -2,7 +2,7 @@
 name: google-calendar
 description: Agent-callable Google Calendar tools — create, update, move, search, and delete events, manage calendars, check free/busy availability, resolve event colors, and manage calendar sharing. Use when the user mentions Google Calendar or wants to schedule, find, reschedule, or share events and calendars — including requests that do not name Google Calendar explicitly, e.g. "put a meeting on my calendar Tuesday 3pm" or "am I free Friday afternoon".
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Google Calendar
   source: https://github.com/zapier/connectors/blob/main/apps/google-calendar/SKILL.md
@@ -16,70 +16,28 @@ _Independent, unofficial connector for Google Calendar. Not affiliated with, end
 
 Tools for managing Google Calendar — create, read, update, move, and delete events; search a calendar; list and create calendars; check free/busy availability; resolve the event-color palette; and manage calendar sharing (ACL). Wraps the [Google Calendar API v3](https://developers.google.com/workspace/calendar/api/v3/reference) (`https://www.googleapis.com/calendar/v3/`). Authentication is OAuth 2.0 over a single connection — capability is gated by scope and by each calendar's access role, not by token type.
 
-## When to use this connector
+## When to use this
 
 - An agent needs to schedule, find, reschedule, move, or cancel calendar events.
 - An agent needs to check when someone is busy/free across one or more calendars.
 - An agent needs to list or create calendars, or read a calendar's default timezone.
 - An agent needs to share a calendar with someone or revoke access (ACL management; requires the `owner` role).
 
-## Using this skill
+## Setup
 
-### 0. Pre-flight and auth
+This is an [agentskills.io](https://agentskills.io) skill.
 
-Run the bundled pre-flight check **once** at the start of a session, then run scripts directly — don't re-run it before every call:
+**If this connector is already exposed to you as callable tools** (e.g. `mcp__google-calendar__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
 
-```bash
-./preflight.sh
-```
+If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill google-calendar` (or your harness's own skill-install mechanism), then continue here.
 
-It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed. Read **`PREFLIGHT_STATUS`** first — the single verdict token (`READY` / `NEEDS_ACTION`); `PREFLIGHT_RUNNER` names the runtime (`node` or `bun`) and `PREFLIGHT_RECOMMENDATION` is the exact next step.
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
 
-- **Exit `0` (`READY`)** — follow `PREFLIGHT_RECOMMENDATION`: it gives the exact `--help` command to run on the script you intend to use (e.g. `node /path/scripts/listEvents.ts --help`). The `--help` output reports BOTH the script's JSON-Schema input contract AND auth status — it annotates each connection's env vars `[set]`/`[not set]`, marks the recommended option `[READY — use this]`, and lists optional packages with their install state. See [Auth](#auth) for how to obtain each credential. If a script call later fails with a network error, this sandbox blocks egress — recommend the user set up Zapier's remote MCP server (`https://mcp.zapier.com`).
-- **Exit `1` (`NEEDS_ACTION`)** — follow `PREFLIGHT_RECOMMENDATION`: it spells out the single self-verifying install step (e.g. `npm install`) and the exact `--help` command to run afterward.
-
-**Match the package runner to `PREFLIGHT_RUNNER`** — wherever this skill shows `npx`, substitute `bunx` when `PREFLIGHT_RUNNER` is `bun`.
-
-**Always learn a script's input contract before calling it via `--help` — never guess field names, casing, or types.** `--help` renders the `inputSchema` as JSON Schema and lists the connection flags + resolvers. Guessing the payload (e.g. passing `start` as a bare string instead of `{ dateTime, timeZone }`) just produces a `ZodError` and wastes a round-trip.
-
-### 1. Execute scripts directly
-
-When the agent has shell access to the installed directory, run a script straight from `scripts/`. Each script is `chmod +x` with a Node shebang:
-
-```bash
-# Zapier connection (recommended)
-./scripts/listEvents.ts '{"calendarId":"primary","timeMin":"2026-06-16T00:00:00Z"}' --connection zapier:conn_xxx
-
-# Direct Google OAuth access token (token stays in env)
-GOOGLE_CALENDAR_ACCESS_TOKEN=ya29... ./scripts/listEvents.ts '{"calendarId":"primary"}' --connection env:GOOGLE_CALENDAR_ACCESS_TOKEN
-
-# Per-script --help: input schema + connection flags + resolvers
-./scripts/createEvent.ts --help
-```
-
-**Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory.** Node 22.18+ strips TypeScript natively, so the shebang stays minimal (`#!/usr/bin/env node`).
-
-### 2. Use the package's CLI
-
-```bash
-GOOGLE_CALENDAR_ACCESS_TOKEN=ya29... npx @zapier/google-calendar-connector run listEvents '{"calendarId":"primary"}' --connection env:GOOGLE_CALENDAR_ACCESS_TOKEN
-npx @zapier/google-calendar-connector --help                  # all scripts
-npx @zapier/google-calendar-connector run createEvent --help  # per-script schema + resolvers
-```
-
-Same scripts as (1), different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. **Caveat:** sandboxed harnesses may block `npx`/`bunx`; if so, fall back to (1).
-
-### 3. Use as a recipe
-
-When no shipped script matches, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"google-calendar"`; [`connections.ts`](connections.ts) attaches the resolvers via `defineConnector`. If you persist generated code, point a comment back at this skill's source so a future agent can re-ground:
-
-```ts
-// Source: https://github.com/zapier/connectors/blob/main/apps/google-calendar/SKILL.md
-```
+`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
 
 ## Scripts
 
-| Script                                                           | Tool name            | Connections                  | Description                                                                                       |
+| Script                                                           | Script name          | Connections                  | Description                                                                                       |
 | ---------------------------------------------------------------- | -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------- |
 | [`scripts/createEvent.ts`](scripts/createEvent.ts)               | `createEvent`        | Single (`"google-calendar"`) | Create an event (timed/all-day, recurring, attendees, reminders, color, Google Meet).             |
 | [`scripts/quickAddEvent.ts`](scripts/quickAddEvent.ts)           | `quickAddEvent`      | Single (`"google-calendar"`) | Create an event from a simple text string — parses a title and date/time.                         |
@@ -99,21 +57,7 @@ When no shipped script matches, read this `SKILL.md`, the [`references/`](refere
 | [`scripts/createAclRule.ts`](scripts/createAclRule.ts)           | `createAclRule`      | Single (`"google-calendar"`) | Share a calendar with a user/group/domain at a role (or change a share's role). Requires `owner`. |
 | [`scripts/deleteAclRule.ts`](scripts/deleteAclRule.ts)           | `deleteAclRule`      | Single (`"google-calendar"`) | Remove a sharing rule (revoke access). Requires `owner`.                                          |
 
-Each tool's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract.
-
-## Output format
-
-Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
-
-- **`data`** — the script's result (the shape declared by its `outputSchema`).
-- **`meta.outputDataValidation`** — what validating `data` did:
-  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
-  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
-  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
-
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
-
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` — CLI: append `--filterOutputData '<jq>'`; MCP: pass `meta: { filterOutputData: "<jq>" }` as a tool argument. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (see this script's output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema. The imported SDK has no `filterOutputData` option — reshape the returned `data` in code instead.
+Each script's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract.
 
 ## Disambiguation & refusals
 
@@ -122,7 +66,9 @@ Every script returns a `{ data, meta }` envelope (same shape across the CLI's JS
 
 ## Auth
 
-Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a _selector_, not the secret. The `<resolver>:` prefix is optional — a bare value goes to the first resolver that claims it. Google Calendar ships two resolvers, Zapier-first: prefer `zapier`; fall back to `env`.
+Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+
+Google Calendar ships two resolvers, Zapier-first: prefer `zapier`; fall back to `env`.
 
 - **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Google Calendar connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). The user authorises Google once via Zapier's OAuth flow at <https://zapier.com/app/connections>; Zapier then handles token refresh transparently. A bare, UUID-shaped value auto-claims this resolver, so `--connection <connection-id>` works without the `zapier:` prefix.
 
@@ -136,6 +82,31 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI
 The connect step grants the `https://www.googleapis.com/auth/calendar` scope (full read/write across events, calendars, freebusy, colors, and ACL). A request made with too narrow a scope returns 403 `insufficientPermissions` — the connector surfaces "reconnect with calendar access". A 403 caused by too low an access _role_ on a specific calendar (e.g. sharing changes need `owner`) is surfaced as a permission error — reconnecting won't fix it; the calendar's owner must grant access.
 
 If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
+
+## Running scripts
+
+After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
+
+```bash
+node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
+```
+
+When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
+
+## Output format
+
+Every script returns a `{ data, meta }` envelope:
+
+- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
+- **`meta.outputDataValidation`** — what validating `data` did:
+  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
+
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
+
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## API quirks worth knowing
 

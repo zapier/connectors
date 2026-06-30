@@ -6,28 +6,57 @@ Agent-callable Google Sheets tools that operate on the data _inside_ a spreadshe
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
+## When to use this
+
+- An agent needs to **read, search, or write data inside a Google spreadsheet** — append/update rows, look up a record by a column value, read or write specific cells or ranges, or pull a window of rows.
+- An agent needs to **manage spreadsheet structure** — create a spreadsheet, add/copy/rename/delete worksheets, add columns — or apply **formatting, sorting, and validation**.
+
+## When NOT to use this
+
+- **File-level Drive operations** (move, share, set permissions, trash a whole spreadsheet) — use a Google Drive tool; this connector operates on spreadsheet _contents_, not the file.
+- **Charts, pivot tables, named/protected ranges, or filters** — not exposed by this connector.
+- **Event triggers** ("when a new row is added…") — connectors are non-trigger; use a Zapier trigger for change detection.
+
 ## Install
 
 ```bash
-# Run a tool with zero install — npx fetches the package on first use
-GOOGLE_SHEETS_ACCESS_TOKEN=ya29.xxx npx @zapier/google-sheets-connector run <toolName> '{ ... }' --connection env:GOOGLE_SHEETS_ACCESS_TOKEN
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/google-sheets-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
-# Install as a dependency to import the tools in your own code
+# Install as a dependency to import the functions in your own code
 npm install @zapier/google-sheets-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill google-sheets
 ```
 
-Credentials are passed as a `--connection [<resolver>:]<value>` selector (the value is an env-var name or a connection id, never the secret). Use `--connection zapier:<connection-id>` to route through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and token refresh is handled for you); see [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
-## Tools
+### MCP server
 
-Run `npx @zapier/google-sheets-connector run <toolName> --help` to see any tool's exact input contract + which auth env vars are set.
+Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
+
+<!-- prettier-ignore -->
+```jsonc
+// e.g. claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "google-sheets": {
+      "command": "npx",
+      "args": ["@zapier/google-sheets-connector", "mcp"]
+    }
+  }
+}
+```
+
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+
+## Scripts
 
 **Rows — records (header-keyed)**
 
-| Tool         | Description                                                             |
+| Script       | Description                                                             |
 | ------------ | ----------------------------------------------------------------------- |
 | `createRow`  | Append a single row, given values keyed by column header.               |
 | `createRows` | Append multiple rows in one batched call.                               |
@@ -41,7 +70,7 @@ Run `npx @zapier/google-sheets-connector run <toolName> --help` to see any tool'
 
 **Cells — raw A1 values**
 
-| Tool           | Description                                              |
+| Script         | Description                                              |
 | -------------- | -------------------------------------------------------- |
 | `getValues`    | Read a raw cell range in A1 notation.                    |
 | `updateValues` | Write values to a raw cell range (RAW or USER_ENTERED).  |
@@ -49,7 +78,7 @@ Run `npx @zapier/google-sheets-connector run <toolName> --help` to see any tool'
 
 **Spreadsheets & worksheets**
 
-| Tool                        | Description                                                            |
+| Script                      | Description                                                            |
 | --------------------------- | ---------------------------------------------------------------------- |
 | `createSpreadsheet`         | Create a new spreadsheet, optionally with worksheets and a header row. |
 | `getSpreadsheet`            | Get a spreadsheet's metadata and worksheet list.                       |
@@ -63,7 +92,7 @@ Run `npx @zapier/google-sheets-connector run <toolName> --help` to see any tool'
 
 **Formatting & ranges**
 
-| Tool                       | Description                                                       |
+| Script                     | Description                                                       |
 | -------------------------- | ----------------------------------------------------------------- |
 | `formatCells`              | Apply number/date/currency formatting or text styling to a range. |
 | `sortRange`                | Sort a range by one or more columns.                              |
@@ -71,7 +100,11 @@ Run `npx @zapier/google-sheets-connector run <toolName> --help` to see any tool'
 | `setDataValidation`        | Set a dropdown / number / date validation rule on a range.        |
 | `addConditionalFormatRule` | Add a conditional-formatting rule to a range.                     |
 
+Run `npx @zapier/google-sheets-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
+
 ## Usage
+
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
 
 ```ts
 import { lookupRow } from "@zapier/google-sheets-connector";
@@ -89,45 +122,12 @@ const { data } = await lookupRow(
 // data => { found: true, row_number: 12, values: { Name: "Sam", Email: "sam@example.com", ... } }
 ```
 
-Every tool returns a `{ data, meta }` envelope; `meta.outputValidation` reports what output validation did. Pass `{ skipOutputValidation: true }` (SDK) / `--skipOutputValidation` (CLI) / `meta: { skipOutputValidation: true }` (MCP) for the raw, unvalidated result. See [`SKILL.md`](SKILL.md#output-format).
-
-## MCP Server
-
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
-
-<!-- prettier-ignore -->
-```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
-{
-  "mcpServers": {
-    "google-sheets": {
-      "command": "npx",
-      "args": ["@zapier/google-sheets-connector", "mcp"],
-      "env": {
-        "GOOGLE_SHEETS_ZAPIER_CONNECTION_ID": "<connection-id>"
-      }
-    }
-  }
-}
-```
-
-Swap `GOOGLE_SHEETS_ZAPIER_CONNECTION_ID` for `GOOGLE_SHEETS_ACCESS_TOKEN` if you don't have a Zapier account (a Google OAuth access token; note Google tokens expire ~1 hour after issue and aren't auto-refreshed in this mode).
-
-## When to use this
-
-- An agent needs to **read, search, or write data inside a Google spreadsheet** — append/update rows, look up a record by a column value, read or write specific cells or ranges, or pull a window of rows.
-- An agent needs to **manage spreadsheet structure** — create a spreadsheet, add/copy/rename/delete worksheets, add columns — or apply **formatting, sorting, and validation**.
-
-## When NOT to use this
-
-- **File-level Drive operations** (move, share, set permissions, trash a whole spreadsheet) — use a Google Drive tool; this connector operates on spreadsheet _contents_, not the file.
-- **Charts, pivot tables, named/protected ranges, or filters** — not exposed by this connector.
-- **Event triggers** ("when a new row is added…") — connectors are non-trigger; use a Zapier trigger for change detection.
+Every script returns a `{ data, meta }` envelope; `meta.outputDataValidation` reports what output validation did. Pass `{ skipOutputDataValidation: true }` in the run options for the raw, unvalidated result. See [`SKILL.md`](SKILL.md#output-format).
 
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Google Sheets API reference](https://developers.google.com/workspace/sheets/api/reference/rest)
+- [Google Sheets API reference](https://developers.google.com/workspace/sheets/api/reference/rest) — the upstream API this connector wraps
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-sheets)
 
 ## Legal

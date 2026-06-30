@@ -2,7 +2,7 @@
 name: dropbox
 description: Agent-callable Dropbox tools — upload, organize, find, and share files and folders. Use when the user wants to manage Dropbox content (save, move, search, share, list, or read files), including requests that don't name Dropbox explicitly, e.g. "save this report to my cloud storage" or "share that folder with Sam".
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Dropbox
   source: https://github.com/zapier/connectors/blob/main/apps/dropbox/SKILL.md
@@ -16,30 +16,30 @@ _Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by
 
 Tools for working with files and folders in Dropbox — upload and write files, organize (move/copy/delete/create folders), navigate and search, read file contents, create and modify shared links, manage shared-folder membership, and create file requests. Wraps the [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) (`https://api.dropboxapi.com/2/<namespace>/<method>`, with uploads/downloads on `https://content.dropboxapi.com`). Read-only tools are clearly marked; write tools return clean file/folder metadata rather than silently attaching links or contents.
 
-## When to use this connector
+## When to use this
 
 - An agent needs to save, move, copy, rename, or delete files and folders in Dropbox.
 - An agent needs to find a file or folder (by name or content) or list a folder's contents before acting on it.
 - An agent needs to read a text file's contents inline, or hand off a file's bytes via a temporary or durable link.
 - An agent needs to share a file/folder, change link settings, or manage who can access a shared folder.
 
-## Step 0 — pre-flight and auth
+## Setup
 
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
+This is an [agentskills.io](https://agentskills.io) skill.
 
-```bash
-./preflight.sh
-```
+**If this connector is already exposed to you as callable tools** (e.g. `mcp__dropbox__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
 
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/<name>.ts --help`). The `--help` output shows which auth options are ready (credentials set), marks the recommended one `[READY — use this]`, lists any optional packages still needed, and tells you exactly what to provide if no option is ready yet. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
+If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill dropbox` (or your harness's own skill-install mechanism), then continue here.
 
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
+
+`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
 
 ## Scripts
 
-All 21 tools use the single `connection: "dropbox"`. Each tool's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
+All 21 scripts use the single `dropbox` connection. Each script's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
 
-| Script                                                                       | Tool name                  | Connections        | Description                                                                                    |
+| Script                                                                       | Script name                | Connections        | Description                                                                                    |
 | ---------------------------------------------------------------------------- | -------------------------- | ------------------ | ---------------------------------------------------------------------------------------------- |
 | [`scripts/uploadFile.ts`](scripts/uploadFile.ts)                             | `uploadFile`               | Single (`dropbox`) | Upload a file by fetching its bytes from a URL (chunked session for large files).              |
 | [`scripts/createTextFile.ts`](scripts/createTextFile.ts)                     | `createTextFile`           | Single (`dropbox`) | Create or overwrite a file from plain text content.                                            |
@@ -63,21 +63,7 @@ All 21 tools use the single `connection: "dropbox"`. Each tool's `inputSchema` /
 | [`scripts/listFileRequests.ts`](scripts/listFileRequests.ts)                 | `listFileRequests`         | Single (`dropbox`) | List the account's file requests.                                                              |
 | [`scripts/getCurrentAccount.ts`](scripts/getCurrentAccount.ts)               | `getCurrentAccount`        | Single (`dropbox`) | Identify the account and its team/personal namespace ids.                                      |
 
-Several tools take an id or url best resolved from another tool — those resolution hints are in the field descriptions (e.g. `addFolderMember.shared_folder_id` ← `listSharedFolders`; `modifySharedLinkSettings.url` ← `listSharedLinks`).
-
-## Output format
-
-Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
-
-- **`data`** — the script's result (the shape declared by its `outputSchema`).
-- **`meta.outputDataValidation`** — what validating `data` did:
-  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
-  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
-  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
-
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
-
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` — CLI: append `--filterOutputData '<jq>'`; MCP: pass `meta: { filterOutputData: "<jq>" }` as a tool argument. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (see this script's output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema. The imported SDK has no `filterOutputData` option — reshape the returned `data` in code instead.
+Several scripts take an id or url best resolved from another script — those resolution hints are in the field descriptions (e.g. `addFolderMember.shared_folder_id` ← `listSharedFolders`; `modifySharedLinkSettings.url` ← `listSharedLinks`).
 
 ## Disambiguation & refusals
 
@@ -96,67 +82,39 @@ The entity types most likely to collide here are **files/folders by name** (reso
 
 ## Auth
 
-The connector uses a single Dropbox OAuth2 connection — one credential, with no separate bot/user tokens. Capability is gated by the **OAuth scopes** granted when the connection is authorized (e.g. `files.content.write`, `sharing.read`); a call missing a scope fails with a `missing_scope` error naming the scope to reconnect with.
+Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
 
-Provide one of two credentials via environment variable (no CLI flags). Prefer the Zapier-managed connection.
+The connector uses a single Dropbox OAuth2 connection — one credential, with no separate bot/user tokens. Capability is gated by the **OAuth scopes** granted when the connection is authorized (e.g. `files.content.write`, `sharing.read`); a call missing a scope fails with a `missing_scope` error naming the scope to reconnect with. Two resolvers, Zapier-first:
 
-- **`DROPBOX_ZAPIER_CONNECTION_ID`** _(recommended)_ — a Zapier Dropbox connection ID. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; ~1 minute). The user authorizes Dropbox once via Zapier's OAuth flow at <https://zapier.com/app/connections>; Zapier then holds the refresh token and **rotates the short-lived access token for you**, so this path doesn't expire mid-session.
+- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier-managed Dropbox connection; Zapier holds the refresh token and **rotates the short-lived (~4h) access token for you**, so this path doesn't expire mid-session. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; ~1 minute). The user authorizes Dropbox once via Zapier's OAuth flow at <https://zapier.com/app/connections>. Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections DropBoxCLIAPI` (run `login` first if unauthenticated; use `DropBoxCLIAPI` exactly, note the capital B; add `--json` for machine output).
+- **`access-token:<ENV_VAR>`** _(fallback, direct mode)_ — read a Dropbox access token from the named environment variable (e.g. `access-token:DROPBOX_ACCESS_TOKEN`, with the token exported in `DROPBOX_ACCESS_TOKEN`; the token stays in `env`, never on argv), sent as `Authorization: Bearer <token>`. Mint one from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it** — a static Dropbox access token is short-lived and stops working after a few hours, so re-mint it or use the Zapier-managed path above, which handles rotation. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
 
-  **Finding the connection ID** (the connections UI doesn't show IDs):
-  1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
-  2. `npx @zapier/zapier-sdk-cli list-connections DropBoxCLIAPI` — prints `title (connection ID)` per matching connection. Use `DropBoxCLIAPI` exactly (note the capital B). Add `--json` for machine-readable output.
-  3. Substitute `bunx` for `npx` when `PREFLIGHT_RUNNER` is `bun`.
+If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
 
-- **`DROPBOX_ACCESS_TOKEN`** _(fallback, direct mode)_ — a Dropbox access token from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it.** A static `DROPBOX_ACCESS_TOKEN` from a Dropbox app is short-lived and stops working after a few hours — re-mint it, or use the Zapier-managed path above, which handles rotation for you. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
+## Running scripts
 
-If neither env var is set the script reports the missing credentials via `--help`.
-
-## Using this skill
-
-The three invocation paths below assume the pre-flight (Step 0) reported `READY`.
-
-### 1. Execute scripts directly
-
-When the agent has shell access to the skill's installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang.
+After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
 
 ```bash
-# Inspect the input contract + auth status FIRST (never guess field names/casing/types):
-./scripts/searchFiles.ts --help
-
-# Then invoke — Zapier connection (recommended):
-DROPBOX_ZAPIER_CONNECTION_ID=conn_xxx ./scripts/searchFiles.ts '{"query":"forecast 2026"}'
-
-# Direct token:
-DROPBOX_ACCESS_TOKEN=sl.xxx ./scripts/listFolder.ts '{"path":""}'
+node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
 ```
 
-`--help` renders the script's `inputSchema` as JSON Schema and reports each auth option's env-var status (`[set]`/`[not set]`, recommended option `[READY — use this]`). Run it before constructing input — guessing the payload (e.g. passing `"/"` instead of `""` for the root, or `limit` as a string) just produces a `ZodError` and wastes a round-trip.
+When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
 
-```bash
-# Pin the runtime explicitly when needed (both run the same source):
-DROPBOX_ACCESS_TOKEN=sl.xxx node scripts/getFileMetadata.ts '{"path":"/Docs/report.pdf"}'
-DROPBOX_ACCESS_TOKEN=sl.xxx bun  scripts/getFileMetadata.ts '{"path":"/Docs/report.pdf"}'
-```
+## Output format
 
-### 2. Use the package's CLI
+Every script returns a `{ data, meta }` envelope:
 
-```bash
-DROPBOX_ACCESS_TOKEN=sl.xxx npx @zapier/dropbox-connector run searchFiles '{"query":"forecast"}'
-npx @zapier/dropbox-connector --help                       # all scripts
-npx @zapier/dropbox-connector run searchFiles --help        # per-script schema + env vars
-```
+- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
+- **`meta.outputDataValidation`** — what validating `data` did:
+  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-The CLI dispatches to the same scripts under `scripts/` — no behavioural difference from (1). Use `bunx` instead of `npx` when `PREFLIGHT_RUNNER` is `bun`. Sandboxed runtimes may block `npx`/`bunx`; if so, fall back to (1).
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
 
-### 3. Use as a recipe
-
-When no shipped script matches the use case, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing `connection: "dropbox"`; the shared `lib/dropbox.ts` carries the `.tag` wrap/unwrap helpers, the error mapper, and the shared response schemas. Imitate that shape: Zod input/output schemas, a `(input, ctx) => …` `run` body using `ctx.fetch` (pre-authed), app auth via [`connections.ts`](connections.ts).
-
-If generated code is persisted, include a comment pointing back to this skill's source so a future agent can re-fetch the canonical recipe:
-
-```ts
-// Source: https://github.com/zapier/connectors/blob/main/apps/dropbox/SKILL.md
-```
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## API quirks worth knowing
 

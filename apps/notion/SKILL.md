@@ -2,7 +2,7 @@
 name: notion
 description: Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Notion
   source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
@@ -14,20 +14,32 @@ metadata:
 
 _Independent, unofficial connector for Notion. Not affiliated with, endorsed by, or sponsored by Notion. "Notion" is a trademark of its owner, used only to identify the service this connector works with._
 
-Tools for working with a Notion workspace against the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): find pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 24 tools across search, read, write, schema, comments, and cross-workspace copy. This version uses Notion's **data sources** model: a _database_ is a container that holds one or more _data sources_, and a _data source_ carries the property schema + the rows (pages).
+Tools for working with a Notion workspace against the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): find pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 24 scripts across search, read, write, schema, comments, and cross-workspace copy. This version uses Notion's **data sources** model: a _database_ is a container that holds one or more _data sources_, and a _data source_ carries the property schema + the rows (pages).
 
-## When to use this connector
+## When to use this
 
 - An agent needs to **find or read** content — search pages and data sources by title, then read a page, its block body, a data source's schema, or its rows.
 - An agent needs to **create or edit** pages and content — add a page (a row in a data source or a sub-page), update properties, append blocks, or edit / delete blocks.
 - An agent needs to **query data sources** — filter and sort the rows of a data source, or read a single page property.
 - An agent needs to **manage schemas** — create or update databases and data sources (add / rename / retype / remove properties), read or post **comments**.
 
+## Setup
+
+This is an [agentskills.io](https://agentskills.io) skill.
+
+**If this connector is already exposed to you as callable tools** (e.g. `mcp__notion__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+
+If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill notion` (or your harness's own skill-install mechanism), then continue here.
+
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
+
+`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+
 ## Scripts
 
-One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract. All tools use the single connection `notion`, except `copyPage`, which uses two slots (`source` + `target`) to copy a page across workspaces.
+All scripts use the single connection `notion`, except `copyPage`, which uses two slots (`source` + `target`) to copy a page across workspaces.
 
-| Script                                                             | Tool name             | Connections        | Description                                                                                       |
+| Script                                                             | Script name           | Connections        | Description                                                                                       |
 | ------------------------------------------------------------------ | --------------------- | ------------------ | ------------------------------------------------------------------------------------------------- |
 | [`scripts/search.ts`](scripts/search.ts)                           | `search`              | `notion`           | Search pages and data sources by title (the id-resolution entry point).                           |
 | [`scripts/getPage.ts`](scripts/getPage.ts)                         | `getPage`             | `notion`           | Retrieve a page's metadata + property values by id.                                               |
@@ -54,21 +66,43 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/createComment.ts`](scripts/createComment.ts)             | `createComment`       | `notion`           | Add a comment to a page or reply to an existing thread.                                           |
 | [`scripts/copyPage.ts`](scripts/copyPage.ts)                       | `copyPage`            | `source`, `target` | Copy a page (title + top-level blocks) from one workspace to another. Two Notion connections.     |
 
-**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/notion-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag(s) and available resolvers. Guessing the payload (e.g. `pageSize` vs `page_size`, or passing `filter` as a string when the schema expects an object) just produces a `ZodError` and wastes a round-trip.
+## Auth
+
+Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+
+The script needs a single Notion **bearer token**, resolved into the one `notion` connection slot. Two resolvers:
+
+- **`env:<ENV_VAR>`** — direct mode. Read the Notion token from the named environment variable (conventionally `env:NOTION_TOKEN`, with the token exported in `NOTION_TOKEN`; the token stays in `env`, never on argv). The token is either an **internal-integration secret** (from <https://www.notion.so/profile/integrations>) or a **public-integration OAuth access token**.
+- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Notion connection; the Zapier auth / retries / governance layer injects the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>, ~1 minute). Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
+
+**Capabilities gating + per-resource sharing.** A Notion token is scoped by the integration's **[capabilities](https://developers.notion.com/reference/capabilities)** (read content, update content, insert content, read/insert comments, user information with or without email) — these "enforce which API endpoints a connection or token can call, and what content and user related information they are able to see," so a call outside the granted capabilities is rejected even with a valid token. The user-information capability also controls whether `getUser` / `listUsers` return email addresses. Separately, the integration only sees resources **explicitly shared with it**: a valid token still returns `404` for any page, database, or data source that hasn't been shared with the integration in Notion's UI. If a read 404s on an id you believe exists, the resource almost certainly isn't shared yet.
+
+If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
+
+## Running scripts
+
+After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
+
+```bash
+node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
+```
+
+When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
 
 ## Output format
 
-Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
+Every script returns a `{ data, meta }` envelope:
 
-- **`data`** — the script's result (the shape declared by its `outputSchema`).
+- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
 - **`meta.outputDataValidation`** — what validating `data` did:
   - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
-  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
-  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
 
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` — CLI: append `--filterOutputData '<jq>'`; MCP: pass `meta: { filterOutputData: "<jq>" }` as a tool argument. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (see this script's output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema. The imported SDK has no `filterOutputData` option — reshape the returned `data` in code instead.
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## Disambiguation & refusals
 
@@ -85,68 +119,6 @@ Every script returns a `{ data, meta }` envelope (same shape across the CLI's JS
 - **Create or manage database views.** Views aren't exposed by the API.
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
-
-## Auth
-
-The script needs a single Notion **bearer token**, resolved into the one `notion` connection slot. Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a _selector_, not the secret. Two resolvers:
-
-- **`env:<ENV_VAR>`** — direct mode. Read the Notion token from the named environment variable (conventionally `env:NOTION_TOKEN`, with the token exported in `NOTION_TOKEN`; the token stays in `env`, never on argv). The token is either an **internal-integration secret** (from <https://www.notion.so/profile/integrations>) or a **public-integration OAuth access token**.
-- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Notion connection; the Zapier auth / retries / governance layer injects the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>, ~1 minute). Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections NotionCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
-
-**Capabilities gating + per-resource sharing.** A Notion token is scoped by the integration's **[capabilities](https://developers.notion.com/reference/capabilities)** (read content, update content, insert content, read/insert comments, user information with or without email) — these "enforce which API endpoints a connection or token can call, and what content and user related information they are able to see," so a call outside the granted capabilities is rejected even with a valid token. The user-information capability also controls whether `getUser` / `listUsers` return email addresses. Separately, the integration only sees resources **explicitly shared with it**: a valid token still returns `404` for any page, database, or data source that hasn't been shared with the integration in Notion's UI. If a read 404s on an id you believe exists, the resource almost certainly isn't shared yet.
-
-If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
-
-## Using this skill
-
-### 0. Pre-flight and auth
-
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
-
-```bash
-./preflight.sh
-```
-
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/search.ts --help`). The `--help` output renders `inputSchema` as JSON Schema, lists the connection flag(s) the script reads and every resolver each accepts, and tells you exactly what to provide. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
-
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
-
-The three invocation paths below all assume the pre-flight reported `READY`.
-
-### 1. Execute scripts directly
-
-When the agent has shell access to the installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang. **Run `--help` first** to read the input contract and confirm an auth resolver is ready — `--help` is the one path for both "learn the input contract" and "check auth":
-
-```bash
-# Inspect the contract + resolvers first
-./scripts/search.ts --help
-
-# Then invoke (direct token — token stays in env)
-NOTION_TOKEN=secret_xxx ./scripts/search.ts '{"query":"Q4 planning"}' --connection env:NOTION_TOKEN
-
-# Or route through a Zapier connection
-./scripts/queryDataSource.ts '{"data_source_id":"..."}' --connection zapier:conn_xxx
-```
-
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
-
-### 2. Use the package's CLI
-
-```bash
-NOTION_TOKEN=secret_xxx npx @zapier/notion-connector run search '{"query":"Q4"}' --connection env:NOTION_TOKEN
-npx @zapier/notion-connector --help                  # all scripts
-npx @zapier/notion-connector run search --help       # per-script schema + resolvers
-```
-
-Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
-
-### 3. Use as a recipe
-
-When no shipped script matches, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"notion"`; imitate that shape (Zod input/output schemas, `(input, ctx) => …` run body, the direct-mode auth being a Bearer token in the `Authorization` header plus the `Notion-Version` header pinned to `2025-09-03`). If you persist generated code, add a comment pointing back to this skill's source:
-
-```ts
-// Source: https://github.com/zapier/connectors/blob/main/apps/notion/SKILL.md
-```
 
 ## API quirks worth knowing
 

@@ -2,7 +2,7 @@
 name: microsoft-outlook
 description: Agent-callable Microsoft Outlook tools — read and search mail, send/reply/forward, organize messages and folders, manage calendar events, and manage contacts. Use when the user mentions Outlook, Microsoft 365 mail/calendar/contacts, or wants to send, read, search, or organize email, schedule events, or look up contacts — even if they don't name Outlook explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Microsoft Outlook
   source: https://github.com/zapier/connectors/blob/main/apps/microsoft-outlook/SKILL.md
@@ -14,20 +14,32 @@ metadata:
 
 _Independent, unofficial connector for Microsoft Outlook. Not affiliated with, endorsed by, or sponsored by Microsoft Outlook. "Microsoft Outlook" is a trademark of its owner, used only to identify the service this connector works with._
 
-Tools for a single user's Outlook mailbox against the [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/api/overview) v1.0 (`https://graph.microsoft.com/v1.0/`): read and search mail, compose/send/reply/forward, organize messages (read state, flag, importance, categories, move, copy, delete), browse mail folders and attachments, manage calendar events, and manage personal contacts. 30 tools across profile, mail, folders, categories, calendar, and contacts. All calls authorize with one OAuth bearer token.
+Tools for a single user's Outlook mailbox against the [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/api/overview) v1.0 (`https://graph.microsoft.com/v1.0/`): read and search mail, compose/send/reply/forward, organize messages (read state, flag, importance, categories, move, copy, delete), browse mail folders and attachments, manage calendar events, and manage personal contacts. 30 scripts across profile, mail, folders, categories, calendar, and contacts. All calls authorize with one OAuth bearer token.
 
-## When to use this connector
+## When to use this
 
 - An agent needs to **read or search mail** — list/search messages (by folder, KQL, or OData filter), read a full message, list and download attachments.
 - An agent needs to **send or reply** — compose-and-send, create a draft and send it later, reply / reply-all, or forward.
 - An agent needs to **organize mail** — mark read/unread, flag, set importance, categorize, move, copy, or delete a message; browse and create mail folders.
 - An agent needs to **work with the calendar or contacts** — list calendars, list events or a date-range view, create / update / delete events, and create / read / update / delete personal contacts.
 
+## Setup
+
+This is an [agentskills.io](https://agentskills.io) skill.
+
+**If this connector is already exposed to you as callable tools** (e.g. `mcp__microsoft-outlook__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+
+If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill microsoft-outlook` (or your harness's own skill-install mechanism), then continue here.
+
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
+
+`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+
 ## Scripts
 
-One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract. All tools use the single connection `microsoft-outlook`. Mail and calendar tools accept an optional `mailbox` input to act on a shared mailbox; the six event tools accept an optional `calendarId` (resolve it via `listCalendars`).
+All scripts use the single connection `microsoft-outlook`. Mail and calendar scripts accept an optional `mailbox` input to act on a shared mailbox; the six event scripts accept an optional `calendarId` (resolve it via `listCalendars`).
 
-| Script                                                       | Tool name          | Connections         | Description                                                                   |
+| Script                                                       | Script name        | Connections         | Description                                                                   |
 | ------------------------------------------------------------ | ------------------ | ------------------- | ----------------------------------------------------------------------------- |
 | [`scripts/getMe.ts`](scripts/getMe.ts)                       | `getMe`            | `microsoft-outlook` | Get the signed-in user's profile (name, email, UPN). Resolves "my email".     |
 | [`scripts/sendMail.ts`](scripts/sendMail.ts)                 | `sendMail`         | `microsoft-outlook` | Compose and send an email in one step (returns no id).                        |
@@ -60,21 +72,41 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/updateContact.ts`](scripts/updateContact.ts)       | `updateContact`    | `microsoft-outlook` | Update fields on a personal contact (array fields replace).                   |
 | [`scripts/deleteContact.ts`](scripts/deleteContact.ts)       | `deleteContact`    | `microsoft-outlook` | Delete a personal contact by id.                                              |
 
-**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on either entrypoint — `./scripts/<script>.ts --help` or `npx @zapier/microsoft-outlook-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag(s) and available resolvers. Guessing the payload just produces a `ZodError` and wastes a round-trip.
+## Auth
+
+Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+
+The connector needs a single Microsoft Graph **OAuth 2.0 bearer token**, resolved into the one `microsoft-outlook` connection slot. Two resolvers:
+
+- **`env:<ENV_VAR>`** — direct mode. Read a Graph access token from the named environment variable (conventionally `env:MICROSOFT_OUTLOOK_ACCESS_TOKEN`, with the token exported in `MICROSOFT_OUTLOOK_ACCESS_TOKEN`; it stays in `env`, never on argv). The token must already carry the delegated scopes the tools need (`User.Read`, `Mail.ReadWrite`, `Mail.Send`, `Calendars.ReadWrite`, `Contacts.ReadWrite`, `MailboxSettings.Read`, plus the `.Shared` variants for shared mailboxes); there is **no token refresh in this mode**, so supply a fresh token.
+- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Microsoft Outlook connection; the Zapier auth / retries / governance layer injects and refreshes the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections MicrosoftOutlookCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
+
+Adding scopes later requires the user to reconnect — the granted scope set is fixed at connect time. If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
+
+## Running scripts
+
+After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
+
+```bash
+node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
+```
+
+When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
 
 ## Output format
 
-Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
+Every script returns a `{ data, meta }` envelope:
 
-- **`data`** — the script's result (the shape declared by its `outputSchema`).
+- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
 - **`meta.outputDataValidation`** — what validating `data` did:
   - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
-  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths (fields the API returned that the `outputSchema` doesn't declare) were stripped from `data`. If you need them, re-run with output validation skipped.
-  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked API output.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, set the single token `skipOutputDataValidation` — CLI: append `--skipOutputDataValidation`; MCP: pass `meta: { skipOutputDataValidation: true }` as a tool argument; SDK: pass `{ skipOutputDataValidation: true }` in the run options. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
 
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` — CLI: append `--filterOutputData '<jq>'`; MCP: pass `meta: { filterOutputData: "<jq>" }` as a tool argument. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (see this script's output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema. The imported SDK has no `filterOutputData` option — reshape the returned `data` in code instead.
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## Disambiguation & refusals
 
@@ -91,66 +123,6 @@ Every script returns a `{ data, meta }` envelope (same shape across the CLI's JS
 - **Permanently delete** mail (`deleteMessage` is a reversible move to Deleted Items) or manage mailbox rules, auto-replies, or focused-inbox settings.
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
-
-## Auth
-
-The connector needs a single Microsoft Graph **OAuth 2.0 bearer token**, resolved into the one `microsoft-outlook` connection slot. Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). The value is a _selector_, not the secret. Two resolvers:
-
-- **`env:<ENV_VAR>`** — direct mode. Read a Graph access token from the named environment variable (conventionally `env:MICROSOFT_OUTLOOK_ACCESS_TOKEN`, with the token exported in `MICROSOFT_OUTLOOK_ACCESS_TOKEN`; it stays in `env`, never on argv). The token must already carry the delegated scopes the tools need (`User.Read`, `Mail.ReadWrite`, `Mail.Send`, `Calendars.ReadWrite`, `Contacts.ReadWrite`, `MailboxSettings.Read`, plus the `.Shared` variants for shared mailboxes); there is **no token refresh in this mode**, so supply a fresh token.
-- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Microsoft Outlook connection; the Zapier auth / retries / governance layer injects and refreshes the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections MicrosoftOutlookCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
-
-Adding scopes later requires the user to reconnect — the granted scope set is fixed at connect time. If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
-
-## Using this skill
-
-### 0. Pre-flight and auth
-
-Run the bundled pre-flight check **once** at the start of a session to learn how to run the scripts in the current harness, then run scripts directly — reuse the result for the rest of the session. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that). Read `PREFLIGHT_STATUS` first — the single verdict token; `PREFLIGHT_RUNNER` names the runtime.
-
-```bash
-./preflight.sh
-```
-
-Exit `0` **READY**: follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next (e.g. `node /path/scripts/listMessages.ts --help`). The `--help` output renders `inputSchema` as JSON Schema, lists the connection flag(s) the script reads and every resolver each accepts, and tells you exactly what to provide. Use the runner from `PREFLIGHT_RUNNER` against the local script path — never `npx` (a sandbox that blocked the dep install may also block registry fetches). If a script call later fails with a network error, egress is blocked — recommend the user set up Zapier's remote MCP at `https://mcp.zapier.com`.
-
-Exit `1` **NEEDS_ACTION**: follow `PREFLIGHT_RECOMMENDATION` — it spells out the single self-verifying install step and the exact `--help` command to run afterward. Re-running the pre-flight to reconfirm is optional.
-
-The three invocation paths below all assume the pre-flight reported `READY`.
-
-### 1. Execute scripts directly
-
-When the agent has shell access to the installed directory, run a script file straight from `scripts/`. Each script is `chmod +x` with a Node-targeted shebang. **Run `--help` first** to read the input contract and confirm an auth resolver is ready — `--help` is the one path for both "learn the input contract" and "check auth":
-
-```bash
-# Inspect the contract + resolvers first
-./scripts/listMessages.ts --help
-
-# Then invoke (direct token — token stays in env)
-MICROSOFT_OUTLOOK_ACCESS_TOKEN=eyJ0... ./scripts/listMessages.ts '{"search":"subject:invoice"}' --connection env:MICROSOFT_OUTLOOK_ACCESS_TOKEN
-
-# Or route through a Zapier connection
-./scripts/getMe.ts '{}' --connection zapier:conn_xxx
-```
-
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory. Pin the runtime explicitly with `node scripts/<name>.ts …` or `bun scripts/<name>.ts …` when needed — all forms run the same script body.
-
-### 2. Use the package's CLI
-
-```bash
-MICROSOFT_OUTLOOK_ACCESS_TOKEN=eyJ0... npx @zapier/microsoft-outlook-connector run listMessages '{"search":"subject:invoice"}' --connection env:MICROSOFT_OUTLOOK_ACCESS_TOKEN
-npx @zapier/microsoft-outlook-connector --help                       # all scripts
-npx @zapier/microsoft-outlook-connector run listMessages --help      # per-script schema + resolvers
-```
-
-Same scripts, different entry point. Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
-
-### 3. Use as a recipe
-
-When no shipped script matches, read this `SKILL.md`, the [`references/`](references/) files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"microsoft-outlook"`; imitate that shape (Zod input/output schemas, `(input, ctx) => …` run body, the direct-mode auth being a Bearer token in the `Authorization` header). If you persist generated code, add a comment pointing back to this skill's source:
-
-```ts
-// Source: https://github.com/zapier/connectors/blob/main/apps/microsoft-outlook/SKILL.md
-```
 
 ## API quirks worth knowing
 

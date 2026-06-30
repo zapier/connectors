@@ -6,24 +6,54 @@ Agent-callable tools for Google Contacts, wrapping the [Google People API](https
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
+## When to use this
+
+Use this connector to manage a person's own Google Contacts — saving and finding people, editing their details, organizing them into groups/labels, and turning auto-saved "other contacts" into real contacts. It's the right pick for contact-CRUD, contact search, and label management against a single Google account over the People API.
+
+## When NOT to use this
+
+- **Google Workspace directory lookups** (org-wide people search) — not covered; this connector manages the user's personal contacts, not the domain directory.
+- **Bulk/batch contact imports or mass edits** — there are no batch tools; act on one contact at a time.
+- **Contact merge/dedupe** — not supported by these tools.
+
 ## Install
 
 ```bash
-# Run a tool with zero install — npx fetches the package on first use
-GOOGLE_CONTACTS_ACCESS_TOKEN=xxx npx @zapier/google-contacts-connector run <toolName> '{ ... }' --connection env:GOOGLE_CONTACTS_ACCESS_TOKEN
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/google-contacts-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
-# Install as a dependency to import the tools in your own code
+# Install as a dependency to import the functions in your own code
 npm install @zapier/google-contacts-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill google-contacts
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment — store the id in `GOOGLE_CONTACTS_ZAPIER_CONNECTION_ID` and pass `--connection "zapier:$GOOGLE_CONTACTS_ZAPIER_CONNECTION_ID"` if you like), and `--connection env:GOOGLE_CONTACTS_ACCESS_TOKEN` reads a direct token from `$GOOGLE_CONTACTS_ACCESS_TOKEN` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
-## Tools
+### MCP server
 
-| Tool                        | Description                                                                                |
+Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
+
+<!-- prettier-ignore -->
+```jsonc
+// e.g. claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "google-contacts": {
+      "command": "npx",
+      "args": ["@zapier/google-contacts-connector", "mcp"]
+    }
+  }
+}
+```
+
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+
+## Scripts
+
+| Script                      | Description                                                                                |
 | --------------------------- | ------------------------------------------------------------------------------------------ |
 | `createContact`             | Create a contact from structured name, email, phone, address, and organization fields.     |
 | `getContact`                | Retrieve a single contact by resource name, with full field detail.                        |
@@ -43,9 +73,11 @@ Auth is one `[<resolver>:]<value>` connection string passed with `--connection`.
 | `searchOtherContacts`       | Search "other contacts" by name, email, or phone (prefix match).                           |
 | `copyOtherContact`          | Promote an "other contact" into saved contacts, returning an editable contact.             |
 
-Run `npx @zapier/google-contacts-connector run <toolName> --help` to see any tool's exact input contract + the available resolvers.
+Run `npx @zapier/google-contacts-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
+
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
 
 ```ts
 import { searchContacts } from "@zapier/google-contacts-connector";
@@ -57,35 +89,6 @@ const { data } = await searchContacts(
 );
 // data.results[].person is the canonical People API Person resource.
 ```
-
-## MCP Server
-
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
-
-<!-- prettier-ignore -->
-```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
-{
-  "mcpServers": {
-    "google-contacts": {
-      "command": "npx",
-      "args": ["@zapier/google-contacts-connector", "mcp", "--connection", "zapier:<connection-id>"],
-    }
-  }
-}
-```
-
-No Zapier account? Use the `env:` resolver — point `--connection` at an env-var name and keep the token in `env`: `"args": ["@zapier/google-contacts-connector", "mcp", "--connection", "env:GOOGLE_CONTACTS_ACCESS_TOKEN"]` with `"env": { "GOOGLE_CONTACTS_ACCESS_TOKEN": "xxx" }`.
-
-## When to use this
-
-Use this connector to manage a person's own Google Contacts — saving and finding people, editing their details, organizing them into groups/labels, and turning auto-saved "other contacts" into real contacts. It's the right pick for contact-CRUD, contact search, and label management against a single Google account over the People API.
-
-## When NOT to use this
-
-- **Google Workspace directory lookups** (org-wide people search) — not covered; this connector manages the user's personal contacts, not the domain directory.
-- **Bulk/batch contact imports or mass edits** — there are no batch tools; act on one contact at a time.
-- **Contact merge/dedupe** — not supported by these tools.
 
 ## Links
 

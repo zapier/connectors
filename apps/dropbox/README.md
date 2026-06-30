@@ -6,28 +6,56 @@ Agent-callable Dropbox tools — upload, organize, find, and share files and fol
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
+## When to use this
+
+Reach for this connector when an agent needs to manage Dropbox files and folders: saving generated content, organizing or cleaning up a folder, finding a file before acting on it, reading a text file inline, or sharing files/folders with people. It returns clean file metadata and resolves shared-link recovery, large-file uploads, and team-space targeting for you.
+
+## When NOT to use this
+
+- **Triggers / polling for new or changed files.** This is a non-trigger connector; use a Zapier trigger or webhook for "when a file is added/updated."
+- **Reading binary documents as text (PDF/image/Office), OCR, or document parsing.** `getFileContents` is UTF-8 text only; hand off other files' bytes via `getTemporaryLink`.
+- **Dropbox Business/team admin** (member management, team folders, groups) and **Dropbox Paper** — out of scope here.
+
 ## Install
 
 ```bash
-# Run a tool with zero install — npx fetches the package on first use
-DROPBOX_ACCESS_TOKEN=xxx npx @zapier/dropbox-connector run <toolName> '{ ... }'
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/dropbox-connector@latest run <script> '<input-json>' --connection access-token:<ENV_VAR>
 
-# Install as a dependency to import the tools in your own code
+# Install as a dependency to import the functions in your own code
 npm install @zapier/dropbox-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill dropbox
 ```
 
-Credentials are environment-variable only (never passed on argv). Use `DROPBOX_ZAPIER_CONNECTION_ID=<id>` instead of `DROPBOX_ACCESS_TOKEN` to route through Zapier-managed auth (recommended — no third-party secret enters the agent's environment, and Zapier rotates the short-lived token for you); see [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection access-token:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
-## Tools
+### MCP server
 
-Run `npx @zapier/dropbox-connector run <toolName> --help` to see any tool's exact input contract + which auth env vars are set.
+Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
+
+<!-- prettier-ignore -->
+```jsonc
+// e.g. claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "dropbox": {
+      "command": "npx",
+      "args": ["@zapier/dropbox-connector", "mcp"]
+    }
+  }
+}
+```
+
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"access-token:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+
+## Scripts
 
 **Files — write & organize**
 
-| Tool               | Description                                                                       |
+| Script             | Description                                                                       |
 | ------------------ | --------------------------------------------------------------------------------- |
 | `uploadFile`       | Upload a file by fetching its bytes from a URL (chunked session for large files). |
 | `createTextFile`   | Create or overwrite a Dropbox file from plain text content.                       |
@@ -39,7 +67,7 @@ Run `npx @zapier/dropbox-connector run <toolName> --help` to see any tool's exac
 
 **Files — read & navigate**
 
-| Tool               | Description                                                 |
+| Script             | Description                                                 |
 | ------------------ | ----------------------------------------------------------- |
 | `listFolder`       | List a folder's immediate contents (cursor-paged).          |
 | `searchFiles`      | Search files and folders by name or content (cursor-paged). |
@@ -49,7 +77,7 @@ Run `npx @zapier/dropbox-connector run <toolName> --help` to see any tool's exac
 
 **Sharing**
 
-| Tool                       | Description                                                                   |
+| Script                     | Description                                                                   |
 | -------------------------- | ----------------------------------------------------------------------------- |
 | `createSharedLink`         | Create a durable shareable link (returns the existing one if present).        |
 | `modifySharedLinkSettings` | Change an existing shared link's visibility, password, expiration, or access. |
@@ -60,61 +88,35 @@ Run `npx @zapier/dropbox-connector run <toolName> --help` to see any tool's exac
 
 **File requests & account**
 
-| Tool                | Description                                                             |
+| Script              | Description                                                             |
 | ------------------- | ----------------------------------------------------------------------- |
 | `createFileRequest` | Create a public upload page into a Dropbox folder.                      |
 | `listFileRequests`  | List the account's file requests.                                       |
 | `getCurrentAccount` | Identify the authenticated account and its team/personal namespace ids. |
 
+Run `npx @zapier/dropbox-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
+
 ## Usage
 
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "access-token:<ENV_VAR>" }`.
+
 ```ts
-import { searchFiles, getTemporaryLink } from "@zapier/dropbox-connector";
+import { searchFiles } from "@zapier/dropbox-connector";
 
-// Each named export is the consumer-facing (input, opts) => Promise<output>.
-const found = await searchFiles({ query: "Q4 forecast" });
-const link = await getTemporaryLink({ path: found.matches[0].path_lower });
-console.log(link.link); // direct download URL, valid ~4 hours
+// Each named export is the consumer-facing (input, opts) => Promise<{ data, meta }>.
+// Pass auth as one `[<resolver>:]<value>` string.
+const { data } = await searchFiles(
+  { query: "Q4 forecast" },
+  { connection: "access-token:DROPBOX_ACCESS_TOKEN" }, // reads DROPBOX_ACCESS_TOKEN
+);
 ```
-
-## MCP Server
-
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
-
-<!-- prettier-ignore -->
-```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
-{
-  "mcpServers": {
-    "dropbox": {
-      "command": "npx",
-      "args": ["@zapier/dropbox-connector", "mcp"],
-      "env": {
-        "DROPBOX_ZAPIER_CONNECTION_ID": "<connection-id>"
-      }
-    }
-  }
-}
-```
-
-Swap `DROPBOX_ZAPIER_CONNECTION_ID` for `DROPBOX_ACCESS_TOKEN` if you don't have a Zapier account.
-
-## When to use this
-
-Reach for this connector when an agent needs to manage Dropbox files and folders: saving generated content, organizing or cleaning up a folder, finding a file before acting on it, reading a text file inline, or sharing files/folders with people. It returns clean file metadata and resolves shared-link recovery, large-file uploads, and team-space targeting for you.
-
-## When NOT to use this
-
-- **Triggers / polling for new or changed files.** This is a non-trigger connector; use a Zapier trigger or webhook for "when a file is added/updated."
-- **Reading binary documents as text (PDF/image/Office), OCR, or document parsing.** `getFileContents` is UTF-8 text only; hand off other files' bytes via `getTemporaryLink`.
-- **Dropbox Business/team admin** (member management, team folders, groups) and **Dropbox Paper** — out of scope here.
 
 ## Links
 
-- [Dropbox HTTP API reference](https://www.dropbox.com/developers/documentation/http/documentation) — the vendor API this wraps
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) — durable per-app API knowledge
 - [Source](https://github.com/zapier/connectors/tree/main/apps/dropbox)
+- [Dropbox HTTP API reference](https://www.dropbox.com/developers/documentation/http/documentation) — the vendor API this wraps
+- [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) — durable per-app API knowledge
 
 ## Legal
 

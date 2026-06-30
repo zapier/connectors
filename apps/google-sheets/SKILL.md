@@ -2,7 +2,7 @@
 name: google-sheets
 description: Agent-callable Google Sheets tools — read and write spreadsheet data as rows or raw cells, manage worksheets and columns, and apply formatting, sorting, and validation. Use when the user mentions Google Sheets or wants to read, add, update, look up, or organize spreadsheet data, even if they don't name Sheets explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+ or Bun 1.x; run `npm install` in this directory first.
+compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
 metadata:
   title: Google Sheets
   source: https://github.com/zapier/connectors/blob/main/apps/google-sheets/SKILL.md
@@ -16,7 +16,7 @@ _Independent, unofficial connector for Google Sheets. Not affiliated with, endor
 
 Tools for working with Google Sheets against the [Google Sheets API v4](https://developers.google.com/workspace/sheets/api/reference/rest) (`https://sheets.googleapis.com/v4/`), with spreadsheet discovery via the [Google Drive API](https://developers.google.com/drive/api/reference/rest/v3/files/list). 26 tools across two complementary surfaces: a **record surface** — rows as objects keyed by their column headers (the "log this expense", "update the status to Done", "look up last quarter's total" jobs) — and a **cell surface** — raw A1-addressed values for formulas, precise numeric/text control, and arbitrary ranges. Plus spreadsheet/worksheet structure and presentation (formatting, sorting, validation).
 
-## When to use this connector
+## When to use this
 
 - **Read or find data inside a spreadsheet** — look up a row by a column value (`lookupRow`), find all matching rows (`findRows`), list a window of rows (`listRows`), or read a raw range (`getValues`).
 - **Write data** — append a row or many rows (`createRow` / `createRows`), update specific columns of a row without disturbing the others (`updateRow` / `updateRows`), or write a raw range / formula (`updateValues`).
@@ -24,11 +24,23 @@ Tools for working with Google Sheets against the [Google Sheets API v4](https://
 - **Manage structure** — create a spreadsheet (`createSpreadsheet`), add / list / copy / rename / hide / delete worksheets, add columns.
 - **Format & validate** — number/date/currency formats, text styling, sort a range, copy a range, dropdowns and number/date validation, conditional formatting.
 
+## Setup
+
+This is an [agentskills.io](https://agentskills.io) skill.
+
+**If this connector is already exposed to you as callable tools** (e.g. `mcp__google-sheets__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+
+If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill google-sheets` (or your harness's own skill-install mechanism), then continue here.
+
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
+
+`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+
 ## Scripts
 
-One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract. All tools use the single connection `google-sheets`.
+All scripts use the single `google-sheets` connection.
 
-| Script                                                                         | Tool name                   | Connections     | Description                                                                       |
+| Script                                                                         | Script name                 | Connections     | Description                                                                       |
 | ------------------------------------------------------------------------------ | --------------------------- | --------------- | --------------------------------------------------------------------------------- |
 | [`scripts/createSpreadsheet.ts`](scripts/createSpreadsheet.ts)                 | `createSpreadsheet`         | `google-sheets` | Create a new spreadsheet, optionally with worksheets and a header row.            |
 | [`scripts/getSpreadsheet.ts`](scripts/getSpreadsheet.ts)                       | `getSpreadsheet`            | `google-sheets` | Get a spreadsheet's metadata and its list of worksheets.                          |
@@ -57,16 +69,41 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | [`scripts/setDataValidation.ts`](scripts/setDataValidation.ts)                 | `setDataValidation`         | `google-sheets` | Set a dropdown / number / date validation rule on a range.                        |
 | [`scripts/addConditionalFormatRule.ts`](scripts/addConditionalFormatRule.ts)   | `addConditionalFormatRule`  | `google-sheets` | Add a conditional-formatting rule to a range.                                     |
 
-**Always learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on a script — `./scripts/<script>.ts --help` or `npx @zapier/google-sheets-connector run <script> --help` — which renders `inputSchema` as JSON Schema and lists the connection flag and resolvers.
+## Auth
+
+Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+
+The connector needs a single Google **OAuth 2.0 access token**, resolved into the one `google-sheets` connection slot.
+
+- **`zapier:<connection-id>`** _(recommended)_ — Zapier-managed auth. Route through a Zapier Google Sheets connection; the Zapier auth / retries / governance layer injects the token and refreshes it for you. The connection grants Sheets + Drive access, so every tool — including `listSpreadsheets` — works. Find the id with `npx @zapier/zapier-sdk-cli list-connections GoogleSheetsV2CLIAPI`.
+- **`env:GOOGLE_SHEETS_ACCESS_TOKEN`** _(direct)_ — read a Google OAuth access token from the named env var, sent as `Authorization: Bearer`. **Google access tokens expire ~1 hour after issue and are not auto-refreshed in direct mode** — suited to short-lived / testing use. The token needs the `https://www.googleapis.com/auth/spreadsheets` scope (and `drive.file` for the spreadsheets you create / open). `listSpreadsheets` additionally needs a broader Drive read scope (`drive.readonly` / `drive`); without it, pass a spreadsheet URL or id directly to the other tools instead of finding by name.
+
+If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers.
+
+## Running scripts
+
+After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
+
+```bash
+node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
+```
+
+When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
 
 ## Output format
 
-Every script returns a `{ data, meta }` envelope (same shape across the CLI's JSON output, the imported SDK return value, and the MCP tool's `structuredContent`):
+Every script returns a `{ data, meta }` envelope:
 
-- **`data`** — the script's result (the shape declared by its `outputSchema`).
-- **`meta.outputValidation`** — what validating `data` did: `{ skipped: false, droppedPaths: null }` (validated, nothing removed), `{ skipped: false, droppedPaths: [...] }` (validated, those API-returned-but-undeclared paths stripped), or `{ skipped: true }` (validation bypassed; `data` is raw).
+- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
+- **`meta.outputDataValidation`** — what validating `data` did:
+  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-To receive the raw, unvalidated result, pass the single token `skipOutputValidation` — CLI: `--skipOutputValidation`; MCP: `meta: { skipOutputValidation: true }` as a tool argument; SDK: `{ skipOutputValidation: true }` in run options. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
+
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## Disambiguation & refusals
 
@@ -86,59 +123,6 @@ Row numbers are **not stable** — they shift on insert/delete/sort. To target t
 - **Permanently delete a whole spreadsheet.** Worksheet deletion (`deleteWorksheet`) is the only structural delete.
 
 If asked for any of these, tell the user it's unsupported and stop.
-
-## Using this skill
-
-### 0. Pre-flight and auth
-
-Run the bundled pre-flight check **once** at the start of a session, then run scripts directly. It detects a usable runtime (Node 22.18+ or Bun) and that dependencies are installed; it does **not** probe the network or auth (the scripts own that).
-
-```bash
-./preflight.sh
-```
-
-Read `PREFLIGHT_STATUS` (the verdict) and `PREFLIGHT_RUNNER` (the runtime). On `READY`, follow `PREFLIGHT_RECOMMENDATION` — it gives the exact `--help` command to run next. On `NEEDS_ACTION`, it spells out the single install step.
-
-### 1. Execute scripts directly
-
-Run a script file straight from `scripts/`. **Run `--help` first** — it renders the `inputSchema` as JSON Schema, annotates each connection's env vars `[set]` / `[not set]`, and marks the recommended auth option `[READY — use this]`. It's the one path for both "learn the input contract" and "check auth":
-
-```bash
-# Inspect the contract + auth status first
-./scripts/lookupRow.ts --help
-
-# Then invoke (direct token — token stays in env)
-GOOGLE_SHEETS_ACCESS_TOKEN=ya29.xxx ./scripts/lookupRow.ts \
-  '{"spreadsheet":"https://docs.google.com/spreadsheets/d/1AbC.../edit","worksheet":"Sheet1","column":"Email","value":"sam@example.com"}' \
-  --connection env:GOOGLE_SHEETS_ACCESS_TOKEN
-
-# Or route through a Zapier connection
-./scripts/createRow.ts '{"spreadsheet":"1AbC...","worksheet":"Sheet1","values":{"Name":"Sam","Status":"Open"}}' --connection zapier:<connection-id>
-```
-
-Prerequisites: Node.js 22.18+ (or Bun 1.x) on `PATH`, plus `npm install` once in this directory.
-
-### 2. Use the package's CLI
-
-```bash
-GOOGLE_SHEETS_ACCESS_TOKEN=ya29.xxx npx @zapier/google-sheets-connector run getValues '{"spreadsheet":"1AbC...","range":"Sheet1!A1:D10"}' --connection env:GOOGLE_SHEETS_ACCESS_TOKEN
-npx @zapier/google-sheets-connector run lookupRow --help    # per-script schema + resolvers
-```
-
-Use `bunx` when `PREFLIGHT_RUNNER` is `bun`. Some harnesses block `npx`/`bunx` — fall back to (1).
-
-### 3. Use as a recipe
-
-When no shipped script matches, read this `SKILL.md`, the `references/` files, and the `scripts/` files as a recipe to generate custom code. Each script is one `export default defineTool({...})` from `@zapier/connectors-sdk` referencing the connection key `"google-sheets"`; imitate that shape (Zod input/output schemas, a `(input, ctx) => …` run body, the bearer token in the `Authorization` header).
-
-## Auth
-
-The connector needs a single Google **OAuth 2.0 access token**, resolved into the one `google-sheets` connection slot. Pass auth as one connection string with `--connection [<resolver>:]<value>` (CLI / MCP) or `{ connection: "[<resolver>:]<value>" }` (imported). Two resolvers:
-
-- **`zapier:<connection-id>`** — Zapier-managed auth (recommended). Route through a Zapier Google Sheets connection; the Zapier auth / retries / governance layer injects the token and refreshes it for you. The connection grants Sheets + Drive access, so every tool — including `listSpreadsheets` — works. Find the id with `npx @zapier/zapier-sdk-cli list-connections GoogleSheetsV2CLIAPI`.
-- **`env:<ENV_VAR>`** — direct mode. Read a Google OAuth access token from the named env var (conventionally `env:GOOGLE_SHEETS_ACCESS_TOKEN`), sent as `Authorization: Bearer`. **Google access tokens expire ~1 hour after issue and are not auto-refreshed in direct mode** — suited to short-lived / testing use. The token needs the `https://www.googleapis.com/auth/spreadsheets` scope (and `drive.file` for the spreadsheets you create / open). `listSpreadsheets` additionally needs a broader Drive read scope (`drive.readonly` / `drive`); without it, pass a spreadsheet URL or id directly to the other tools instead of finding by name.
-
-If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers.
 
 ## API quirks worth knowing
 

@@ -6,28 +6,55 @@ Agent-callable Google Docs tools wrapping the [Google Docs API v1](https://devel
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
+## When to use this
+
+Reach for this connector when an agent needs to act on Google Docs documents directly: drafting a new document from text or Markdown, filling a templated document, reading a document's content (prefer `exportDocument` markdown for reading, `getDocument` for editing at a position), or making targeted edits — text, find-and-replace, formatting, images, or page style. `findDocuments` resolves a human-named document to the id every other tool needs.
+
+## When NOT to use this
+
+- **Binary file upload / conversion** (uploading a `.docx` and converting to a Doc) — that's a Drive job; use a Drive connector.
+- **Managing comments or suggestions** (creating/resolving comments, accepting/rejecting suggested edits) — not exposed here; `getDocument` can _read_ suggested edits via `suggestionsViewMode`, but there is no write tool.
+- **Spreadsheets or presentations** — use a Google Sheets / Slides connector.
+- **Polling for document changes** — connectors are non-trigger; there is no change feed.
+
 ## Install
 
 ```bash
-# Run a tool with zero install — npx fetches the package on first use
-GOOGLE_DOCS_ACCESS_TOKEN=ya29.xxx npx @zapier/google-docs-connector run findDocuments '{"name":"Q4 plan"}' --connection env:GOOGLE_DOCS_ACCESS_TOKEN
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/google-docs-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
-# Install as a dependency to import the tools in your own code
+# Install as a dependency to import the functions in your own code
 npm install @zapier/google-docs-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
 npx skills zapier/connectors --skill google-docs
 ```
 
-Credentials are environment-variable only (never passed on argv). Pass auth as one connection string with `--connection [<resolver>:]<value>`: `env:GOOGLE_DOCS_ACCESS_TOKEN` reads a Google OAuth access token from the environment, or `zapier:<connection-id>` routes through Zapier-managed auth (no third-party secret enters the agent's environment); see [`SKILL.md`](SKILL.md#auth) for the scope requirements and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
 
-Requires Node.js 22.18+ or Bun 1.x on `PATH`.
+### MCP server
 
-## Tools
+Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
 
-One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `outputSchema` (Zod) is the source of truth for its contract. All tools use the single `google-docs` connection (one OAuth credential authorizes both the Docs and Drive hosts).
+<!-- prettier-ignore -->
+```jsonc
+// e.g. claude_desktop_config.json or .cursor/mcp.json
+{
+  "mcpServers": {
+    "google-docs": {
+      "command": "npx",
+      "args": ["@zapier/google-docs-connector", "mcp"]
+    }
+  }
+}
+```
 
-| Tool                         | Description                                                                                |
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+
+## Scripts
+
+| Script                       | Description                                                                                |
 | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | `createDocument`             | Create a new document, optionally with initial text/Markdown and in a folder.              |
 | `createDocumentFromTemplate` | Copy a template document and fill its `{{placeholder}}` tokens.                            |
@@ -52,9 +79,11 @@ One file per tool in [`scripts/`](scripts/); each tool's `inputSchema` / `output
 | `createFooter`               | Create the default footer with its text; returns the segmentId for styling via formatText. |
 | `createFootnote`             | Insert a footnote reference; returns its segmentId for insertText.                         |
 
-Run `npx @zapier/google-docs-connector run <toolName> --help` to see any tool's exact input contract + which auth env vars are set.
+Run `npx @zapier/google-docs-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
+
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
 
 ```ts
 import { findDocuments, exportDocument } from "@zapier/google-docs-connector";
@@ -67,45 +96,12 @@ const { data } = await exportDocument(
 console.log(data.content); // the document as Markdown
 ```
 
-`meta.outputDataValidation` reports whether any API fields were stripped against the tool's `outputSchema`; pass `{ skipOutputDataValidation: true }` in the run options to get the raw result. See [`SKILL.md`](SKILL.md#output-format) for the full envelope contract.
-
-## MCP Server
-
-Add one stanza to any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) to auto-discover the tools over stdio:
-
-<!-- prettier-ignore -->
-```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
-{
-  "mcpServers": {
-    "google-docs": {
-      "command": "npx",
-      "args": ["@zapier/google-docs-connector", "mcp"],
-      "env": {
-        "GOOGLE_DOCS_ZAPIER_CONNECTION_ID": "<connection-id>"
-      }
-    }
-  }
-}
-```
-
-Swap `GOOGLE_DOCS_ZAPIER_CONNECTION_ID` for `GOOGLE_DOCS_ACCESS_TOKEN` if you don't have a Zapier account.
-
-## When to use this
-
-Reach for this connector when an agent needs to act on Google Docs documents directly: drafting a new document from text or Markdown, filling a templated document, reading a document's content (prefer `exportDocument` markdown for reading, `getDocument` for editing at a position), or making targeted edits — text, find-and-replace, formatting, images, or page style. `findDocuments` resolves a human-named document to the id every other tool needs.
-
-## When NOT to use this
-
-- **Binary file upload / conversion** (uploading a `.docx` and converting to a Doc) — that's a Drive job; use a Drive connector.
-- **Managing comments or suggestions** (creating/resolving comments, accepting/rejecting suggested edits) — not exposed here; `getDocument` can _read_ suggested edits via `suggestionsViewMode`, but there is no write tool.
-- **Spreadsheets or presentations** — use a Google Sheets / Slides connector.
-- **Polling for document changes** — connectors are non-trigger; there is no change feed.
+`meta.outputDataValidation` reports whether any API fields were stripped against the script's `outputSchema`; pass `{ skipOutputDataValidation: true }` in the run options to get the raw result. See [`SKILL.md`](SKILL.md#output-format) for the full envelope contract.
 
 ## Links
 
-- [Google Docs API reference](https://developers.google.com/workspace/docs/api/reference/rest)
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
+- [Google Docs API reference](https://developers.google.com/workspace/docs/api/reference/rest) — the upstream API this connector wraps
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-docs)
 
 ## Legal

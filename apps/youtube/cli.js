@@ -2,70 +2,105 @@
 /**
  * Connector CLI entry point.
  *
- * When dist/cli.js is present (npm install route, or after a local build):
- *   → delegates to the compiled CLI, works on any Node version.
- *
- * When dist/ is absent (git-clone route, no build step):
- *   → handles the `build` subcommand directly (any Node version, no TS needed),
- *     then falls through to cli.ts for all other subcommands (requires Node 22.18+
- *     or Bun for TypeScript stripping outside node_modules).
- *
- * `build` subcommand: compiles the connector so that
- *   `import { search } from "@zapier/notion-connector"` works on any Node version
- *   even when the connector was installed from a git/file source. Invoked
- *   automatically by the `prepare` lifecycle hook on git-clone installs.
- *   Tries `npx tsup`, falls back to `bunx tsup`, exits 0 regardless so that
- *   `npm install` / `pnpm install` never fails in restricted environments.
+ * Delegates to the compiled CLI (`dist/cli.js`, shipped in the npm tarball —
+ * runs on any Node) when present, else the TypeScript source (`cli.ts` — needs
+ * Node 22.18+ type-stripping, or Bun). Under Node it first runs a readiness
+ * gate that ports the old preflight checks: it bails with actionable guidance
+ * when `node_modules` is missing, or when the `.ts` source can't run on this
+ * Node. Under Bun the gate is skipped — Bun runs `.ts` directly and
+ * auto-installs missing imports.
  *
  * Managed by @zapier/connectors-dev — do not edit; synced byte-for-byte
  * across every connector.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const dir = dirname(fileURLToPath(import.meta.url));
+const hasDist = existsSync(join(dir, "dist"));
 
-if (process.argv[2] === "build") {
-  if (!existsSync(join(dir, "dist", "cli.js"))) {
-    // Try the locally-installed tsup binary first so module resolution for
-    // typescript (a required tsup peer) works from the connector's own
-    // node_modules. Fall back to npx/bunx for environments without a local
-    // install (e.g. fresh git-clone before npm install).
-    const localTsup = join(dir, "node_modules", ".bin", "tsup");
-    const candidates = existsSync(localTsup)
-      ? [
-          [process.execPath, [localTsup]],
-          ["npx", ["tsup"]],
-          ["bunx", ["tsup"]],
-        ]
-      : [
-          ["npx", ["tsup"]],
-          ["bunx", ["tsup"]],
-        ];
-    for (const [cmd, args] of candidates) {
-      const { status } = spawnSync(cmd, args, {
-        stdio: "inherit",
-        shell: true,
-        cwd: dir,
-      });
-      if (status === 0) break;
-    }
+// Node-only readiness gate. Bun runs `.ts` directly and auto-installs missing
+// imports, so neither check applies under it.
+if (!process.versions.bun) {
+  if (!existsSync(join(dir, "node_modules"))) {
+    bail(dependenciesRecommendation());
   }
-  process.exit(0);
+  // The .ts source only runs on Node 22.18+ (native type-stripping). A compiled
+  // dist/ runs on any Node, so it's only a problem when there's no dist/.
+  if (!hasDist && !nodeStripsTypes()) {
+    bail(
+      `this Node (v${process.versions.node}) can't run the TypeScript source — ` +
+        `native type-stripping needs Node 22.18+. Upgrade Node, or run with Bun: ` +
+        `\`bun ${join(dir, "cli.js")} --help\`.`,
+    );
+  }
 }
 
-// Spawn the target as a subprocess so it runs as the entry point.
-// Dynamic import() would set import.meta.main = false, causing
-// runDispatchCli to return early without executing anything.
-const target = existsSync(join(dir, "dist", "cli.js"))
-  ? join(dir, "dist", "cli.js")
-  : join(dir, "cli.ts");
+const target = hasDist ? join(dir, "dist", "cli.js") : join(dir, "cli.ts");
 
+// Spawn the target as a subprocess (not import()) so import.meta.main is true
+// and runDispatchCli executes. Using process.execPath keeps it runtime-adaptive:
+// `node cli.js` runs the target under Node, `bun cli.js` runs it under Bun.
 const { status } = spawnSync(
   process.execPath,
   [target, ...process.argv.slice(2)],
   { stdio: "inherit" },
 );
 process.exit(status ?? 1);
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+/** Node >= 22.18 is where TypeScript type-stripping is on by default. */
+function nodeStripsTypes() {
+  const [major, minor] = process.versions.node.split(".").map(Number);
+  return major > 22 || (major === 22 && minor >= 18);
+}
+
+/**
+ * Can we create `node_modules/` here right now? A sandbox can deny the write at
+ * the syscall while the permission bits still look writable, and at least one
+ * sandbox permits creating a file here while denying `mkdir` — so probe with a
+ * real `mkdir`/`rmdir`, the install's first on-disk action.
+ */
+function dirWritable() {
+  const probe = join(dir, `.cli-write-test.${process.pid}`);
+  try {
+    mkdirSync(probe);
+    rmdirSync(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Disambiguate the two sandbox failures that block an install, because the
+ * fixes differ: a read-only connector dir (run unsandboxed / grant write) vs. a
+ * blocked home dir (point the package cache inside this dir via `--cache`).
+ */
+function dependenciesRecommendation() {
+  if (!dirWritable()) {
+    return (
+      `dependencies are not installed and ${dir} is read-only in this sandbox ` +
+      `(a test write failed) — \`npm install\` can't place node_modules here. ` +
+      `Run the install with the sandbox disabled, or grant write access to ${dir} ` +
+      `(a cache flag won't help — node_modules must land in this directory).`
+    );
+  }
+  return (
+    `dependencies are not installed — run ` +
+    `\`npm install --cache "${join(dir, ".npm-cache")}"\` in ${dir} ` +
+    `(the workspace-local --cache survives a sandbox that blocks ~/.npm; plain ` +
+    `\`npm install\` works otherwise).`
+  );
+}
+
+function bail(recommendation) {
+  console.error(
+    `Connector setup needed: ${recommendation} ` +
+      `Then run \`node ${join(dir, "cli.js")} --help\` to list its scripts.`,
+  );
+  process.exit(1);
+}
