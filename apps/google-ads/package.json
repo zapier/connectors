@@ -50,7 +50,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-ads"
   },
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publishConfig": {
     "access": "public"
   }
