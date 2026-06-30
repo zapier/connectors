@@ -1,6 +1,6 @@
 {
   "name": "@zapier/google-calendar-connector",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "publishConfig": {
     "access": "public"
   },
@@ -31,7 +31,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.2.0",
+    "@zapier/connectors-sdk": "^0.2.2",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
