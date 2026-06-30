@@ -2,7 +2,7 @@
 name: trello
 description: Agent-callable Trello tools — create and update cards, manage boards, lists, labels, checklists, and search. Use when the user mentions Trello or wants to create cards, move tasks, or manage boards, even if they do not name Trello explicitly.
 license: Elastic-2.0
-compatibility: Requires Node.js 22.18+; run `npm install` in this directory first.
+compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
 metadata:
   title: Trello
   source: https://github.com/zapier/connectors/blob/main/apps/trello/SKILL.md
@@ -31,7 +31,7 @@ This is an [agentskills.io](https://agentskills.io) skill.
 
 If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill trello` (or your harness's own skill-install mechanism), then continue here.
 
-The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`.
+The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`. On older Node, run `node cli.js --help` anyway: it detects your runtime and prints how to run without upgrading (the prebuilt npm package, or another runtime) — don't skip the connector just because Node is old.
 
 `cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
 
@@ -106,7 +106,9 @@ If no connection is passed the script fails with an actionable error telling you
 After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
 
 ```bash
+# default — via the entry point; self-checks readiness and prints friendly diagnostics
 node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
+# shorthand — runs the script file directly (same args, same Node 22.18+ need, no readiness check)
 ./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
 ```
 
