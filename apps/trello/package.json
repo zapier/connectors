@@ -27,7 +27,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.2.2",
+    "@zapier/connectors-sdk": "^0.2.3",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
