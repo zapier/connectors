@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zapier-google-tasks": {
+      "command": "npx",
+      "args": ["-y", "@zapier/google-tasks-connector", "mcp"]
+    }
+  }
+}
