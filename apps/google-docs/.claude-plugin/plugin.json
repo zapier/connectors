@@ -1,0 +1,31 @@
+{
+  "name": "zapier-google-docs",
+  "description": "Google Docs tools for Claude Code. Built and maintained by Zapier.",
+  "version": "0.2.4",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/google-docs",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "google-docs",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "documents",
+    "docs",
+    "word-processing",
+    "text-editing",
+    "google-workspace",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
