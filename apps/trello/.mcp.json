@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zapier-trello": {
+      "command": "npx",
+      "args": ["-y", "@zapier/trello-connector", "mcp"]
+    }
+  }
+}
