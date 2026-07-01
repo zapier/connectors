@@ -65,7 +65,9 @@ describe("sendPhoto: run", () => {
     );
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toBe("https://api.telegram.org/sendPhoto");
+    expect(calls[0]?.url).toBe(
+      "https://api.telegram.org/bot{{bot_token}}/sendPhoto",
+    );
     expect(calls[0]?.init?.method).toBe("POST");
     expect(JSON.parse(calls[0]?.init?.body as string)).toMatchObject({
       chat_id: "123",

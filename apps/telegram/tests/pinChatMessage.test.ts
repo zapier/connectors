@@ -56,7 +56,9 @@ describe("pinChatMessage: run", () => {
     );
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toBe("https://api.telegram.org/pinChatMessage");
+    expect(calls[0]?.url).toBe(
+      "https://api.telegram.org/bot{{bot_token}}/pinChatMessage",
+    );
     expect(calls[0]?.init?.method).toBe("POST");
     expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
       chat_id: "1",

@@ -61,7 +61,9 @@ describe("getChatMember: run", () => {
     );
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toBe("https://api.telegram.org/getChatMember");
+    expect(calls[0]?.url).toBe(
+      "https://api.telegram.org/bot{{bot_token}}/getChatMember",
+    );
     expect(calls[0]?.init?.method).toBe("POST");
     expect(JSON.parse(calls[0]?.init?.body as string)).toMatchObject({
       chat_id: "123",
