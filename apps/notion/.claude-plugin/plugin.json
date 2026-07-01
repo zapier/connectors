@@ -1,7 +1,7 @@
 {
   "name": "zapier-notion",
   "description": "Notion tools for Claude Code. Built and maintained by Zapier.",
-  "version": "0.1.2",
+  "version": "0.2.5",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
@@ -16,7 +16,15 @@
     "mcp",
     "connector",
     "zapier",
-    "productivity"
+    "database",
+    "wiki",
+    "docs",
+    "pages",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
   ],
   "mcpServers": "./.mcp.json"
 }
