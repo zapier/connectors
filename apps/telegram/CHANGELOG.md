@@ -1,5 +1,11 @@
 # @zapier/telegram-connector
 
+## 0.2.5
+
+### Patch Changes
+
+- e391d17: Simplify the token-in-URL-path auth resolver. Use `zapierConnectionResolver` unwrapped with a `{{bot_token}}` placeholder baked into the `TELEGRAM_API` base URL; only the direct/env resolver swaps the placeholder for the real token. Drops the `injectBotPath` wrapper and the duplicated `TELEGRAM_API_PREFIX` constant. No behavioral change — verified live (getMe, getChat). Folds the corrected Pattern 7 factory guidance into the connector.
+
 ## 0.2.4
 
 ### Patch Changes
