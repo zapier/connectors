@@ -2,7 +2,7 @@ import { ConnectorHttpError } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 /** Base host for the Telegram Bot API. The /bot<token>/ path segment is injected by the connection resolver. */
-export const TELEGRAM_API = "https://api.telegram.org";
+export const TELEGRAM_API = "https://api.telegram.org/bot{{bot_token}}";
 
 // ───────────────────────── Shared output schemas ─────────────────────────
 // Telegram returns the same object shapes (Message, Chat, User, ChatMember)

@@ -1,65 +1,42 @@
 import {
-  defineConnectionResolver,
   defineEnvResolver,
   zapierConnectionResolver,
 } from "@zapier/connectors-sdk";
 
-const TELEGRAM_API_PREFIX = "https://api.telegram.org/";
-
 /**
  * Telegram authenticates by carrying the bot token in the request URL PATH:
  * `https://api.telegram.org/bot<token>/<method>` (a header is ignored — the
- * route only exists under `/bot<token>/`). Scripts call clean method URLs
- * (`https://api.telegram.org/sendMessage`); this wrapper rewrites the URL to
- * insert the `bot<token>/` segment, so the token never appears in a script.
+ * route only exists under `/bot<token>/`). The shared `TELEGRAM_API` base
+ * (lib/telegram.ts) carries the literal `{{bot_token}}` placeholder, so scripts
+ * build `https://api.telegram.org/bot{{bot_token}}/<method>`.
  *
- * `token` is the real bot token in direct mode, or the literal `{{bot_token}}`
- * placeholder in the Zapier-managed path — Zapier's auth layer substitutes the
- * connection's token into the path per request.
- */
-function injectBotPath(
-  fetchImpl: typeof globalThis.fetch,
-  token: string,
-): typeof globalThis.fetch {
-  return ((input, init) => {
-    let url: string;
-    if (typeof input === "string") url = input;
-    else if (input instanceof URL) url = input.href;
-    else return fetchImpl(input, init); // Request objects pass through unchanged
-    const rewritten = url.startsWith(TELEGRAM_API_PREFIX)
-      ? `${TELEGRAM_API_PREFIX}bot${token}/${url.slice(TELEGRAM_API_PREFIX.length)}`
-      : url;
-    return fetchImpl(rewritten, init);
-  }) as typeof globalThis.fetch;
-}
-
-/**
- * Zapier-managed path: wrap the Zapier-routed fetch so the request URL carries
- * the `{{bot_token}}` placeholder; the Zapier auth layer fills in the real
- * token server-side. A bare UUID-shaped connection value auto-claims this.
- */
-const zapierTelegramResolver = defineConnectionResolver({
-  name: "zapier" as const,
-  valuePlaceholder: zapierConnectionResolver.valuePlaceholder,
-  valueDescription: zapierConnectionResolver.valueDescription,
-  canHandle: zapierConnectionResolver.canHandle,
-  resolve: async (value: string) => {
-    const zapierFetch = await zapierConnectionResolver.resolve(value);
-    return injectBotPath(zapierFetch, "{{bot_token}}");
-  },
-});
-
-/**
- * Direct mode: the connection value names an env var holding the bot token
- * (from @BotFather); the token is injected into the request URL path.
+ *  - Zapier-managed: `zapierConnectionResolver` is used UNWRAPPED. The
+ *    `{{bot_token}}` placeholder name must match a field on the Zapier
+ *    connection (`bot_token` is the connection's auth field); Relay substitutes
+ *    that field's value per request, wherever it sits in the URL — including the
+ *    path. A bare UUID-shaped connection value auto-claims this.
+ *  - Direct (env): the connection value names an env var holding the bot token
+ *    (from @BotFather); the resolver swaps the `{{bot_token}}` placeholder for
+ *    that token (there is no Relay to substitute it).
  */
 const directTelegramResolver = defineEnvResolver({
   name: "env",
   valueDescription:
-    "name of the environment variable holding the bot token; the token is injected into the request URL path (/bot<token>/). Auto-claims a bare value when that env var is set.",
-  build: (token) => injectBotPath(globalThis.fetch, token),
+    "name of the environment variable holding the bot token; substituted into the {{bot_token}} placeholder in the request URL path. Auto-claims a bare value when that env var is set.",
+  build: (token) =>
+    ((input, init) => {
+      const raw =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.href
+            : null;
+      if (raw === null) return globalThis.fetch(input, init); // Request: pass through
+      return globalThis.fetch(raw.replace("{{bot_token}}", token), init);
+    }) as typeof globalThis.fetch,
 });
 
 export const connectionResolvers = {
-  telegram: [zapierTelegramResolver, directTelegramResolver],
+  // Zapier resolver used AS-IS — no wrapper. Relay fills {{bot_token}} from the connection.
+  telegram: [zapierConnectionResolver, directTelegramResolver],
 } as const;

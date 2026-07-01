@@ -46,7 +46,9 @@ describe("getMe: run", () => {
     );
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toBe("https://api.telegram.org/getMe");
+    expect(calls[0]?.url).toBe(
+      "https://api.telegram.org/bot{{bot_token}}/getMe",
+    );
     expect(calls[0]?.init?.method).toBe("POST");
 
     expect(outputSchema.safeParse(result).success).toBe(true);

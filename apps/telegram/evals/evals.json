@@ -1,6 +1,6 @@
 {
   "skill_name": "telegram",
-  "version": "09a4ad3",
+  "version": "87b5897",
   "description": "Intent-anchored eval scenarios for the telegram connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Telegram bots cannot create chats or cold-DM a user, so most scenarios act on an operator-provisioned sandbox chat the bot already belongs to (arrange-act builds a message inside it; discover-act resolves a chat via recent updates). Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created content. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
