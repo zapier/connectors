@@ -70,7 +70,9 @@ describe("listRecentChats: run", () => {
     );
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.url).toBe("https://api.telegram.org/getUpdates");
+    expect(calls[0]?.url).toBe(
+      "https://api.telegram.org/bot{{bot_token}}/getUpdates",
+    );
     expect(calls[0]?.init?.method).toBe("POST");
     expect(JSON.parse(calls[0]?.init?.body as string)).toMatchObject({
       allowed_updates: ["message", "channel_post"],
