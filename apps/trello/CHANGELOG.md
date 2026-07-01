@@ -1,5 +1,11 @@
 # @zapier/trello-connector
 
+## 0.2.3
+
+### Patch Changes
+
+- 9708072: Bump `@zapier/connectors-sdk` dependency to `0.2.3`.
+
 ## 0.2.2
 
 ### Patch Changes
