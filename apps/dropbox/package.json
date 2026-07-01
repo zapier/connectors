@@ -54,7 +54,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/dropbox"
   },
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publishConfig": {
     "access": "public"
   }

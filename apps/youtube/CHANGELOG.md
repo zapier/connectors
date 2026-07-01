@@ -1,5 +1,11 @@
 # @zapier/youtube-connector
 
+## 0.1.3
+
+### Patch Changes
+
+- 9708072: Bump `@zapier/connectors-sdk` dependency to `0.2.3`.
+
 ## 0.1.2
 
 ### Patch Changes
