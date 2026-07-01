@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zapier-google-calendar": {
+      "command": "npx",
+      "args": ["-y", "@zapier/google-calendar-connector", "mcp"]
+    }
+  }
+}
