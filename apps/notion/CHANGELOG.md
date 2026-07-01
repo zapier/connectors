@@ -1,5 +1,12 @@
 # @zapier/notion-connector
 
+## 0.2.5
+
+### Patch Changes
+
+- Updated dependencies [7256e58]
+  - @zapier/connectors-sdk@0.3.0
+
 ## 0.2.4
 
 ### Patch Changes
