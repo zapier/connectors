@@ -1,0 +1,31 @@
+{
+  "name": "zapier-microsoft-outlook",
+  "description": "Microsoft Outlook tools for Claude Code. Built and maintained by Zapier.",
+  "version": "0.2.4",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/microsoft-outlook",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "microsoft-outlook",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "outlook",
+    "email",
+    "calendar",
+    "contacts",
+    "microsoft-365",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
