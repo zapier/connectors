@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "zapier-dropbox": {
+      "command": "npx",
+      "args": ["-y", "@zapier/dropbox-connector", "mcp"]
+    }
+  }
+}

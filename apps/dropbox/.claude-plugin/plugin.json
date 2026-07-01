@@ -1,0 +1,30 @@
+{
+  "name": "zapier-dropbox",
+  "description": "Dropbox tools for Claude Code. Built and maintained by Zapier.",
+  "version": "0.2.4",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/dropbox",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "dropbox",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "files",
+    "file-storage",
+    "cloud-storage",
+    "file-sharing",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
