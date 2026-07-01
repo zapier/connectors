@@ -1,6 +1,6 @@
 {
   "name": "@zapier/notion-connector",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "publishConfig": {
     "access": "public"
   },
@@ -31,7 +31,7 @@
     "build": "tsup"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.2.3",
+    "@zapier/connectors-sdk": "^0.3.0",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
