@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-youtube": {
+    "youtube": {
       "command": "npx",
       "args": ["-y", "@zapier/youtube-connector", "mcp"]
     }
