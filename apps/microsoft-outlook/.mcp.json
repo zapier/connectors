@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-microsoft-outlook": {
+    "microsoft-outlook": {
       "command": "npx",
       "args": ["-y", "@zapier/microsoft-outlook-connector", "mcp"]
     }
