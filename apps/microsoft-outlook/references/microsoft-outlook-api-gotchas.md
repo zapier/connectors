@@ -29,6 +29,11 @@ folder in the mailbox."_ ([immutable ids](https://learn.microsoft.com/en-us/grap
 The immutable id still changes if the item is moved to an **archive mailbox** or exported and
 re-imported (same source).
 
+On **consumer Outlook.com accounts** (personal Microsoft accounts), Graph may ignore the
+`Prefer: IdType="ImmutableId"` header and return mutable ids — only M365 and Exchange Online
+work or school mailboxes are guaranteed to honor it.
+([immutable ids](https://learn.microsoft.com/en-us/graph/outlook-immutable-id))
+
 - **moveMessage** returns the message in its new folder; use the id from that response for any
   follow-up call. ([move message](https://learn.microsoft.com/en-us/graph/api/resources/message) — _"Move
   the message to a folder. This creates a new copy of the message in the destination folder."_)
@@ -48,6 +53,11 @@ Reading/writing a shared folder uses the `Mail.Read.Shared` / `Mail.ReadWrite.Sh
 permissions (same source). Sending **from** a shared mailbox relies on Exchange-side delegation —
 the message `sender`/`from` _"can be set to a different value when sending a message from a shared
 mailbox … or as a delegate."_ ([message resource](https://learn.microsoft.com/en-us/graph/api/resources/message))
+
+**`search` is not supported on shared or delegated mailboxes.** The KQL `$search` parameter only
+works against the signed-in user's own mailbox. Passing both `search` and `mailbox` results in a
+connector error before the request is sent. Use `filter` instead when querying a shared mailbox.
+([shared/delegated folders](https://learn.microsoft.com/en-us/graph/outlook-share-messages-folders))
 
 ## Paging — `next_cursor` is an opaque URL
 
@@ -74,6 +84,10 @@ GET request to retrieve the next page of results … Don't try to extract the `$
   When `$filter` and `$orderby` are combined on messages, _"Properties that appear in `$orderby`
   must also appear in `$filter`"_ and in the same order.
   ([list messages](https://learn.microsoft.com/en-us/graph/api/user-list-messages))
+- **`$search` and `$filter` cannot be combined** on the messages endpoint. Graph rejects
+  requests that include both. Use `search` for full-text KQL queries or `filter` for exact OData
+  predicates — never both in the same call.
+  ([search concept](https://learn.microsoft.com/en-us/graph/search-concept-messages))
 - **listContacts** filtering is **limited to email-address match**: _"You can use `$filter`, `any`,
   and the `eq` operator on only the **address** sub-property of instances in an **emailAddresses**
   collection. That is, you can't filter on the **name** or any other sub-property … nor can you
@@ -138,6 +152,13 @@ folder names."_ Common ones: `inbox`, `drafts`, `sentitems`, `deleteditems`, `ar
 - **listEvents** returns single events **plus recurring series masters** (the recurrence
   definition), not expanded occurrences: _"The list contains single instance meetings and series
   masters."_ ([event resource](https://learn.microsoft.com/en-us/graph/api/resources/event))
+- **seriesMaster vs. occurrence:** Calling `updateEvent` or `deleteEvent` with a `seriesMaster`
+  id affects **all instances of the recurring series**. To update or delete a single occurrence
+  without touching the rest of the series, pass the occurrence or exception id from
+  `listCalendarView` (which expands series into individual occurrences over a time window).
+  _"If an event is the series master of a recurring event, the changes apply to the entire
+  recurring series."_
+  ([update event](https://learn.microsoft.com/en-us/graph/api/event-update))
 - **listCalendarView** expands recurring series into individual occurrences over a time window:
   _"Get the occurrences, exceptions and single instances of events in a calendar view defined by a
   time range."_ Its `startDateTime`/`endDateTime` are interpreted by their offset, **defaulting to
@@ -159,6 +180,12 @@ folder names."_ Common ones: `inbox`, `drafts`, `sentitems`, `deleteditems`, `ar
   `teamsForBusiness`. ([event resource](https://learn.microsoft.com/en-us/graph/api/resources/event))
 - **updateEvent attendees REPLACE** the existing list — read current via getEvent, append, then
   update. (PATCH sends only the fields you set.)
+- **createEvent and updateEvent send attendee notifications.** When attendees are included,
+  Graph automatically sends meeting request or update emails to them: _"When you create an event
+  in a user's calendar, the server sends invitations to all attendees."_
+  ([create event](https://learn.microsoft.com/en-us/graph/api/user-post-events)) Updating an
+  event with attendees similarly dispatches update notifications to all attendees. To avoid
+  unwanted emails, omit the `attendees` array on updates that don't change attendees.
 - **deleteEvent** cancels the event; for meetings you organize, attendees are notified
   (Graph exposes a _"Cancel event"_ that _"Send[s] a cancellation message from the organizer to all
   the attendees"_). ([event resource](https://learn.microsoft.com/en-us/graph/api/resources/event))

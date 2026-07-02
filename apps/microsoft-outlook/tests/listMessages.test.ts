@@ -103,4 +103,40 @@ describe("listMessages: run", () => {
     expect((err as Error).message).toContain("listMessages");
     expect((err as Error).message).toContain("ErrorAccessDenied");
   });
+
+  it("rejects search+filter without making an HTTP call", async () => {
+    const calls: Array<unknown> = [];
+    const fetch: typeof globalThis.fetch = (async (...args: unknown[]) => {
+      calls.push(args);
+      return jsonResponse({ value: [] });
+    }) as typeof globalThis.fetch;
+
+    const err = await listMessagesDefinition
+      .run({ search: "invoice", filter: "isRead eq false" }, { fetch })
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain(
+      "search and filter cannot be used together",
+    );
+    expect(calls).toHaveLength(0);
+  });
+
+  it("rejects search+mailbox without making an HTTP call", async () => {
+    const calls: Array<unknown> = [];
+    const fetch: typeof globalThis.fetch = (async (...args: unknown[]) => {
+      calls.push(args);
+      return jsonResponse({ value: [] });
+    }) as typeof globalThis.fetch;
+
+    const err = await listMessagesDefinition
+      .run({ search: "invoice", mailbox: "team@contoso.com" }, { fetch }) // pii:allow
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain(
+      "search is not supported on shared or delegated mailboxes",
+    );
+    expect(calls).toHaveLength(0);
+  });
 });

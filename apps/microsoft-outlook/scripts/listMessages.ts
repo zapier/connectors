@@ -9,6 +9,7 @@ import {
   mailboxRoot,
   outlookFetch,
   toListResult,
+  validateListMessagesInput,
 } from "../lib/graph.ts";
 import { messageListItemSchema } from "../lib/schemas.ts";
 
@@ -23,13 +24,13 @@ const inputSchema = z
     search: z
       .string()
       .describe(
-        'Full-text KQL search over the default from/subject/body properties, e.g. "subject:invoice from:acme". Results are sorted by the date and time sent. Omit to list newest-first.',
+        'Full-text KQL query over the default from/subject/body properties, e.g. "subject:invoice from:acme". Results are sorted by the date and time sent. Cannot be combined with filter. Not supported on shared mailboxes — omit mailbox when using search. See [search query parameter](https://learn.microsoft.com/en-us/graph/search-query-parameter) for KQL syntax. Omit to list newest-first.',
       )
       .optional(),
     filter: z
       .string()
       .describe(
-        'OData $filter predicate for exact matches, e.g. "isRead eq false" or "importance eq \'high\'". Use search for free-text instead.',
+        'OData $filter predicate for exact matches, e.g. "isRead eq false" or "importance eq \'high\'". Cannot be combined with search. Use search for free-text queries instead.',
       )
       .optional(),
     mailbox: z
@@ -78,6 +79,7 @@ const definition = defineTool({
   },
   connection: "microsoft-outlook",
   run: async (input, ctx) => {
+    validateListMessagesInput(input);
     // `@odata.nextLink` is an opaque full URL — when paging, fetch it verbatim
     // and skip rebuilding the path/query.
     let url: string;

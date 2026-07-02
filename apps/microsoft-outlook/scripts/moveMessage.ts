@@ -15,7 +15,7 @@ const inputSchema = z
     messageId: z
       .string()
       .describe(
-        "Message id from listMessages or another message tool. Opaque and case-sensitive; changes when the message is moved between folders.",
+        "Opaque message id from listMessages or getMessage. Case-sensitive. With ImmutableId (sent on every request), ids stay stable across folder moves on M365 and Exchange Online work or school mailboxes; on consumer Outlook.com accounts Graph may ignore ImmutableId and ids can still change. Always use the id returned by moveMessage for follow-up calls.",
       ),
     destinationId: z
       .string()
@@ -41,7 +41,7 @@ const definition = defineTool({
   name: "moveMessage",
   title: "Move Message",
   description:
-    "Move a message into another folder. Resolve the message id via listMessages first. IMPORTANT: the message id CHANGES after a move — use the id from this response for any follow-up call, not the id you passed in.",
+    "Move a message into another folder. Resolve the message id via listMessages first. On M365 mailboxes the returned id usually matches the input (ImmutableId); on consumer accounts or after archive or export it may differ — always use the id from this response for follow-up calls.",
   inputSchema,
   outputSchema,
   annotations: {

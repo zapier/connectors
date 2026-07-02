@@ -177,6 +177,35 @@ export async function graphError(
 }
 
 /**
+ * Guard against input combinations that Microsoft Graph does not support on
+ * the messages endpoint:
+ * - `$search` and `$filter` cannot be used together.
+ *   ([search concept](https://learn.microsoft.com/en-us/graph/search-concept-messages))
+ * - `$search` is only supported on the signed-in user's own mailbox, not on
+ *   shared or delegated mailboxes.
+ *   ([shared/delegated folders](https://learn.microsoft.com/en-us/graph/outlook-share-messages-folders))
+ *
+ * Throws a plain `Error` (not a Zod error) so the message surfaces verbatim
+ * to the caller before any HTTP call is made.
+ */
+export function validateListMessagesInput(input: {
+  search?: string;
+  filter?: string;
+  mailbox?: string;
+}): void {
+  if (input.search && input.filter) {
+    throw new Error(
+      "listMessages: search and filter cannot be used together. Use search for full-text KQL or filter for exact OData matches, not both.",
+    );
+  }
+  if (input.search && input.mailbox) {
+    throw new Error(
+      "listMessages: search is not supported on shared or delegated mailboxes. Omit mailbox to search your own mailbox, or use filter without search on a shared mailbox.",
+    );
+  }
+}
+
+/**
  * Make an authed Graph request. `fetch` is the connection-injected `ctx.fetch`
  * (the resolver chain has already attached the bearer token and the
  * `Prefer: IdType="ImmutableId"` header). Sets `Content-Type: application/json`

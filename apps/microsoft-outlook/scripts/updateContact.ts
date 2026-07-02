@@ -21,7 +21,7 @@ const definition = defineTool({
   name: "updateContact",
   title: "Update Contact",
   description:
-    "Update fields on a personal contact. Set only the fields you want to change. Array fields (emailAddresses, businessPhones) REPLACE the existing values — read current via getContact, merge, then update.",
+    "Update fields on a personal contact. Set only the fields you want to change. Array fields (emailAddresses, businessPhones) REPLACE the existing values — read current via getContact, merge, then update. Updating other fields may cause Graph to regenerate displayName automatically — always include displayName in the patch if you want to preserve a custom value.",
   inputSchema,
   outputSchema,
   annotations: {

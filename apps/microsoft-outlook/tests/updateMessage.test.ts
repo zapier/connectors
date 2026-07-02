@@ -109,6 +109,33 @@ describe("updateMessage: run", () => {
     expect("mailbox" in sentBody).toBe(false);
   });
 
+  it("rejects a flag with dueDateTime but no startDateTime (input validation)", async () => {
+    const calls: Array<unknown> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (...args: unknown[]) => {
+      calls.push(args);
+      return jsonResponse({ id: "x", subject: "x", isRead: false });
+    }) as typeof globalThis.fetch;
+
+    const err = await updateMessageDefinition
+      .run(
+        {
+          messageId: "AAMkMsg==",
+          flag: {
+            flagStatus: "flagged",
+            dueDateTime: { dateTime: "2026-08-01T17:00:00", timeZone: "UTC" },
+          },
+        },
+        { fetch: fakeFetch },
+      )
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain(
+      "dueDateTime requires startDateTime",
+    );
+    expect(calls).toHaveLength(0);
+  });
+
   it("throws a tool-named Error on a 404 Graph response", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(
