@@ -130,7 +130,7 @@ describe("listMessages: run", () => {
     }) as typeof globalThis.fetch;
 
     const err = await listMessagesDefinition
-      .run({ search: "invoice", mailbox: "team@contoso.com" }, { fetch }) // pii:allow
+      .run({ search: "invoice", mailbox: "shared@example.com" }, { fetch })
       .catch((e: unknown) => e);
 
     expect(err).toBeInstanceOf(Error);
