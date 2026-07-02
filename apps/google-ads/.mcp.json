@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-google-ads": {
+    "google-ads": {
       "command": "npx",
       "args": ["-y", "@zapier/google-ads-connector", "mcp"]
     }
