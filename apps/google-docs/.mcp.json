@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-google-docs": {
+    "google-docs": {
       "command": "npx",
       "args": ["-y", "@zapier/google-docs-connector", "mcp"]
     }

@@ -1,6 +1,8 @@
 {
-  "name": "zapier-google-docs",
-  "description": "Google Docs tools for Claude Code. Built and maintained by Zapier.",
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "google-docs",
+  "displayName": "Google Docs",
+  "description": "Agent-callable Google Docs tools — create, read, export, and find documents; edit text, formatting, images, and page style. Use when the user mentions Google Docs or wants to create, read, search, or edit document content, even if they don't name Google Docs explicitly.",
   "version": "0.2.4",
   "author": {
     "name": "Zapier",
