@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-telegram": {
+    "telegram": {
       "command": "npx",
       "args": ["-y", "@zapier/telegram-connector", "mcp"]
     }
