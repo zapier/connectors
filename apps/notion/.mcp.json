@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-notion": {
+    "notion": {
       "command": "npx",
       "args": ["-y", "@zapier/notion-connector", "mcp"]
     }

@@ -1,6 +1,8 @@
 {
-  "name": "zapier-notion",
-  "description": "Notion tools for Claude Code. Built and maintained by Zapier.",
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "notion",
+  "displayName": "Notion",
+  "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
   "version": "0.2.5",
   "author": {
     "name": "Zapier",
