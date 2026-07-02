@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "zapier-google-contacts": {
+    "google-contacts": {
       "command": "npx",
       "args": ["-y", "@zapier/google-contacts-connector", "mcp"]
     }
