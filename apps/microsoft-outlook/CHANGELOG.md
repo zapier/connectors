@@ -1,5 +1,11 @@
 # @zapier/microsoft-outlook-connector
 
+## 0.2.5
+
+### Patch Changes
+
+- 826fe19: Address integrations review comments on the Microsoft Outlook connector: fix `search`+`filter` and `search`+`mailbox` mutual exclusion with pre-flight validation and tests; fix `messageId` describe text across all message scripts to reflect ImmutableId stability on M365 vs consumer Outlook.com accounts; add `dueDateTime` requires `startDateTime` guard on `updateMessage` flag; update `listCategories`, `updateContact`, `moveMessage`, `createEvent`, `updateEvent`, and `deleteEvent` descriptions; fix `.Shared` scope list in SKILL.md; expand gotchas reference with consumer ImmutableId caveat, search+filter/shared-mailbox constraints, seriesMaster behaviour, and attendee notification notes.
+
 ## 0.2.4
 
 ### Patch Changes
