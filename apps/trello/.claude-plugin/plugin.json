@@ -1,6 +1,8 @@
 {
-  "name": "zapier-trello",
-  "description": "Trello tools for Claude Code. Built and maintained by Zapier.",
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "trello",
+  "displayName": "Trello",
+  "description": "Agent-callable Trello tools — create and update cards, manage boards, lists, labels, checklists, and search. Use when the user mentions Trello or wants to create cards, move tasks, or manage boards, even if they do not name Trello explicitly.",
   "version": "0.2.4",
   "author": {
     "name": "Zapier",
