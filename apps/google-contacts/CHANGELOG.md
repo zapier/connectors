@@ -1,5 +1,13 @@
 # @zapier/google-contacts-connector
 
+## 0.2.5
+
+### Patch Changes
+
+- c2748bb: Require `@zapier/zapier-sdk-cli` as the connector peer dependency instead of `@zapier/zapier-sdk`.
+
+  The SDK still arrives at runtime — the CLI hard-depends on it, so it hoists to a single host-owned copy that also satisfies `@zapier/connectors-sdk`'s `@zapier/zapier-sdk` peer. Peering on the CLI means one `npm install` now lands both the runtime SDK and the `zapier-sdk` auth CLI, removing the second install step an agent previously hit when authenticating (`zapier-sdk login`, `list-connections`). Connector auth docs now use `npx zapier-sdk <cmd>`. STAFF-4508.
+
 ## 0.2.4
 
 ### Patch Changes
