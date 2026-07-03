@@ -96,7 +96,7 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>`. The
 
 Trello uses **OAuth 1.0a** — every request carries an `Authorization: OAuth oauth_consumer_key="…", oauth_token="…"` header built from an API key plus access token. One connection slot (`trello`) holds both values. Two resolvers, Zapier-first:
 
-- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Trello connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>, ~1 minute). The user authorizes Trello once via Zapier's OAuth flow; token refresh is handled for you. A bare UUID auto-claims this resolver. Find the ID with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections TrelloAPI` (run `login` first if unauthenticated; add `--json` for machine output).
+- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Trello connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>, ~1 minute). The user authorizes Trello once via Zapier's OAuth flow; token refresh is handled for you. A bare UUID auto-claims this resolver. Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections TrelloAPI` (run `login` first if unauthenticated; add `--json` for machine output).
 - **`env:TRELLO`** _(fallback)_ — read credentials from **`TRELLO_API_KEY`** and **`TRELLO_TOKEN`** environment variables (both required; the prefix `TRELLO` maps to those two keys). Export both before calling — the secrets stay in `env`, never on argv.
 
 If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
