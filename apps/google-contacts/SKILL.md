@@ -65,7 +65,7 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>`. The
 
 Google Contacts uses OAuth 2.0. The connector needs Google "contacts" access (read/write); the other-contacts tools additionally need "other contacts" read access. On a `403`, reconnect with contacts access granted.
 
-- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier-managed Google Contacts connection (`GOOGLE_CONTACTS_ZAPIER_CONNECTION_ID`); Zapier holds the OAuth credential and refreshes it automatically. Find the id with `npx @zapier/zapier-sdk-cli list-connections GoogleContactsCLIAPI`.
+- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier-managed Google Contacts connection (`GOOGLE_CONTACTS_ZAPIER_CONNECTION_ID`); Zapier holds the OAuth credential and refreshes it automatically. Find the id with `npx zapier-sdk list-connections GoogleContactsCLIAPI`.
 - **`env:GOOGLE_CONTACTS_ACCESS_TOKEN`** _(direct)_ — a Google OAuth access token sent as a bearer. Good for short-lived/testing use: Google access tokens expire ~1 hour after issue and this path does **not** refresh them, so the Zapier-managed connection is the durable choice.
 
 ## Running scripts
