@@ -75,7 +75,7 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>`. The
 
 The connector needs a single Google **OAuth 2.0 access token**, resolved into the one `google-sheets` connection slot.
 
-- **`zapier:<connection-id>`** _(recommended)_ — Zapier-managed auth. Route through a Zapier Google Sheets connection; the Zapier auth / retries / governance layer injects the token and refreshes it for you. The connection grants Sheets + Drive access, so every tool — including `listSpreadsheets` — works. Find the id with `npx @zapier/zapier-sdk-cli list-connections GoogleSheetsV2CLIAPI`.
+- **`zapier:<connection-id>`** _(recommended)_ — Zapier-managed auth. Route through a Zapier Google Sheets connection; the Zapier auth / retries / governance layer injects the token and refreshes it for you. The connection grants Sheets + Drive access, so every tool — including `listSpreadsheets` — works. Find the id with `npx zapier-sdk list-connections GoogleSheetsV2CLIAPI`.
 - **`env:GOOGLE_SHEETS_ACCESS_TOKEN`** _(direct)_ — read a Google OAuth access token from the named env var, sent as `Authorization: Bearer`. **Google access tokens expire ~1 hour after issue and are not auto-refreshed in direct mode** — suited to short-lived / testing use. The token needs the `https://www.googleapis.com/auth/spreadsheets` scope (and `drive.file` for the spreadsheets you create / open). `listSpreadsheets` additionally needs a broader Drive read scope (`drive.readonly` / `drive`); without it, pass a spreadsheet URL or id directly to the other tools instead of finding by name.
 
 If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers.
