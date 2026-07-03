@@ -32,7 +32,7 @@
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "peerDependencies": {
-    "@zapier/zapier-sdk": ">=0.59.0 <1.0.0"
+    "@zapier/zapier-sdk-cli": ">=0.62.0 <1.0.0"
   },
   "keywords": [
     "google-contacts",
