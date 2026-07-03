@@ -73,9 +73,9 @@ Google Calendar ships two resolvers, Zapier-first: prefer `zapier`; fall back to
 - **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Google Calendar connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). The user authorises Google once via Zapier's OAuth flow at <https://zapier.com/app/connections>; Zapier then handles token refresh transparently. A bare, UUID-shaped value auto-claims this resolver, so `--connection <connection-id>` works without the `zapier:` prefix.
 
   **Finding the connection ID** (the connections UI doesn't expose IDs):
-  1. Verify auth: `npx @zapier/zapier-sdk-cli get-profile`. If unauthenticated, run `npx @zapier/zapier-sdk-cli login` once.
-  2. `npx @zapier/zapier-sdk-cli list-connections GoogleCalendarCLIAPI` — prints `title (connection ID)` per matching connection. Add `--json` for machine-readable output. If the user has multiple Google Calendar connections, list the titles and ask which to use.
-  3. If the connection is **shared** with the user (e.g. an org-wide connection), opt in: `npx @zapier/zapier-sdk-cli --can-include-shared-connections list-connections GoogleCalendarCLIAPI --include-shared`. Ask the user first before retrying with this on.
+  1. Verify auth: `npx zapier-sdk get-profile`. If unauthenticated, run `npx zapier-sdk login` once.
+  2. `npx zapier-sdk list-connections GoogleCalendarCLIAPI` — prints `title (connection ID)` per matching connection. Add `--json` for machine-readable output. If the user has multiple Google Calendar connections, list the titles and ask which to use.
+  3. If the connection is **shared** with the user (e.g. an org-wide connection), opt in: `npx zapier-sdk --can-include-shared-connections list-connections GoogleCalendarCLIAPI --include-shared`. Ask the user first before retrying with this on.
 
 - **`env:<ENV_VAR>`** _(fallback)_ — read a Google OAuth access token from the named environment variable and send it as `Authorization: Bearer <token>`. The value is the env-var NAME, not the token; the token stays in `env` and never touches argv. Conventionally `--connection env:GOOGLE_CALENDAR_ACCESS_TOKEN`. **Caveat: Google access tokens expire ~1 hour after issue and this resolver does NOT refresh them** — direct mode suits short-lived/testing use; the Zapier-managed connection (recommended) refreshes transparently.
 
