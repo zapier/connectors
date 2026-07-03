@@ -68,7 +68,7 @@ Pass auth as one connection string with `--connection [<resolver>:]<value>`. The
 
 A Telegram bot has one credential: the **bot token** issued by [@BotFather](https://core.telegram.org/bots/features#botfather) (send `/newbot`, or `/token` to regenerate). There is no OAuth and no scopes — the token grants full control of the bot.
 
-- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier-managed Telegram connection (`TELEGRAM_ZAPIER_CONNECTION_ID`). Zapier holds the bot token and injects it for each request; a bare UUID-shaped value auto-claims this resolver. Find the id with `npx @zapier/zapier-sdk-cli list-connections TelegramCLIAPI`.
+- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier-managed Telegram connection (`TELEGRAM_ZAPIER_CONNECTION_ID`). Zapier holds the bot token and injects it for each request; a bare UUID-shaped value auto-claims this resolver. Find the id with `npx zapier-sdk list-connections TelegramCLIAPI`.
 - **`env:TELEGRAM_BOT_TOKEN`** _(direct)_ — read the bot token from the named environment variable. The connector places it in the request path as the Telegram API requires; the token stays in `env` and never touches argv. A bare `--connection TELEGRAM_BOT_TOKEN` auto-claims this once the var is set.
 
 If no connection is passed the script fails with an actionable error listing the resolvers in match order.
