@@ -55,7 +55,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-tasks"
   },
-  "version": "0.2.5",
+  "version": "0.2.6",
   "publishConfig": {
     "access": "public"
   }
