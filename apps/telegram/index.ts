@@ -48,6 +48,7 @@ const connector = defineConnector({
     unpinChatMessage: unpinChatMessageDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
