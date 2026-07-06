@@ -54,6 +54,7 @@ const connector = defineConnector({
     updatePage: updatePageDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
