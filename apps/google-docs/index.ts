@@ -50,6 +50,7 @@ const connector = defineConnector({
     updateDocumentStyle: updateDocumentStyleDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
