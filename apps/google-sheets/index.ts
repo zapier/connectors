@@ -58,6 +58,7 @@ const connector = defineConnector({
     updateWorksheetProperties: updateWorksheetPropertiesDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
