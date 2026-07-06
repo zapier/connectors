@@ -32,6 +32,7 @@ const connector = defineConnector({
     updateTaskList: updateTaskListDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
