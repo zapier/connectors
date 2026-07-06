@@ -40,6 +40,7 @@ const connector = defineConnector({
     updateEvent: updateEventDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
