@@ -1,5 +1,11 @@
 # @zapier/telegram-connector
 
+## 0.2.8
+
+### Patch Changes
+
+- 57828a9: Raise the `@zapier/connectors-sdk` dependency floor to `^0.4.0`. The `0.4.0` release made `defineConnector({ meta })` required (breaking); the connectors already pass `meta`, but their declared range still excluded `0.4.0`, so the monorepo resolved them to the older published `0.3.1` and `typecheck` failed. Raising the range links the local `0.4.0` and unblocks the release.
+
 ## 0.2.7
 
 ### Patch Changes
