@@ -3,7 +3,7 @@
   "name": "notion",
   "displayName": "Notion",
   "description": "Agent-callable Notion tools for searching pages and databases, reading and creating pages, querying data sources, appending content, and managing schemas. Use when the user mentions Notion or wants to find, read, create, or edit Notion content, even if they don't name Notion explicitly.",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
