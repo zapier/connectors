@@ -215,6 +215,142 @@ export const EventSchema = z
   })
   .describe("A calendar event.");
 
+// --- Date-window helpers ---------------------------------------------------
+//
+// The time-window tools (listEvents, listEventInstances, queryFreeBusy) accept a
+// bare calendar date (YYYY-MM-DD) on timeMin/timeMax in addition to full RFC3339.
+// A bare date is read as start-of-day in the relevant timezone, so an agent can
+// ask for "tomorrow" without first calling getCalendar just to learn the zone.
+// The zone is resolved once per call, and only when a bare date is actually
+// passed — an RFC3339 call makes no extra request. Kept here so all three tools
+// share one behavior and one description of it.
+
+/**
+ * True for a real bare calendar date like "2026-07-03". Rejects shape-valid but
+ * impossible dates ("2026-13-40", "2026-02-30") so they fail at input validation
+ * instead of after a wasted network call.
+ */
+export function isPlainDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return (
+    !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value)
+  );
+}
+
+/**
+ * The UTC offset (e.g. "-07:00") in effect in `timeZone` at the START of
+ * `dateYmd` (local midnight). We can't read the offset directly, so we converge:
+ * guess the instant, read the zone's offset there, correct the guess, repeat.
+ * This lands on the right side of a DST transition (the offset at local noon can
+ * differ from the offset at local midnight on transition days). Falls back to
+ * "+00:00" for UTC / unknown zones.
+ */
+export function zoneOffset(dateYmd: string, timeZone: string): string {
+  let dtf: Intl.DateTimeFormat;
+  try {
+    dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "longOffset",
+    });
+  } catch {
+    // Intl throws a RangeError on an invalid IANA zone. Honor the documented
+    // fallback rather than surfacing an uncaught error to the agent.
+    return "+00:00";
+  }
+  const readOffset = (at: Date): { str: string; minutes: number } => {
+    const name =
+      dtf.formatToParts(at).find((p) => p.type === "timeZoneName")?.value ??
+      "GMT";
+    const match = /GMT([+-])(\d{1,2}):?(\d{2})?/.exec(name);
+    if (!match) return { str: "+00:00", minutes: 0 };
+    const minutes =
+      (match[1] === "-" ? -1 : 1) *
+      (Number(match[2]) * 60 + Number(match[3] ?? 0));
+    return {
+      str: `${match[1]}${match[2].padStart(2, "0")}:${match[3] ?? "00"}`,
+      minutes,
+    };
+  };
+  const midnightUtc = new Date(`${dateYmd}T00:00:00Z`).getTime();
+  let offset = readOffset(new Date(midnightUtc));
+  for (let i = 0; i < 3; i++) {
+    offset = readOffset(new Date(midnightUtc - offset.minutes * 60000));
+  }
+  return offset.str;
+}
+
+/**
+ * Expand a bare calendar date to the RFC3339 start-of-day instant in `timeZone`
+ * (e.g. "2026-07-03" -> "2026-07-03T00:00:00-07:00"). A bare date always means
+ * midnight at the start of that day, so a [date, nextDate) pair spans a full day.
+ */
+export function plainDateToStartOfDay(
+  dateYmd: string,
+  timeZone: string,
+): string {
+  return `${dateYmd}T00:00:00${zoneOffset(dateYmd, timeZone)}`;
+}
+
+const rfc3339Offset = z.string().datetime({ offset: true });
+
+/** Shared validation message for a bad timeMin/timeMax across all three tools. */
+export const TIME_BOUND_MESSAGE =
+  "Must be RFC3339 with offset (e.g. 2026-06-16T00:00:00Z) or a bare date (YYYY-MM-DD).";
+
+/** A valid time-window bound: RFC3339-with-offset or a real bare date. */
+export function isTimeBound(value: string): boolean {
+  return isPlainDate(value) || rfc3339Offset.safeParse(value).success;
+}
+
+/** True when either bound is a bare date and therefore needs a timezone. */
+export function boundsNeedZone(
+  timeMin: string | undefined,
+  timeMax: string | undefined,
+): boolean {
+  return (
+    (timeMin !== undefined && isPlainDate(timeMin)) ||
+    (timeMax !== undefined && isPlainDate(timeMax))
+  );
+}
+
+/** Expand any bare-date bound to start-of-day in `timeZone`; RFC3339 passes through. */
+export function expandBounds(
+  timeMin: string | undefined,
+  timeMax: string | undefined,
+  timeZone: string,
+): { timeMin: string | undefined; timeMax: string | undefined } {
+  return {
+    timeMin:
+      timeMin !== undefined && isPlainDate(timeMin)
+        ? plainDateToStartOfDay(timeMin, timeZone)
+        : timeMin,
+    timeMax:
+      timeMax !== undefined && isPlainDate(timeMax)
+        ? plainDateToStartOfDay(timeMax, timeZone)
+        : timeMax,
+  };
+}
+
+/**
+ * Fetch a calendar's IANA timezone with a single GET (calendars.get), so a
+ * bare-date bound can be expanded to that calendar's own start-of-day. Falls back
+ * to "UTC" if the response omits it. `toolName` labels any error for the caller.
+ */
+export async function resolveCalendarTimeZone(
+  fetch: typeof globalThis.fetch,
+  calendarId: string,
+  toolName: string,
+): Promise<string> {
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}`,
+    { method: "GET" },
+  );
+  await throwForGoogleCalendar(res, toolName);
+  const cal = (await res.json()) as { timeZone?: string };
+  return cal.timeZone ?? "UTC";
+}
+
 const RATE_LIMIT_REASONS = new Set([
   "rateLimitExceeded",
   "userRateLimitExceeded",

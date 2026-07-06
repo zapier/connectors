@@ -3,7 +3,15 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { EventSchema, throwForGoogleCalendar } from "../lib/google-calendar.ts";
+import {
+  boundsNeedZone,
+  EventSchema,
+  expandBounds,
+  isTimeBound,
+  resolveCalendarTimeZone,
+  throwForGoogleCalendar,
+  TIME_BOUND_MESSAGE,
+} from "../lib/google-calendar.ts";
 
 const inputSchema = z
   .object({
@@ -14,16 +22,16 @@ const inputSchema = z
       ),
     timeMin: z
       .string()
-      .datetime({ offset: true })
+      .refine(isTimeBound, { message: TIME_BOUND_MESSAGE })
       .describe(
-        "Lower bound (exclusive) for an event's end time. RFC3339 with offset, e.g. 2026-06-16T00:00:00Z — a bare timestamp is rejected.",
+        "Lower bound (exclusive) for an event's end time. RFC3339 with offset (e.g. 2026-06-16T00:00:00Z), OR a bare date YYYY-MM-DD (e.g. 2026-07-03) — a bare date is read as start-of-day in the calendar's own timezone, so you can ask for \"tomorrow\" without a separate getCalendar lookup.",
       )
       .optional(),
     timeMax: z
       .string()
-      .datetime({ offset: true })
+      .refine(isTimeBound, { message: TIME_BOUND_MESSAGE })
       .describe(
-        "Upper bound (exclusive) for an event's start time. RFC3339 with offset; must be greater than timeMin.",
+        "Upper bound (exclusive) for an event's start time. RFC3339 with offset, OR a bare date YYYY-MM-DD read as start-of-day in the calendar's timezone; must be greater than timeMin. For a single day, pass the next day as timeMax (e.g. timeMin=2026-07-03, timeMax=2026-07-04).",
       )
       .optional(),
     q: z
@@ -108,13 +116,24 @@ const definition = defineTool({
   },
   connection: "google-calendar",
   run: async (input, ctx) => {
+    // Expand any bare YYYY-MM-DD bound to start-of-day in the calendar's own
+    // timezone. The timezone is fetched once, and only when a bare date is
+    // actually passed, so a fully-qualified RFC3339 call makes no extra request.
+    let { timeMin, timeMax } = input;
+    if (boundsNeedZone(timeMin, timeMax)) {
+      const timeZone = await resolveCalendarTimeZone(
+        ctx.fetch,
+        input.calendarId,
+        "listEvents",
+      );
+      ({ timeMin, timeMax } = expandBounds(timeMin, timeMax, timeZone));
+    }
+
     const url = new URL(
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(input.calendarId)}/events`,
     );
-    if (input.timeMin !== undefined)
-      url.searchParams.set("timeMin", input.timeMin);
-    if (input.timeMax !== undefined)
-      url.searchParams.set("timeMax", input.timeMax);
+    if (timeMin !== undefined) url.searchParams.set("timeMin", timeMin);
+    if (timeMax !== undefined) url.searchParams.set("timeMax", timeMax);
     if (input.q !== undefined) url.searchParams.set("q", input.q);
     if (input.singleEvents !== undefined)
       url.searchParams.set("singleEvents", String(input.singleEvents));

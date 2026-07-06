@@ -98,6 +98,94 @@ describe("queryFreeBusy: run", () => {
     ).toEqual(["primary"]);
   });
 
+  it("expands a bare date using the first calendar's timezone when none is passed", async () => {
+    const calls: Array<{ url: string; init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ url, init });
+      // The calendar GET resolves the timezone; the freeBusy POST runs the query.
+      if (init?.method !== "POST") {
+        return jsonResponse({ id: "team", timeZone: "America/Los_Angeles" });
+      }
+      return jsonResponse({ calendars: { "team@example.com": { busy: [] } } });
+    }) as typeof globalThis.fetch;
+
+    await queryFreeBusyDefinition.run(
+      {
+        timeMin: "2026-07-03",
+        timeMax: "2026-07-04",
+        calendar_ids: ["team@example.com"],
+      },
+      { fetch: fakeFetch },
+    );
+
+    // One tz-resolving GET (the first calendar), then the POST.
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.init?.method).not.toBe("POST");
+    expect(calls[0]?.url).toContain(
+      `/calendars/${encodeURIComponent("team@example.com")}`,
+    );
+    expect(JSON.parse(calls[1]?.init?.body as string)).toMatchObject({
+      timeMin: "2026-07-03T00:00:00-07:00",
+      timeMax: "2026-07-04T00:00:00-07:00",
+    });
+  });
+
+  it("interprets a bare date in the passed timeZone without a lookup", async () => {
+    const calls: Array<{ init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      _url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ init });
+      return jsonResponse({ calendars: { primary: { busy: [] } } });
+    }) as typeof globalThis.fetch;
+
+    await queryFreeBusyDefinition.run(
+      {
+        timeMin: "2026-07-03",
+        timeMax: "2026-07-04",
+        calendar_ids: ["primary"],
+        timeZone: "America/New_York",
+      },
+      { fetch: fakeFetch },
+    );
+
+    // No calendar GET: the passed timeZone drives the expansion.
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
+      timeMin: "2026-07-03T00:00:00-04:00",
+      timeMax: "2026-07-04T00:00:00-04:00",
+      items: [{ id: "primary" }],
+      timeZone: "America/New_York",
+    });
+  });
+
+  it("passes RFC3339 bounds through with no timezone lookup", async () => {
+    const calls: Array<{ init: RequestInit | undefined }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (
+      _url: string,
+      init?: RequestInit,
+    ) => {
+      calls.push({ init });
+      return jsonResponse({ calendars: { primary: { busy: [] } } });
+    }) as typeof globalThis.fetch;
+
+    await queryFreeBusyDefinition.run(
+      { ...window, calendar_ids: ["primary"] },
+      { fetch: fakeFetch },
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
+      timeMin: window.timeMin,
+      timeMax: window.timeMax,
+      items: [{ id: "primary" }],
+    });
+  });
+
   it("throws a ConnectorHttpError on a non-OK response", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(

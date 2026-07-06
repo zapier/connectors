@@ -9,21 +9,29 @@ import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
-import { throwForGoogleCalendar } from "../lib/google-calendar.ts";
+import {
+  boundsNeedZone,
+  isPlainDate,
+  isTimeBound,
+  plainDateToStartOfDay,
+  resolveCalendarTimeZone,
+  throwForGoogleCalendar,
+  TIME_BOUND_MESSAGE,
+} from "../lib/google-calendar.ts";
 
 const inputSchema = z
   .object({
     timeMin: z
       .string()
-      .datetime({ offset: true })
+      .refine(isTimeBound, { message: TIME_BOUND_MESSAGE })
       .describe(
-        "Start of the query window. RFC3339 with offset, e.g. 2026-06-16T00:00:00Z.",
+        'Start of the query window. RFC3339 with offset (e.g. 2026-06-16T00:00:00Z), OR a bare date YYYY-MM-DD read as start-of-day in the timeZone you pass (or the first calendar\'s timezone) — so you can ask for "tomorrow" without a separate getCalendar lookup.',
       ),
     timeMax: z
       .string()
-      .datetime({ offset: true })
+      .refine(isTimeBound, { message: TIME_BOUND_MESSAGE })
       .describe(
-        "End of the query window. RFC3339 with offset; must be greater than timeMin.",
+        "End of the query window. RFC3339 with offset, OR a bare date YYYY-MM-DD read as start-of-day in the same timezone; must be greater than timeMin. For a single day, pass the next day as timeMax.",
       ),
     calendar_ids: z
       .array(z.string())
@@ -32,7 +40,7 @@ const inputSchema = z
     timeZone: z
       .string()
       .describe(
-        "IANA timezone id for the response, e.g. America/Los_Angeles. Defaults to UTC.",
+        "IANA timezone id for the response, e.g. America/Los_Angeles. Defaults to UTC. Also used to interpret a bare-date timeMin/timeMax.",
       )
       .optional(),
   })
@@ -74,11 +82,30 @@ const definition = defineTool({
   },
   connection: "google-calendar",
   run: async (input, ctx) => {
+    // Expand any bare YYYY-MM-DD bound to start-of-day. The frame is the caller's
+    // timeZone when given, otherwise the first calendar's own zone (fetched once,
+    // and only when a bare date is actually passed). Bounds are required here, so
+    // they stay non-optional through the expansion.
+    let { timeMin, timeMax } = input;
+    if (boundsNeedZone(timeMin, timeMax)) {
+      const timeZone =
+        input.timeZone ??
+        (await resolveCalendarTimeZone(
+          ctx.fetch,
+          input.calendar_ids[0] ?? "primary",
+          "queryFreeBusy",
+        ));
+      if (isPlainDate(timeMin))
+        timeMin = plainDateToStartOfDay(timeMin, timeZone);
+      if (isPlainDate(timeMax))
+        timeMax = plainDateToStartOfDay(timeMax, timeZone);
+    }
+
     // Map the agent-friendly `calendar_ids` array into the wire's `items`
     // shape; only include timeZone when the caller provided one.
     const body: Record<string, unknown> = {
-      timeMin: input.timeMin,
-      timeMax: input.timeMax,
+      timeMin,
+      timeMax,
       items: input.calendar_ids.map((id) => ({ id })),
     };
     if (input.timeZone !== undefined) body["timeZone"] = input.timeZone;

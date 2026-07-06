@@ -54,6 +54,61 @@ describe("listEventInstances: run", () => {
     expect(result.next_page_token).toBe("tok");
   });
 
+  it("expands a bare date to start-of-day in the calendar's timezone (one extra GET)", async () => {
+    const calls: Array<{ url: string }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (url: string) => {
+      calls.push({ url });
+      // The calendar GET (no /events) returns the timezone; the instances GET lists.
+      if (!url.includes("/events")) {
+        return jsonResponse({ id: "primary", timeZone: "America/Los_Angeles" });
+      }
+      return jsonResponse({ items: [] });
+    }) as typeof globalThis.fetch;
+
+    await listEventInstancesDefinition.run(
+      {
+        calendarId: "primary",
+        eventId: "e1",
+        timeMin: "2026-07-03",
+        timeMax: "2026-07-04",
+      },
+      { fetch: fakeFetch },
+    );
+
+    expect(calls).toHaveLength(2);
+    expect(calls[0]?.url).toContain("/calendars/primary");
+    expect(calls[0]?.url).not.toContain("/events");
+    expect(calls[1]?.url).toContain(
+      `timeMin=${encodeURIComponent("2026-07-03T00:00:00-07:00")}`,
+    );
+    expect(calls[1]?.url).toContain(
+      `timeMax=${encodeURIComponent("2026-07-04T00:00:00-07:00")}`,
+    );
+  });
+
+  it("passes RFC3339 bounds through unchanged with no timezone lookup", async () => {
+    const calls: Array<{ url: string }> = [];
+    const fakeFetch: typeof globalThis.fetch = (async (url: string) => {
+      calls.push({ url });
+      return jsonResponse({ items: [] });
+    }) as typeof globalThis.fetch;
+
+    await listEventInstancesDefinition.run(
+      {
+        calendarId: "primary",
+        eventId: "e1",
+        timeMin: "2026-07-03T00:00:00Z",
+      },
+      { fetch: fakeFetch },
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.url).toContain("/instances");
+    expect(calls[0]?.url).toContain(
+      `timeMin=${encodeURIComponent("2026-07-03T00:00:00Z")}`,
+    );
+  });
+
   it("throws a ConnectorHttpError on a non-OK response", async () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse(
