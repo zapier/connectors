@@ -48,6 +48,7 @@ const connector = defineConnector({
     uploadFile: uploadFileDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
