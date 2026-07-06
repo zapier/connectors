@@ -1,5 +1,16 @@
 # @zapier/telegram-connector
 
+## 0.2.7
+
+### Patch Changes
+
+- 388ff61: Attribute Zapier-proxied API calls to the connector that made them. Each connector's `package.json` `name`/`version` is now forwarded to the Zapier SDK as `callerPackage`, so requests through the connection proxy carry the `zapier-sdk-package` / `zapier-sdk-package-version` telemetry headers.
+
+  `defineConnector` now requires `meta: import.meta` (**breaking**), which the generated `index.ts` passes. The connector's identity is a first-class input independent of whether it declares `connectionResolvers`, so it also feeds anonymous (non-Zapier) telemetry later. The identity is resolved lazily from the connector's own `package.json` and threaded through the connection resolvers to `createZapierSdk({ callerPackage })`, so it works across every consumption path — programmatic Node-module import, the connector bin, and the MCP server — not just the CLI.
+
+- Updated dependencies [388ff61]
+  - @zapier/connectors-sdk@0.4.0
+
 ## 0.2.6
 
 ### Patch Changes
