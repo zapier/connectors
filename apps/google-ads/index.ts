@@ -32,6 +32,7 @@ const connector = defineConnector({
     updateCampaignBudget: updateCampaignBudgetDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
