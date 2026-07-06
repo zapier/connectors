@@ -94,6 +94,7 @@ const connector = defineConnector({
     updateCard: updateCardDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
