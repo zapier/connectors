@@ -66,6 +66,7 @@ const connector = defineConnector({
     updateMessage: updateMessageDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
