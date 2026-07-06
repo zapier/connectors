@@ -1,5 +1,11 @@
 # @zapier/google-calendar-connector
 
+## 0.2.6
+
+### Patch Changes
+
+- 056a928: listEvents, listEventInstances, and queryFreeBusy now accept a bare date (`YYYY-MM-DD`) on `timeMin`/`timeMax` in addition to RFC3339. A bare date is expanded to start-of-day in the relevant timezone (the calendar's own zone for the two list tools; the caller's `timeZone` else the first calendar's zone for queryFreeBusy), so an agent can ask for "tomorrow" without a separate `getCalendar` lookup. RFC3339 bounds pass through unchanged with no extra request.
+
 ## 0.2.5
 
 ### Patch Changes
