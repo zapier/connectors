@@ -50,6 +50,7 @@ const connector = defineConnector({
     updateVideo: updateVideoDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
