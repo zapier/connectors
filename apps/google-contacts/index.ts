@@ -40,6 +40,7 @@ const connector = defineConnector({
     updateContactPhoto: updateContactPhotoDefinition,
   },
   connectionResolvers,
+  meta: import.meta,
 });
 
 export default connector;
