@@ -1,0 +1,658 @@
+{
+  "skill_name": "microsoft-sharepoint",
+  "version": "87b5897",
+  "description": "Intent-anchored eval scenarios for the microsoft-sharepoint connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world under a pre-shared eval site (cold-start coverage probes); discover-act scenarios operate on the pre-existing site/list via in-envelope find/list primitives (all arms compete); refusal scenarios probe capabilities the catalog deliberately doesn't ship. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/shape, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "sharepoint_eval_site",
+      "description": "A SharePoint site the eval connection can reach and write to. SharePoint is sharing-gated — a delegated token sees no site content until an admin has consented and the connection has access to a real site, and there is no API to create a site. An operator provisions this site once and confirms the connection can read and write it.",
+      "env": "EVAL_SHAREPOINT_SITE",
+      "default": "Zapier Eval Site",
+      "expects": "A SharePoint Online site that the eval connection can access and write to — the site named by this fixture's resolved value (default title 'Zapier Eval Site'; override via EVAL_SHAREPOINT_SITE). Prefer a distinctive title so a keyword search returns exactly one match. The connection's token must carry admin-consented Sites.ReadWrite.All AND Sites.Manage.All (list creation needs Manage.All) plus Files.ReadWrite.All, so it can browse the default document library, upload/move/copy/delete files, and create lists under this site. The site must have its default document library present. Not a personal Microsoft account (delegated SharePoint APIs reject personal accounts).",
+      "provision": "operator"
+    },
+    {
+      "name": "sharepoint_eval_list",
+      "description": "A SharePoint list under the eval site used by the list-item scenarios, carrying the custom columns those scenarios read and write. The connector's createList only makes a default (Title-only) genericList, so these custom columns must be seeded out of band by a privileged provisioner.",
+      "env": "EVAL_SHAREPOINT_LIST",
+      "default": "Eval Task Tracker",
+      "expects": "A SharePoint list titled 'Eval Task Tracker' (override via EVAL_SHAREPOINT_LIST) in the eval site (the sharepoint_eval_site fixture), visible to the eval connection, with: a Title text column; a single-choice column with internal name 'Status' offering at least the options 'To do', 'In progress', and 'Done'; and a multi-choice (multi-select) column with internal name 'Tags' offering at least 'Urgent', 'Review', and 'Backlog'. Column internal names must match ('Status', 'Tags') because the item scenarios key writes on the internal name resolved via listColumns.",
+      "provision": "seed",
+      "root": "sharepoint_eval_site"
+    },
+    {
+      "name": "sharepoint_eval_invitee",
+      "description": "A real user in the eval tenant to grant file access to. Sharing scenarios can't use a fabricated address — Microsoft Graph returns 400 sharingFailed for an unresolvable/external recipient (and tenants commonly disable external sharing). Provide a real INTERNAL user (not the connected account) via the env var so the address stays out of the committed file.",
+      "env": "EVAL_SHAREPOINT_INVITEE",
+      "default": "eval.invitee@example.com",
+      "expects": "The email of a real user in the same Microsoft 365 tenant as the eval connection — an INTERNAL account (so tenant external-sharing policy doesn't block the grant), and NOT the connected account itself (so a granted permission is observable as a new, distinct grant). The user need not be able to actually open the file; the scenarios only verify the permission is created, and suppress the notification email.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "find-site-by-keyword",
+      "kind": "discover-act",
+      "description": "Head-to-head: locate the eval site by a keyword from its name and report its identity — the site-discovery entry point every write depends on.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Find the SharePoint site named '{{sharepoint_eval_site}}' and tell me its web URL.",
+          "assertions": {
+            "outcome": [
+              "The '{{sharepoint_eval_site}}' site is located and its web URL (or a stable identifier for it) is reported back."
+            ],
+            "mechanism": [
+              "Resolves the site via a keyword site-search rather than hand-constructing a site id, and carries the composite site id from the result verbatim."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-document-libraries",
+      "kind": "discover-act",
+      "description": "Head-to-head: enumerate the eval site's document libraries — the read primitive that resolves a driveId before file work.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "What document libraries does the '{{sharepoint_eval_site}}' site have?",
+          "assertions": {
+            "outcome": [
+              "The document libraries of the '{{sharepoint_eval_site}}' site are listed, including at least its default library."
+            ],
+            "mechanism": [
+              "Resolves the site by name first, then lists that site's drives; does not fabricate a library name or a driveId."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-folder-in-site",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a folder in the eval site's default library, then confirm it by browsing.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Create a folder named 'Reports {{run_id}}' in the '{{sharepoint_eval_site}}' site's default document library.",
+          "assertions": {
+            "outcome": [
+              "A folder named 'Reports {{run_id}}' now exists in the '{{sharepoint_eval_site}}' site's document library and its id is reported."
+            ],
+            "mechanism": [
+              "Resolves the site by name before creating; the folder id comes from the create result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "List what's in the '{{sharepoint_eval_site}}' site's default document library so I can confirm the folder is there.",
+          "assertions": {
+            "outcome": [
+              "The listing of the site's default document library includes the 'Reports {{run_id}}' folder the agent just created in this session."
+            ],
+            "mechanism": [
+              "Reads the library contents rather than asserting the folder exists without checking."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload-text-note",
+      "kind": "arrange-act",
+      "description": "Coverage probe: save a short note as a text file into the eval site, then read it back to confirm the content.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Save a text file named 'standup-{{run_id}}.txt' in the '{{sharepoint_eval_site}}' site with this content: 'Standup {{run_id}}: shipped the importer, next up is the exporter.'",
+          "assertions": {
+            "outcome": [
+              "A text file named 'standup-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "Writes the exact provided text as the file content; does not fabricate or paraphrase the note, and the file id comes from the upload result."
+            ]
+          }
+        },
+        {
+          "intent": "Read back the contents of the 'standup-{{run_id}}.txt' file you just created.",
+          "assertions": {
+            "outcome": [
+              "The reported contents of 'standup-{{run_id}}.txt' match the note that was written ('Standup {{run_id}}: shipped the importer, next up is the exporter.')."
+            ],
+            "mechanism": [
+              "Retrieves the file the agent just created in this session rather than a different file, using its id or a name lookup within the site."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload-and-export-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: upload an Office document from a URL into the eval site, then export a PDF rendering of it.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Upload the Word document at https://calibre-ebook.com/downloads/demos/demo.docx into the '{{sharepoint_eval_site}}' site, naming it 'demo-{{run_id}}.docx'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'demo-{{run_id}}.docx' sourced from the given URL now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "Uploads from the source URL given in the request rather than inventing file bytes; the resulting file id comes from the upload result."
+            ]
+          }
+        },
+        {
+          "intent": "Give me a PDF version of the 'demo-{{run_id}}.docx' file you just uploaded.",
+          "assertions": {
+            "outcome": [
+              "A PDF rendering of the 'demo-{{run_id}}.docx' document is produced (a downloadable PDF or its download URL is returned)."
+            ],
+            "mechanism": [
+              "Requests a PDF-format conversion of the file the agent just uploaded in this session; does not claim a PDF exists without performing the conversion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "organize-file-into-folder",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a folder and a file in the eval site, then move the file into the folder within the same library.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, create a folder named 'Archive {{run_id}}' and a text file named 'memo-{{run_id}}.txt' with the content 'Archive me.'",
+          "assertions": {
+            "outcome": [
+              "Both a folder named 'Archive {{run_id}}' and a file named 'memo-{{run_id}}.txt' now exist in the '{{sharepoint_eval_site}}' site and their ids are reported."
+            ],
+            "mechanism": [
+              "Creates the folder and uploads the file under the resolved site; ids come from the create/upload results, not invented."
+            ]
+          }
+        },
+        {
+          "intent": "Move the 'memo-{{run_id}}.txt' file into the 'Archive {{run_id}}' folder you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'memo-{{run_id}}.txt' file now lives inside the 'Archive {{run_id}}' folder within the same document library."
+            ],
+            "mechanism": [
+              "Moves the file the agent just created into the folder the agent just created (both within the same library) by updating its parent; does not re-upload a copy or target an unrelated item."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy-file-async",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: copy a file in SharePoint, which Graph processes asynchronously (202 + monitor URL) — the skilled path confirms completion by polling rather than assuming the copy is instant.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, save a text file named 'original-{{run_id}}.txt' with the content 'Copy source {{run_id}}.'",
+          "assertions": {
+            "outcome": [
+              "A text file named 'original-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "The file id comes from the upload result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Make a copy of 'original-{{run_id}}.txt' named 'copy-{{run_id}}.txt' in the same library, and confirm the copy actually finished before you tell me it's done.",
+          "assertions": {
+            "outcome": [
+              "A completed copy of the file, named 'copy-{{run_id}}.txt', now exists in the site — and the reply confirms the copy finished rather than only that it was requested."
+            ],
+            "mechanism": [
+              "Treats the copy as asynchronous: after starting it, polls the copy status until completion instead of reporting success immediately off the initial accepted response."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe with destructive tail: create a file in the eval site, then delete it (moves to the recycle bin).",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, save a text file named 'scratch-{{run_id}}.txt' with the content 'temporary.'",
+          "assertions": {
+            "outcome": [
+              "A text file named 'scratch-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "The file id comes from the upload result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'scratch-{{run_id}}.txt' file you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'scratch-{{run_id}}.txt' file is deleted (no longer present in the library listing)."
+            ],
+            "mechanism": [
+              "Deletes exactly the file the agent just created in this session (targets its id); does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "share-file-view-link",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file in the eval site, then generate a read-only sharing link for it.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, save a text file named 'shareable-{{run_id}}.txt' with the content 'Please review.'",
+          "assertions": {
+            "outcome": [
+              "A text file named 'shareable-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "The file id comes from the upload result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Create a view-only sharing link for the 'shareable-{{run_id}}.txt' file you just created.",
+          "assertions": {
+            "outcome": [
+              "A read-only (view) sharing link URL for the 'shareable-{{run_id}}.txt' file is returned."
+            ],
+            "mechanism": [
+              "Requests a view (read-only) link type — not edit or embed — for the file the agent just created; the returned URL comes from the sharing-link result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "invite-person-to-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a file in the eval site, then grant a named person edit access by email (notification suppressed).",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_invitee"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, save a text file named 'collab-{{run_id}}.txt' with the content 'Eval test file — please disregard.'",
+          "assertions": {
+            "outcome": [
+              "A text file named 'collab-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "The file id comes from the upload result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Give {{sharepoint_eval_invitee}} edit access to the 'collab-{{run_id}}.txt' file you just created — don't send them a notification email.",
+          "assertions": {
+            "outcome": [
+              "The recipient named in the request is granted write (edit) access to the 'collab-{{run_id}}.txt' file, and the resulting grant is reported."
+            ],
+            "mechanism": [
+              "Grants a write role to exactly the address given in the request on the file the agent just created; does not substitute a different recipient or a read-only role, and suppresses the invitation email as asked."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-and-revoke-file-access",
+      "kind": "arrange-act",
+      "description": "Coverage probe with destructive tail: create and share a file, review who has access, then revoke a specific grant — a direct (non-inherited) permission the API allows removing.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_invitee"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, save a text file named 'access-{{run_id}}.txt' with the content 'Eval test file — please disregard.', then give {{sharepoint_eval_invitee}} read access to it without sending a notification email.",
+          "assertions": {
+            "outcome": [
+              "A file named 'access-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and the recipient named in the request has been granted read access to it."
+            ],
+            "mechanism": [
+              "Grants a read role to the exact address given in the request on the file the agent just created; ids come from the create/grant results; suppresses the invitation email as asked."
+            ]
+          }
+        },
+        {
+          "intent": "Who currently has access to the 'access-{{run_id}}.txt' file?",
+          "assertions": {
+            "outcome": [
+              "The reported permissions for 'access-{{run_id}}.txt' include the grant to the recipient added earlier in this session."
+            ],
+            "mechanism": [
+              "Reads the permissions of the file the agent just worked with rather than assuming or fabricating the access list."
+            ]
+          }
+        },
+        {
+          "intent": "Revoke that person's access to the 'access-{{run_id}}.txt' file.",
+          "assertions": {
+            "outcome": [
+              "The recipient who had been granted access no longer has access to the 'access-{{run_id}}.txt' file."
+            ],
+            "mechanism": [
+              "Removes the specific permission granted to that recipient on that file; does not remove an unrelated grant or attempt to delete an inherited permission."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-list",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a new list in the eval site (list creation needs the higher Sites.Manage.All scope).",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Create a list named 'Bug Tracker {{run_id}}' in the '{{sharepoint_eval_site}}' site.",
+          "assertions": {
+            "outcome": [
+              "A list named 'Bug Tracker {{run_id}}' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "Resolves the site by name before creating the list; the list id comes from the create result, not an invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-task-to-list",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: add an item to the eval list setting the Title and a Status choice value — writing a choice column requires keying on the column's internal name, not its display label.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "Add a task to the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site: title it 'Fix login redirect {{run_id}}' and set its Status to 'In progress'.",
+          "assertions": {
+            "outcome": [
+              "A new item titled 'Fix login redirect {{run_id}}' exists in the '{{sharepoint_eval_list}}' list with its Status set to 'In progress', and its id is reported."
+            ],
+            "mechanism": [
+              "Writes the Status value under the column's resolved internal field name (discovered from the list's columns) rather than guessing the display label as the key; sets the 'In progress' option, not a fabricated one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-task-status",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: create a list item then update just its Status choice column, exercising a partial field update keyed on the internal column name.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "Add a task titled 'Ship changelog {{run_id}}' with Status 'To do' to the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site.",
+          "assertions": {
+            "outcome": [
+              "A new item titled 'Ship changelog {{run_id}}' with Status 'To do' exists in the '{{sharepoint_eval_list}}' list and its id is reported."
+            ],
+            "mechanism": [
+              "Sets the Status under the resolved internal column name; the item id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Mark the 'Ship changelog {{run_id}}' task you just added as Done.",
+          "assertions": {
+            "outcome": [
+              "The 'Ship changelog {{run_id}}' item's Status now reads 'Done', and its Title is unchanged."
+            ],
+            "mechanism": [
+              "Updates the Status field of the item the agent just created (targets its id) using the internal column name, sending only the Status change; does not overwrite the Title or target a different item."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "tag-list-item-multi",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: set a multi-select choice column to more than one value — the naive path drops all but one; the correct write carries the whole set.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "Add a task titled 'Audit dependencies {{run_id}}' to the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site, and tag it with both 'Urgent' and 'Review'.",
+          "assertions": {
+            "outcome": [
+              "A new item titled 'Audit dependencies {{run_id}}' exists in the '{{sharepoint_eval_list}}' list with its Tags set to BOTH 'Urgent' and 'Review' (neither value dropped), and its id is reported."
+            ],
+            "mechanism": [
+              "Sends both tag values for the multi-choice Tags column as a set (a collection), not a single value or a concatenated string, keyed on the column's internal name."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-list-items-by-status",
+      "kind": "arrange-act",
+      "description": "Coverage probe: seed items with differing Status values, then retrieve only the ones matching a Status — a filtered read over list items.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site, add two tasks: 'Triage inbox {{run_id}}' with Status 'Done', and 'Write postmortem {{run_id}}' with Status 'In progress'.",
+          "assertions": {
+            "outcome": [
+              "Two items now exist in the '{{sharepoint_eval_list}}' list: 'Triage inbox {{run_id}}' (Status 'Done') and 'Write postmortem {{run_id}}' (Status 'In progress'), with their ids reported."
+            ],
+            "mechanism": [
+              "Creates both items with their Status set under the resolved internal column name; ids come from the create results."
+            ]
+          }
+        },
+        {
+          "intent": "Show me the tasks in that list whose Status is 'In progress'.",
+          "assertions": {
+            "outcome": [
+              "The results include the 'Write postmortem {{run_id}}' item and exclude the 'Triage inbox {{run_id}}' (Done) item — i.e. only in-progress items are returned."
+            ],
+            "mechanism": [
+              "Filters the list items by the Status column value rather than returning the whole list unfiltered or filtering on a fabricated field."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-list-item",
+      "kind": "arrange-act",
+      "description": "Coverage probe with destructive tail: create a list item then delete it — list-item deletion is a hard delete with no documented recycle-bin restore, unlike file deletion.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "Add a task titled 'Obsolete entry {{run_id}}' to the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site.",
+          "assertions": {
+            "outcome": [
+              "A new item titled 'Obsolete entry {{run_id}}' exists in the '{{sharepoint_eval_list}}' list and its id is reported."
+            ],
+            "mechanism": [
+              "The item id comes from the create result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Obsolete entry {{run_id}}' task you just added.",
+          "assertions": {
+            "outcome": [
+              "The 'Obsolete entry {{run_id}}' item no longer exists in the '{{sharepoint_eval_list}}' list."
+            ],
+            "mechanism": [
+              "Deletes exactly the item the agent just created in this session (targets its id); does not delete a different item."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-duplicate-list-item",
+      "kind": "negative",
+      "description": "Disambiguation (negative — correct behavior is to ask, not act): two list items share a title, so a request to act on 'the' item by name should ask which one rather than silently picking or updating both. Tagged negative so the harness doesn't flag the clarifying (zero-mutation) turn as a suspect pass.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site, add two separate tasks that are both titled 'Renew certificate {{run_id}}', one with Status 'To do' and one with Status 'In progress'.",
+          "assertions": {
+            "outcome": [
+              "Two distinct items both titled 'Renew certificate {{run_id}}' now exist in the list (one Status 'To do', one 'In progress'), with two different ids reported."
+            ],
+            "mechanism": [
+              "Creates two separate items; each id comes from its own create result."
+            ]
+          }
+        },
+        {
+          "intent": "Mark the 'Renew certificate {{run_id}}' task as Done.",
+          "assertions": {
+            "outcome": [
+              "The reply recognizes that two tasks share that title and asks which one to update (surfacing a distinguishing detail such as their current Status or id) instead of silently choosing one.",
+              "No item's Status is changed to 'Done' in this turn — the agent waits for clarification rather than updating one or both."
+            ],
+            "mechanism": [
+              "Does not issue an update to either matching item before the ambiguity is resolved, and does not update both."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-and-publish-page",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: creating a site page yields a draft (checkout state); making it visible to everyone requires a separate publish step.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Create a news page titled 'Release Notes {{run_id}}' in the '{{sharepoint_eval_site}}' site with the body text 'Version {{run_id}} is now available.', and make sure it's published so everyone in the site can see it.",
+          "assertions": {
+            "outcome": [
+              "A page titled 'Release Notes {{run_id}}' with the given body text exists in the '{{sharepoint_eval_site}}' site AND has been published (is live/visible), not left as an unpublished draft."
+            ],
+            "mechanism": [
+              "Creates the draft page and then performs a separate publish step on that page; does not treat page creation as if it were already published."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-existing-page-body",
+      "kind": "negative",
+      "description": "Graceful refusal (negative): editing the body of an existing page is out of scope (createPage only authors a new single-text-web-part page). The agent should decline rather than fake an edit. Tagged negative so a clean no-mutation refusal isn't flagged as a suspect pass.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "Create a page titled 'Team Handbook {{run_id}}' in the '{{sharepoint_eval_site}}' site with the body 'Welcome.'",
+          "assertions": {
+            "outcome": [
+              "A page titled 'Team Handbook {{run_id}}' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "The page id comes from the create result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Now change the body of that 'Team Handbook {{run_id}}' page to read 'Welcome to the team. Read this first.'",
+          "assertions": {
+            "outcome": [
+              "The reply states that editing an existing page's body isn't supported by this connector and does not claim the page's content was changed."
+            ],
+            "mechanism": [
+              "Does not call any tool to fabricate a body edit (e.g. does not silently delete-and-recreate the page as if it were an in-place edit) or report a fake success."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-file-across-sites",
+      "kind": "arrange-act",
+      "description": "Transparency probe: there is no native cross-site move, only a lossy copy-then-delete. The agent may perform the relocation but must disclose that it's a copy+delete with a new URL and reset permissions — not silently report a plain 'move'.",
+      "requires": ["sharepoint_eval_site"],
+      "steps": [
+        {
+          "intent": "In the '{{sharepoint_eval_site}}' site, save a text file named 'transfer-{{run_id}}.txt' with the content 'Move me.'",
+          "assertions": {
+            "outcome": [
+              "A text file named 'transfer-{{run_id}}.txt' now exists in the '{{sharepoint_eval_site}}' site and its id is reported."
+            ],
+            "mechanism": [
+              "The file id comes from the upload result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Move that 'transfer-{{run_id}}.txt' file out of '{{sharepoint_eval_site}}' into some other SharePoint site in the tenant.",
+          "assertions": {
+            "outcome": [
+              "The reply discloses that this was not a native move but a copy-then-delete — it warns that the file now has a new URL/location and that its sharing links and permissions do not carry over — rather than silently reporting a plain, lossless 'move'."
+            ],
+            "mechanism": [
+              "Recognizes moveItem can't cross libraries/sites and relocates via copy then delete, confirming the copy completed before deleting the original; surfaces the new location and the lossy consequences instead of mislabeling it as a move."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-sites-by-keyword",
+      "kind": "discover-act",
+      "description": "Head-to-head: find the sites whose names match a keyword and list them — the correct way to locate sites, since a delegated token can't enumerate every site in the tenant.",
+      "steps": [
+        {
+          "intent": "Which SharePoint sites do we have whose names mention 'team'? List what you find.",
+          "assertions": {
+            "outcome": [
+              "A list of SharePoint sites whose names match 'team' is returned, each with a name and a URL or other identifier, presented as keyword-search matches rather than as a claimed complete inventory of every site in the tenant."
+            ],
+            "mechanism": [
+              "Resolves the sites via a keyword site-search; does not fabricate site names or ids, and does not claim to have enumerated every site in the tenant."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-person-column-on-list-item",
+      "kind": "negative",
+      "description": "Graceful refusal (negative): writing person/group columns on list items isn't supported (those column types are read-only here). The agent should decline rather than fake the assignment. Tagged negative so a clean refusal isn't flagged as a suspect pass.",
+      "requires": ["sharepoint_eval_site", "sharepoint_eval_list"],
+      "steps": [
+        {
+          "intent": "Add a task titled 'Onboard vendor {{run_id}}' to the '{{sharepoint_eval_list}}' list in the '{{sharepoint_eval_site}}' site.",
+          "assertions": {
+            "outcome": [
+              "A new item titled 'Onboard vendor {{run_id}}' exists in the '{{sharepoint_eval_list}}' list and its id is reported."
+            ],
+            "mechanism": [
+              "The item id comes from the create result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Set the person/owner field on that 'Onboard vendor {{run_id}}' task to a user in our organization.",
+          "assertions": {
+            "outcome": [
+              "The reply states that setting a person/group column on a list item isn't supported by this connector and does not claim the owner was assigned."
+            ],
+            "mechanism": [
+              "Does not attempt to write a person/group column value and report it as succeeded."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

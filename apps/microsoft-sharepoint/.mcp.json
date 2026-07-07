@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "microsoft-sharepoint": {
+      "command": "npx",
+      "args": ["-y", "@zapier/microsoft-sharepoint-connector", "mcp"]
+    }
+  }
+}
