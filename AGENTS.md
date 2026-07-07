@@ -1,6 +1,6 @@
 # Repository instructions for agents
 
-This repository is a **catalog of agent-callable tools** for a growing set of the apps Zapier integrates with. Each folder under [`apps/`](apps/) is one connector: simultaneously an [agentskills.io](https://agentskills.io/specification) skill and a set of [MCP `Tool`](https://modelcontextprotocol.io/specification/2025-06-18/schema#tool)-shaped TypeScript modules. If you are an agent, your job here is to **find the connector you need and call it** — not to build or modify this repo. Browse [`apps/`](apps/) for what's currently available; the catalog grows over time and isn't the full set of Zapier integrations.
+This repository is a **catalog of agent-callable tools** for a growing set of the apps Zapier integrates with. Each folder under [`apps/`](apps/) is one connector: simultaneously an [agentskills.io](https://agentskills.io/specification) skill, an npm-distributed Node module (TypeScript and JS), an `npx`-runnable CLI, and a local stdio MCP server. If you are an agent, your job here is to **find the connector you need and call it** — not to build or modify this repo. Browse [`apps/`](apps/) for what's currently available; the catalog grows over time and isn't the full set of Zapier integrations.
 
 > **Status: prototype (`0.x`).** Treat nothing here as a stable contract. Breaking changes ship as a minor bump, features and fixes as a patch. Pin with a caret (`^0.x.y`). Licensed under the [Elastic License 2.0](./LICENSE).
 
@@ -24,19 +24,26 @@ Each connector is one folder that works four ways. Pick the one that fits the ca
    );
    ```
 3. **Call as a CLI** — `echo '{...}' | npx @zapier/<app>-connector run <script>`. Reads JSON on stdin/argv, prints the upstream response. Good for cron, CI, shells.
-4. **Run as a local MCP server** — `npx @zapier/<app>-connector mcp` exposes every script as an MCP tool over stdio, and the connector's `SKILL.md` + `references/*.md` as MCP resources.
+4. **Run as a local MCP server** — `npx @zapier/<app>-connector mcp` exposes every script as an [MCP `Tool`](https://modelcontextprotocol.io/specification/draft/server/tools) over stdio, and the connector's `SKILL.md` + `references/*.md` as MCP resources.
 
-Node 22.18+ runs the TypeScript directly (`npm install` the connector's deps first); Bun auto-installs on first run.
+Only the skill route (way 1) touches the TypeScript source directly, so it's the only one that needs a one-time `npm install` in the connector's folder plus Node.js 22.18+ to type-strip it natively. Ways 2–4 run the precompiled package that `npm`/`npx` fetches from the registry, so they work on any Node with no local install step. On older Node for the skill route, run the connector's `cli.js` — it self-diagnoses and recommends a fallback (e.g. `npx <pkg>@latest`, which runs on any Node since the published package ships precompiled JS).
 
 ## Auth
 
-Pass auth as one `[<resolver>:]<value>` connection string per slot:
+Pass auth as one `[<resolver>:]<value>` connection string per slot. Resolver names and env var names vary per connector — don't assume `env:NOTION_TOKEN`-style specifics. How you discover a script's actual connection flags and resolvers depends on which of the four ways above you're using:
 
-- `env:NOTION_TOKEN` — reads the token from that environment variable (direct mode, your own credentials).
-- `zapier:<connection-id>` — routes through Zapier-managed auth (recommended; find IDs with the Zapier SDK).
+- **Way 1 (skill), from the local checkout** — `node cli.js run <script> --help`.
+- **Way 2 (npm dependency)** — pass the connection string via the `.run(input, { connection })` option shown above; the script's exported `inputSchema` (or its `SKILL.md` entry) lists which slots it accepts.
+- **Way 3 (CLI), no checkout needed** — `npx @zapier/<app>-connector run <script> --help`.
+- **Way 4 (MCP server)** — the client's tool list already surfaces the same connection info in the tool's `inputSchema`; no separate command needed.
+
+Common resolvers:
+
+- `env:<VAR>` — reads the token from that environment variable (direct mode, your own credentials). Some connectors use a different resolver name (e.g. `basic:`) or an env-var prefix covering multiple variables.
+- `zapier:<connection-id>` — routes through [Zapier-managed auth](https://docs.zapier.com/sdk/cli-reference#list-connections) (recommended). Find an ID with `npx zapier-sdk list-connections <app-key>` — see the connector's `SKILL.md` for the exact command and app key.
 - a bare value — claimed by the first matching resolver (a UUID → `zapier`, a known env-var name → `env`).
 
-Each connector's `SKILL.md` documents its scripts, auth modes, and the trade-offs between direct and Zapier-managed connections.
+Each connector's `SKILL.md` documents its exact scripts, auth modes, and the trade-offs between direct and Zapier-managed connections — treat it as the source of truth over this file.
 
 ## Connector layout
 
