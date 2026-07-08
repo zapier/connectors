@@ -28,8 +28,7 @@
     "references/"
   ],
   "scripts": {
-    "build": "tsup",
-    "prepare": "node cli.js build || bun cli.js build || true"
+    "build": "tsup"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.4.0",
