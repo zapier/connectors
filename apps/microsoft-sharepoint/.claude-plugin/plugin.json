@@ -3,7 +3,7 @@
   "name": "microsoft-sharepoint",
   "displayName": "Microsoft SharePoint",
   "description": "Agent-callable Microsoft SharePoint tools — find sites and document libraries, browse, search, upload, move and share files, manage lists and list items, and author site pages. Use when the user mentions SharePoint or wants to work with SharePoint sites, files, folders, lists, or pages, even if they don't name SharePoint explicitly.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
