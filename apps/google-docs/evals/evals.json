@@ -104,6 +104,7 @@
         },
         {
           "intent": "Summarize what the 'Incident Review {{run_id}}' document says.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The summary covers all three key facts: an expired TLS certificate caused checkout 500s, the cert was rotated to restore traffic, and the follow-up action is to automate certificate renewal. Accept an accurate summary regardless of whether the agent made a tool call — the content accuracy is the test."
@@ -603,6 +604,7 @@
         },
         {
           "intent": "Append the line 'Approved.' to the document titled 'Budget {{run_id}}'.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "Because two documents share the title 'Budget {{run_id}}', the reply reports the ambiguity and asks which document to edit (or lists the candidates with a distinguishing detail) rather than silently editing one or both."
@@ -661,6 +663,7 @@
         },
         {
           "intent": "Add a comment saying 'Please review by Friday' to the 'Proposal {{run_id}}' document.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply states that adding comments is not supported and does not claim a comment was added.",
@@ -691,6 +694,7 @@
         },
         {
           "intent": "Export the 'Invoice {{run_id}}' document as a PDF file.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply states that PDF export is not supported — only plain text and Markdown are available — and does not claim a PDF was produced.",
