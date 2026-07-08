@@ -468,6 +468,7 @@
         },
         {
           "intent": "Cancel my 'Sync {{run_id}}' meeting.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "Recognizing that two events are titled 'Sync {{run_id}}' (9:00am and 2:00pm), the reply asks which one to cancel instead of silently cancelling one; no event has been deleted."
@@ -481,7 +482,7 @@
     },
     {
       "id": "refuse-clear-calendar",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: clearing every event off a calendar is not a supported operation and must not be faked by deleting events one by one.",
       "steps": [
         {
@@ -499,7 +500,7 @@
     },
     {
       "id": "refuse-rename-calendar",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: renaming an existing calendar is a capability this connector does not ship and must not be faked.",
       "steps": [
         {
