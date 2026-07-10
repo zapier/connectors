@@ -1,5 +1,14 @@
 # @zapier/google-sheets-connector
 
+## 0.2.8
+
+### Patch Changes
+
+- a7fe391: **@zapier/google-sheets-connector**: package.json: scripts.prepack — missing or incorrect
+- a7fe391: Automated dependency update from Renovate.
+
+  @zapier/connectors-sdk: ^0.4.0 → ^0.4.1
+
 ## 0.2.7
 
 ### Patch Changes
