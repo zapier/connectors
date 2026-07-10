@@ -1,5 +1,14 @@
 # @zapier/google-calendar-connector
 
+## 0.2.9
+
+### Patch Changes
+
+- a7fe391: **@zapier/google-calendar-connector**: package.json: scripts.prepack — missing or incorrect
+- a7fe391: Automated dependency update from Renovate.
+
+  @zapier/connectors-sdk: ^0.4.0 → ^0.4.1
+
 ## 0.2.8
 
 ### Patch Changes
