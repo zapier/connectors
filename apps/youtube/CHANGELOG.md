@@ -1,5 +1,14 @@
 # @zapier/youtube-connector
 
+## 0.1.8
+
+### Patch Changes
+
+- a7fe391: **@zapier/youtube-connector**: package.json: scripts.prepack — missing or incorrect
+- a7fe391: Automated dependency update from Renovate.
+
+  @zapier/connectors-sdk: ^0.4.0 → ^0.4.1
+
 ## 0.1.7
 
 ### Patch Changes
