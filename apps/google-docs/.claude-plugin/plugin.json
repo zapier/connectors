@@ -3,7 +3,7 @@
   "name": "google-docs",
   "displayName": "Google Docs",
   "description": "Agent-callable Google Docs tools — create, read, export, and find documents; edit text, formatting, images, and page style. Use when the user mentions Google Docs or wants to create, read, search, or edit document content, even if they don't name Google Docs explicitly.",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
