@@ -29,7 +29,7 @@
     "prepack": "tsup"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.4.1",
+    "@zapier/connectors-sdk": "^0.4.3",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
