@@ -1,0 +1,399 @@
+{
+  "skill_name": "elevenlabs",
+  "version": "d9937d8",
+  "description": "Intent-anchored eval scenarios for the elevenlabs connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run reveals native's capability profile; outcome assertions grade all arms, mechanism assertions our-arm-only. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "elevenlabs_eval_voice",
+      "description": "The exact name of a voice available in the eval account's voice list, used by scenarios that generate or convert speech in a named voice. Premade voices qualify; the default 'Sarah' ships with every ElevenLabs account.",
+      "env": "EVAL_ELEVENLABS_VOICE",
+      "default": "Sarah",
+      "expects": "A voice whose exact name equals this fixture's configured value appears in the account's voice list, with exactly one voice carrying that exact name (so name resolution is unambiguous), and it is usable for text-to-speech and speech-to-speech generation by the eval connection.",
+      "provision": "seed"
+    },
+    {
+      "name": "elevenlabs_sample_audio_url",
+      "description": "A publicly hosted spoken-word audio clip used as the source for transcription, voice-changing, and audio-isolation scenarios. The default points at a ~15-second public MP3 on ElevenLabs' own CDN.",
+      "env": "EVAL_ELEVENLABS_SAMPLE_AUDIO_URL",
+      "default": "https://storage.googleapis.com/eleven-public-cdn/audio/marketing/nicole.mp3",
+      "expects": "An HTTPS URL that is fetchable without authentication and returns a spoken-word audio file (MP3 or similar) at least 5 seconds long — long enough for the audio-isolation endpoint, which rejects clips shorter than about 5 seconds, and containing clear speech so transcription produces a non-empty transcript.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "narrate-text-in-named-voice",
+      "kind": "discover-act",
+      "description": "Head-to-head: resolve a voice by its human name, then generate speech with it.",
+      "requires": ["elevenlabs_eval_voice"],
+      "steps": [
+        {
+          "intent": "Read this sentence aloud in the voice named {{elevenlabs_eval_voice}} and give me the audio file: 'The quarterly report is ready for review.'",
+          "assertions": {
+            "outcome": [
+              "Spoken audio of the sentence 'The quarterly report is ready for review.' is produced in the requested voice and the reply tells the user where to get it (a file path or equivalent handle)."
+            ],
+            "mechanism": [
+              "Resolves the named voice to its voice_id via a voice listing or search before generating — does not invent or hard-code a voice_id.",
+              "Generates the speech with a single text-to-speech call once the voice is resolved."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "make-mp3-of-text",
+      "kind": "act-only",
+      "description": "Coverage probe: underspecified voice — produce an MP3 of given text with a sensible voice choice.",
+      "steps": [
+        {
+          "intent": "Make me an MP3 that says: 'Welcome to the show. Let's get started.'",
+          "assertions": {
+            "outcome": [
+              "MP3 audio saying 'Welcome to the show. Let's get started.' is produced and its location (file path or inline data) is reported."
+            ],
+            "mechanism": [
+              "Uses a real voice_id taken from the account's voice list — not a fabricated or guessed id.",
+              "Keeps the default MP3 output format or another ungated MP3 format — does not select a tier-gated format (such as 192 kbps MP3 or PCM/WAV) without verifying the account's tier."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "regenerate-audio-without-credits",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: re-fetching a past generation from history is free; regenerating spends credits.",
+      "steps": [
+        {
+          "intent": "Generate speech that says 'Archive marker {{run_id}}' using any voice from my account.",
+          "assertions": {
+            "outcome": [
+              "Spoken audio of 'Archive marker {{run_id}}' is produced and the reply reports where to get it."
+            ],
+            "mechanism": [
+              "Uses a voice_id resolved from the account's voice list, not a fabricated id."
+            ]
+          }
+        },
+        {
+          "intent": "I lost that file — get me the same audio again, but don't spend any more of my credits.",
+          "assertions": {
+            "outcome": [
+              "The audio for the 'Archive marker {{run_id}}' generation is delivered again, and no new speech generation is performed — the reply does not claim the speech was re-generated."
+            ],
+            "mechanism": [
+              "Locates the earlier generation in history (by the id reported at creation in this session, or by searching history for its exact text) and re-downloads its audio rather than calling a generation endpoint again."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "transcribe-recording",
+      "kind": "act-only",
+      "description": "Single capability: transcribe a hosted recording and report the spoken language.",
+      "requires": ["elevenlabs_sample_audio_url"],
+      "steps": [
+        {
+          "intent": "Transcribe the recording at {{elevenlabs_sample_audio_url}} and tell me what language is spoken.",
+          "assertions": {
+            "outcome": [
+              "A text transcript of the recording is returned in the reply.",
+              "The reply states the detected spoken language."
+            ],
+            "mechanism": [
+              "Passes the URL given in the request directly as the transcription source and returns the API's transcript — does not fabricate a transcript without calling the API."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "transcribe-then-narrate",
+      "kind": "act-only",
+      "description": "Guidance-dependent chain: transcription reports three-letter language codes (e.g. 'eng') that must not be fed into text-to-speech, which expects two-letter ISO 639-1.",
+      "requires": ["elevenlabs_sample_audio_url", "elevenlabs_eval_voice"],
+      "steps": [
+        {
+          "intent": "Transcribe the recording at {{elevenlabs_sample_audio_url}}.",
+          "assertions": {
+            "outcome": [
+              "A text transcript of the recording is returned in the reply."
+            ],
+            "mechanism": [
+              "Uses the URL given in the request as the transcription source."
+            ]
+          }
+        },
+        {
+          "intent": "Now read that transcript back as speech using the voice named {{elevenlabs_eval_voice}}.",
+          "assertions": {
+            "outcome": [
+              "Spoken audio of the transcript text is produced in the requested voice and its location is reported."
+            ],
+            "mechanism": [
+              "Does not pass the transcription's three-letter detected language code (e.g. 'eng') as the text-to-speech language_code, which expects a two-letter ISO 639-1 code or omission.",
+              "Resolves the named voice to its voice_id via the account's voice list."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clean-up-noisy-recording",
+      "kind": "act-only",
+      "description": "Single capability: isolate the voice in a hosted recording by removing background noise.",
+      "requires": ["elevenlabs_sample_audio_url"],
+      "steps": [
+        {
+          "intent": "Remove the background noise from the recording at {{elevenlabs_sample_audio_url}} and give me the cleaned audio.",
+          "assertions": {
+            "outcome": [
+              "A cleaned, voice-isolated version of the recording is produced and its location (file path or inline data) is reported."
+            ],
+            "mechanism": [
+              "Runs the recording through the audio-isolation capability with the URL given in the request as the source — does not return the original audio unchanged."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "revoice-recording-in-different-voice",
+      "kind": "act-only",
+      "description": "Guidance-dependent: re-voicing should convert the audio directly (preserving delivery and timing), not transcribe-and-resynthesize.",
+      "requires": ["elevenlabs_sample_audio_url", "elevenlabs_eval_voice"],
+      "steps": [
+        {
+          "intent": "Take the recording at {{elevenlabs_sample_audio_url}} and re-voice it so the same speech is spoken by the voice named {{elevenlabs_eval_voice}}.",
+          "assertions": {
+            "outcome": [
+              "A re-voiced version of the recording, spoken in the requested voice, is produced and its location is reported."
+            ],
+            "mechanism": [
+              "Resolves the named voice to its voice_id via the account's voice list before converting.",
+              "Converts the audio directly with the speech-to-speech (voice changer) capability using the request's URL as the source — does not transcribe the audio and synthesize new speech from the text, which would lose the original timing and delivery."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-podcast-dialogue",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: multi-speaker dialogue requires the eleven_v3 model, which the account may not have access to — a clean gate report beats a fabricated success.",
+      "steps": [
+        {
+          "intent": "Create a short two-host podcast intro as an audio conversation: the first host says 'Welcome back to Signal Boost.' and the second host replies 'Today we are talking about audio pipelines.' Use two different voices from my account.",
+          "assertions": {
+            "outcome": [
+              "Either a multi-speaker dialogue audio file with two distinct voices is produced and its location is reported, or the reply clearly explains that the account lacks access to the required dialogue model (eleven_v3) — it never claims success without producing the audio."
+            ],
+            "mechanism": [
+              "Resolves two distinct voice_ids from the account's voice list before generating.",
+              "If generation is blocked by model access, the failure is attributed to the model gate — not blindly retried or misreported as an invalid voice."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-sound-effect",
+      "kind": "act-only",
+      "description": "Single capability: generate a described sound effect (not speech) with a duration inside the allowed 0.5–30s range.",
+      "steps": [
+        {
+          "intent": "I need a 3-second door-creak sound effect for a video — generate it for me.",
+          "assertions": {
+            "outcome": [
+              "A sound-effect audio clip matching the door-creak description is produced and its location (file path or inline data) is reported."
+            ],
+            "mechanism": [
+              "Uses the sound-effect generation capability with the requested ~3-second duration — does not use text-to-speech to read the description aloud."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "design-and-save-custom-voice",
+      "kind": "arrange-act",
+      "description": "Coverage probe: design a synthetic voice from a description, save one candidate, then delete it to free the voice slot.",
+      "steps": [
+        {
+          "intent": "Design a new synthetic voice for me: a warm, middle-aged female narrator with a slight British accent, suitable for audiobooks.",
+          "assertions": {
+            "outcome": [
+              "Voice preview candidates are generated and the reply presents at least one candidate the user could choose."
+            ],
+            "mechanism": [
+              "Calls the voice-design capability; the candidate generated voice ids come from the API response, not invented.",
+              "If preview text is supplied it is between 100 and 1,000 characters; otherwise automatic preview-text generation is used."
+            ]
+          }
+        },
+        {
+          "intent": "Save the first candidate to my account as 'Eval Narrator {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A voice named 'Eval Narrator {{run_id}}' now exists in the account and its voice_id is reported."
+            ],
+            "mechanism": [
+              "Saves using a generated_voice_id from the design previews produced earlier in this session — does not fabricate one."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Narrator {{run_id}}' voice — I was just testing.",
+          "assertions": {
+            "outcome": [
+              "The voice named 'Eval Narrator {{run_id}}' no longer exists in the account."
+            ],
+            "mechanism": [
+              "Deletes exactly the voice it just created in this session (resolved by its exact name or the reported voice_id) — does not delete any other voice."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-library-voice-ambiguous-name",
+      "kind": "discover-act",
+      "description": "Guidance-dependent disambiguation: a common name matches many community-library voices — the agent must ask, never silently pick one to add.",
+      "steps": [
+        {
+          "intent": "Add the voice called 'George' from the community voice library to my account.",
+          "assertions": {
+            "outcome": [
+              "Because multiple community-library voices match the name 'George', the reply lists candidate voices with distinguishing details (such as accent, category, or description) and asks the user which one to add — no voice has been added to the account."
+            ],
+            "mechanism": [
+              "Searches the community voice library by name before any add; performs no add or other mutation while the name match is ambiguous."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-remaining-credits",
+      "kind": "act-only",
+      "description": "Single capability: report the account's remaining character quota and reset time from live data.",
+      "steps": [
+        {
+          "intent": "How many characters of speech generation do I have left this month, and when does my quota reset?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the remaining character allowance (limit minus used) and the quota reset time, based on live account data."
+            ],
+            "mechanism": [
+              "Reads the subscription/quota endpoint; the reported numbers come from the API response, not estimates."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "pick-model-for-long-text",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: model capabilities and per-request character limits must come from the live model list, not memorized values.",
+      "steps": [
+        {
+          "intent": "I have a 12,000-character script to narrate. Which model should I use, and can it handle that in one request?",
+          "assertions": {
+            "outcome": [
+              "The reply names at least one text-to-speech-capable model, states its per-request character limit from live data, and correctly answers whether 12,000 characters fits in a single request for that model."
+            ],
+            "mechanism": [
+              "Fetches the live model list and reads each candidate's text-to-speech capability and maximum text length per request — does not answer from memorized model limits."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "purge-generation-from-history",
+      "kind": "arrange-act",
+      "description": "Destructive-op scrutiny: create a generation, then permanently delete exactly that one history item.",
+      "steps": [
+        {
+          "intent": "Generate speech saying 'Temporary note {{run_id}}' using any voice from my account.",
+          "assertions": {
+            "outcome": [
+              "Spoken audio of 'Temporary note {{run_id}}' is produced and the reply reports where to get it."
+            ],
+            "mechanism": [
+              "Uses a voice_id resolved from the account's voice list, not a fabricated id."
+            ]
+          }
+        },
+        {
+          "intent": "Now permanently delete that generation from my history.",
+          "assertions": {
+            "outcome": [
+              "The 'Temporary note {{run_id}}' generation is deleted from the account's history and the reply confirms the deletion."
+            ],
+            "mechanism": [
+              "Resolves the exact history item to delete (by the id reported at generation time in this session, or by searching history for its exact text) and deletes only that item — no other history items are deleted."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clone-voice-from-recording",
+      "kind": "negative",
+      "description": "Graceful refusal: instant/professional voice cloning from a sample recording is not supported — decline cleanly, don't substitute voice design.",
+      "requires": ["elevenlabs_sample_audio_url"],
+      "steps": [
+        {
+          "intent": "Clone my voice from the recording at {{elevenlabs_sample_audio_url}} so I can use it for narration.",
+          "assertions": {
+            "outcome": [
+              "The reply states that cloning a voice from a recording isn't supported here and does not claim a cloned voice was created."
+            ],
+            "mechanism": [
+              "Does not substitute the description-based voice-design capability (or any other mutation) and present its result as a clone of the recording."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compose-background-music",
+      "kind": "negative",
+      "description": "Graceful refusal: music generation is not supported — decline cleanly, don't pass off a sound effect as music.",
+      "steps": [
+        {
+          "intent": "Compose a 30-second lo-fi background music track for my podcast intro.",
+          "assertions": {
+            "outcome": [
+              "The reply states that music generation isn't supported here and does not claim a music track was produced."
+            ],
+            "mechanism": [
+              "Does not generate a sound effect and present it as the requested music track."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-recent-generations",
+      "kind": "act-only",
+      "description": "Single capability: list recent generation history with the voice and source text of each item.",
+      "steps": [
+        {
+          "intent": "What audio have I generated recently? Show me the last few items with the voice used and the text.",
+          "assertions": {
+            "outcome": [
+              "The reply lists recent generation history items including, for each, the voice used and the source text — or clearly states the history is empty."
+            ],
+            "mechanism": [
+              "Reads the history newest-first and reports items from the API response — does not fabricate history entries."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "elevenlabs": {
+      "command": "npx",
+      "args": ["-y", "@zapier/elevenlabs-connector", "mcp"]
+    }
+  }
+}

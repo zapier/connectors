@@ -1,0 +1,60 @@
+{
+  "name": "@zapier/elevenlabs-connector",
+  "private": true,
+  "description": "Agent-callable ElevenLabs tools — generate speech, sound effects, and multi-speaker dialogue; re-voice and clean up audio; transcribe audio and video; design voices; manage voices and history.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/elevenlabs-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "SKILL.md",
+    "README.md",
+    "NOTICE",
+    "LICENSE",
+    "references/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.4.1",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk-cli": ">=0.62.0 <1.0.0"
+  },
+  "keywords": [
+    "elevenlabs",
+    "text-to-speech",
+    "speech-to-text",
+    "voice",
+    "audio",
+    "sound-effects",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/elevenlabs"
+  }
+}
