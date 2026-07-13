@@ -3,7 +3,7 @@
   "name": "dropbox",
   "displayName": "Dropbox",
   "description": "Agent-callable Dropbox tools — upload, organize, find, and share files and folders. Use when the user wants to manage Dropbox content (save, move, search, share, list, or read files), including requests that don't name Dropbox explicitly, e.g. \"save this report to my cloud storage\" or \"share that folder with Sam\".",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
