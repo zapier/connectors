@@ -1,6 +1,5 @@
 {
   "name": "@zapier/elevenlabs-connector",
-  "private": true,
   "description": "Agent-callable ElevenLabs tools — generate speech, sound effects, and multi-speaker dialogue; re-voice and clean up audio; transcribe audio and video; design voices; manage voices and history.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -56,5 +55,9 @@
     "type": "git",
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/elevenlabs"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
