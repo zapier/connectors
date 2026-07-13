@@ -21,17 +21,17 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export MICROSOFT_SHAREPOINT_ACCESS_TOKEN=xxx
-npx @zapier/microsoft-sharepoint-connector@latest run findSites '{ "search": "marketing" }' --connection env:MICROSOFT_SHAREPOINT_ACCESS_TOKEN
+export <ENV_VAR>=xxx
+npx @zapier/microsoft-sharepoint-connector@latest run findSites '{ "search": "marketing" }' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/microsoft-sharepoint-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill microsoft-sharepoint
+npx skills add zapier/connectors --skill microsoft-sharepoint
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:MICROSOFT_SHAREPOINT_ACCESS_TOKEN` reads a direct Graph token from `$MICROSOFT_SHAREPOINT_ACCESS_TOKEN` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. SharePoint's scopes are admin-consent-gated; see [`SKILL.md`](SKILL.md#auth) for the one-time admin consent and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. SharePoint's scopes are admin-consent-gated; see [`SKILL.md`](SKILL.md#auth) for the one-time admin consent and how to find a connection ID.
 
 ### MCP server
 
@@ -50,7 +50,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:MICROSOFT_SHAREPOINT_ACCESS_TOKEN"` with `"env": { "MICROSOFT_SHAREPOINT_ACCESS_TOKEN": "xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
 
@@ -115,14 +115,14 @@ Run `npx @zapier/microsoft-sharepoint-connector@latest run <script> --help` to s
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:MICROSOFT_SHAREPOINT_ACCESS_TOKEN" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
 
 ```ts
 import { findFiles } from "@zapier/microsoft-sharepoint-connector";
 
 const { data } = await findFiles(
   { siteId: "contoso.sharepoint.com,2c71…,2d22…", search: "Q3 report" },
-  { connection: "env:MICROSOFT_SHAREPOINT_ACCESS_TOKEN" },
+  { connection: "env:<ENV_VAR>" },
 );
 // data → { items: [ { id, name, webUrl, ... } ], next_cursor?: string }
 ```
