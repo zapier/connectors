@@ -11,9 +11,7 @@ A block represents one unit of page content (a paragraph, heading, list item, to
   "object": "block",
   "id": "...",
   "type": "paragraph",
-  "paragraph": {
-    /* type-specific content */
-  }
+  "paragraph": {/* type-specific content */}
 }
 ```
 
