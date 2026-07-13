@@ -22,14 +22,14 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export ELEVENLABS_API_KEY=xxx
-npx @zapier/elevenlabs-connector@latest run <script> '<input-json>' --connection env:ELEVENLABS_API_KEY
+export <ENV_VAR>=xxx
+npx @zapier/elevenlabs-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/elevenlabs-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill elevenlabs
+npx skills add zapier/connectors --skill elevenlabs
 ```
 
 Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
@@ -88,7 +88,7 @@ import { textToSpeech } from "@zapier/elevenlabs-connector";
 
 const { data } = await textToSpeech(
   { voice_id: "JBFqnCBsd6RMkjVDRZzb", text: "Welcome to the show." },
-  { connection: "env:ELEVENLABS_API_KEY" },
+  { connection: "env:<ENV_VAR>" },
 );
 // data.audio_path — local MP3 file; data.history_item_id — re-download key.
 ```
