@@ -1,5 +1,13 @@
 # @zapier/google-docs-connector
 
+## 0.2.9
+
+### Patch Changes
+
+- 59063ca: Automated dependency update from Renovate.
+
+  - `lib/docWalker.ts`: updated
+
 ## 0.2.8
 
 ### Patch Changes
