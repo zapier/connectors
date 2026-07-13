@@ -4,8 +4,6 @@ _Independent, unofficial connector for Trello. Not affiliated with, endorsed by,
 
 Agent-callable scripts for the [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/): create and move cards, manage boards and lists, labels and checklists, comments and attachments, and search — 44 scripts total. Auth is OAuth 1.0a via a Zapier-managed connection (recommended) or direct `TRELLO_API_KEY` + `TRELLO_TOKEN` env vars.
 
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
-
 ## When to use this
 
 Use this connector when an agent needs to create or update Trello cards, organize boards and lists, manage labels and checklists, or search and read Trello data. It covers the common CRUD and lookup flows agents need for task boards and project tracking.
@@ -18,6 +16,8 @@ Use this connector when an agent needs to create or update Trello cards, organiz
 
 ## Install
 
+This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
+
 ```bash
 # Run a script with zero install — npx fetches the package on first use
 export <ENV_VAR_PREFIX>_API_KEY=xxx <ENV_VAR_PREFIX>_TOKEN=yyy
@@ -27,7 +27,7 @@ npx @zapier/trello-connector@latest run <script> '<input-json>' --connection env
 npm install @zapier/trello-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill trello
+npx skills add zapier/connectors --skill trello
 ```
 
 Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR_PREFIX>` reads the API key and token from `$<ENV_VAR_PREFIX>_API_KEY` and `$<ENV_VAR_PREFIX>_TOKEN` (they stay in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
