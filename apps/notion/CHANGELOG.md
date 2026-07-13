@@ -1,5 +1,13 @@
 # @zapier/notion-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- 59063ca: Automated dependency update from Renovate.
+
+  - `references/notion-blocks.md`: updated
+
 ## 0.2.9
 
 ### Patch Changes
