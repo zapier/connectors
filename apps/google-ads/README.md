@@ -29,7 +29,7 @@ npx @zapier/google-ads-connector@latest run <script> '<input-json>' --connection
 npm install @zapier/google-ads-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill google-ads
+npx skills add zapier/connectors --skill google-ads
 ```
 
 Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR_PREFIX>` reads the OAuth access token and developer token from `$<ENV_VAR_PREFIX>_ACCESS_TOKEN` and `$<ENV_VAR_PREFIX>_DEVELOPER_TOKEN` (they stay in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
