@@ -59,10 +59,7 @@ export interface WireDocument {
 }
 
 export type ElementType =
-  | "paragraph"
-  | "table"
-  | "sectionBreak"
-  | "tableOfContents";
+  "paragraph" | "table" | "sectionBreak" | "tableOfContents";
 
 /** One tab's identity + its top-level structural content. */
 export interface WalkedTab {
