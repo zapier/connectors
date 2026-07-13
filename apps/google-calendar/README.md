@@ -29,7 +29,7 @@ npx @zapier/google-calendar-connector@latest run <script> '<input-json>' --conne
 npm install @zapier/google-calendar-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill google-calendar
+npx skills add zapier/connectors --skill google-calendar
 ```
 
 Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
@@ -108,6 +108,7 @@ const { data, meta } = await createEvent(
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-calendar)
+- [Google Calendar API v3 reference](https://developers.google.com/workspace/calendar/api/v3/reference) — vendor API docs
 - [Google Calendar API v3 reference](https://developers.google.com/workspace/calendar/api/v3/reference) — vendor API docs
 
 ## Legal
