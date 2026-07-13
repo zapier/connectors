@@ -57,7 +57,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-docs"
   },
-  "version": "0.2.9",
+  "version": "0.2.10",
   "publishConfig": {
     "access": "public"
   }

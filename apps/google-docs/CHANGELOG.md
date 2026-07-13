@@ -1,5 +1,13 @@
 # @zapier/google-docs-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- 642096f: Bump `@zapier/connectors-sdk` dependency to `0.4.3`.
+
+  Migrate `SKILL.md` to the new interface-agnostic router introduced in `@zapier/connectors-dev@0.11.0` (STAFF-4533): `## Setup` now dispatches to per-shape `references/use-as-{cli,mcp,sdk}.md`, `## Running scripts` is retired in favor of those files, and `## Auth` / `## Output format` are trimmed to the shape-agnostic conceptual model. `README.md` reconciled to match.
+
 ## 0.2.9
 
 ### Patch Changes
