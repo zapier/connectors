@@ -27,13 +27,15 @@ Tools for working with files and folders in Dropbox — upload and write files, 
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-**If this connector is already exposed to you as callable tools** (e.g. `mcp__dropbox__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill dropbox` (or your harness's own skill-install mechanism), then continue here.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill dropbox` (or your harness's own skill-install mechanism), then continue here.
+The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`. On older Node, run `node cli.js --help` anyway: it detects your runtime and prints how to run without upgrading (the prebuilt npm package, or another runtime) — don't skip the connector just because Node is old.
-
-`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+| You have...                                                                                                                                         | Load                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__dropbox__<tool>`), or you can register a local server yourself (or guide the user to) | [`references/use-as-mcp.md`](references/use-as-mcp.md) |
+| Terminal / subprocess access (you can run `node`)                                                                                                   | [`references/use-as-cli.md`](references/use-as-cli.md) |
+| Only your own code, importing this package as a dependency                                                                                          | [`references/use-as-sdk.md`](references/use-as-sdk.md) |
 
 ## Scripts
 
@@ -82,41 +84,26 @@ The entity types most likely to collide here are **files/folders by name** (reso
 
 ## Auth
 
-Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 The connector uses a single Dropbox OAuth2 connection — one credential, with no separate bot/user tokens. Capability is gated by the **OAuth scopes** granted when the connection is authorized (e.g. `files.content.write`, `sharing.read`); a call missing a scope fails with a `missing_scope` error naming the scope to reconnect with. Two resolvers, Zapier-first:
 
-- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier-managed Dropbox connection; Zapier holds the refresh token and **rotates the short-lived (~4h) access token for you**, so this path doesn't expire mid-session. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>; ~1 minute). The user authorizes Dropbox once via Zapier's OAuth flow at <https://zapier.com/app/connections>. Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections DropBoxCLIAPI` (run `login` first if unauthenticated; use `DropBoxCLIAPI` exactly, note the capital B; add `--json` for machine output).
-- **`access-token:<ENV_VAR>`** _(fallback, direct mode)_ — read a Dropbox access token from the named environment variable (e.g. `access-token:DROPBOX_ACCESS_TOKEN`, with the token exported in `DROPBOX_ACCESS_TOKEN`; the token stays in `env`, never on argv), sent as `Authorization: Bearer <token>`. Mint one from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it** — a static Dropbox access token is short-lived and stops working after a few hours, so re-mint it or use the Zapier-managed path above, which handles rotation. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
-
-If no connection is passed the script fails with an actionable error telling you to `Pass --connection [<resolver>:]<value>` and lists the resolvers in match order.
-
-## Running scripts
-
-After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
-
-```bash
-# default — via the entry point; self-checks readiness and prints friendly diagnostics
-node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
-# shorthand — runs the script file directly (same args, same Node 22.18+ need, no readiness check)
-./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
-```
-
-When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
+- **`zapier:<connection-id>`** _(recommended)_ — Zapier holds the refresh token and **rotates the short-lived (~4h) access token for you**, so this path doesn't expire mid-session. Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections DropBoxCLIAPI` (run `login` first if unauthenticated; note the capital B; add `--json` for machine output).
+- **`access-token:<ENV_VAR>`** _(fallback, direct mode)_ — a Dropbox access token read from the named environment variable. Mint one from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it** — a static Dropbox access token is short-lived and stops working after a few hours, so re-mint it or use the Zapier-managed path above, which handles rotation. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
 
 ## Output format
 
 Every script returns a `{ data, meta }` envelope:
 
-- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
+- **`data`** — the script's result (the shape its `outputSchema` declares; see the reference you loaded above for how to inspect a script's exact schema in your shape).
 - **`meta.outputDataValidation`** — what validating `data` did:
   - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
   - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
   - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, opt out of output validation (the exact syntax differs by shape — see the reference you loaded above). Input validation is never skipped.
 
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
 ## References
 
