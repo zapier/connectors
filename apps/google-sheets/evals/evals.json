@@ -1,5 +1,6 @@
 {
   "skill_name": "google-sheets",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the Google Sheets connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Google Sheets is ambient/self-provisioning — the connector can create its own spreadsheet — so scenarios are arrange-act: each cold-starts by creating a {{run_id}}-namespaced throwaway spreadsheet and then acts on it, never touching pre-existing user data. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/efficiency, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "evals": [
     {
