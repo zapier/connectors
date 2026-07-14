@@ -2,7 +2,7 @@
 name: telegram
 description: Agent-callable Telegram bot tools — send messages, media, locations, contacts, and polls; edit, delete, forward, copy, and pin messages; resolve chats, members, and files. Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content — including requests that don't name Telegram explicitly, e.g. "message the team channel", "post this update to the group".
 license: Elastic-2.0
-compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
+compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
 metadata:
   title: Telegram
   source: https://github.com/zapier/connectors/blob/main/apps/telegram/SKILL.md
@@ -30,11 +30,12 @@ If the connector has not been installed as a skill yet, install it first with `n
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-| You have...                                                                                                                                          | Load                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| An MCP-aware client — tools may already be loaded (e.g. `mcp__telegram__<tool>`), or you can register a local server yourself (or guide the user to) | [`references/use-as-mcp.md`](references/use-as-mcp.md) |
-| Terminal / subprocess access (you can run `node`)                                                                                                    | [`references/use-as-cli.md`](references/use-as-cli.md) |
-| Only your own code, importing this package as a dependency                                                                                           | [`references/use-as-sdk.md`](references/use-as-sdk.md) |
+| You have...                                                                                                                                                       | Load                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__telegram__<tool>`), or you can register a local server yourself (or guide the user to)              | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                                 | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                        | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Telegram Bot API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
