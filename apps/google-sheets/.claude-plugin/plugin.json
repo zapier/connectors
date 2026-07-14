@@ -3,7 +3,7 @@
   "name": "google-sheets",
   "displayName": "Google Sheets",
   "description": "Agent-callable Google Sheets tools — read and write spreadsheet data as rows or raw cells, manage worksheets and columns, and apply formatting, sorting, and validation. Use when the user mentions Google Sheets or wants to read, add, update, look up, or organize spreadsheet data, even if they don't name Sheets explicitly.",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
