@@ -1,6 +1,6 @@
 {
   "skill_name": "notion",
-  "version": "a29aa5a",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the Notion connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Notion is sharing-gated: the integration sees nothing until a human shares a page, so an operator root fixture is shared once and everything else is seeded under it. arrange-act scenarios self-provision a child resource under the shared root (cold-start coverage probes); discover-act scenarios operate on the pre-seeded world via in-envelope read/find primitives (all arms compete); act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
