@@ -1,5 +1,11 @@
 # @zapier/google-contacts-connector
 
+## 0.2.12
+
+### Patch Changes
+
+- 70322eb: Add app-specific `keywords` for npm registry discoverability (STAFF-5021). The published package now surfaces on searches beyond its exact slug.
+
 ## 0.2.11
 
 ### Patch Changes
