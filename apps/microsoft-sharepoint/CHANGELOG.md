@@ -1,5 +1,11 @@
 # @zapier/microsoft-sharepoint-connector
 
+## 0.1.4
+
+### Patch Changes
+
+- de4ad4a: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Microsoft Graph API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.1.3
 
 ### Patch Changes
