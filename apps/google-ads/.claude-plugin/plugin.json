@@ -3,7 +3,7 @@
   "name": "google-ads",
   "displayName": "Google Ads",
   "description": "Agent-callable Google Ads tools — search campaigns, ad groups, and ads via GAQL, build performance reports, manage campaign status and budgets, and set up conversion tracking. Use when the user mentions Google Ads or wants to read or manage advertising campaigns, budgets, or reporting — even if they don't name Google Ads explicitly.",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
