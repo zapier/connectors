@@ -2,7 +2,7 @@
 name: elevenlabs
 description: Agent-callable ElevenLabs tools — generate spoken audio from text, create sound effects and multi-speaker dialogue, re-voice and clean up audio, transcribe audio and video, design synthetic voices, and manage voices, history, and quota. Use when the user mentions ElevenLabs or wants AI audio work — text to speech, narration, voiceover, transcription, voice changing, or sound design — even if they don't name ElevenLabs explicitly, e.g. "read this aloud", "make an MP3 of this", "transcribe this recording".
 license: Elastic-2.0
-compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
+compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
 metadata:
   source: https://github.com/zapier/connectors/blob/main/apps/elevenlabs/SKILL.md
   title: Elevenlabs
