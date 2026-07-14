@@ -1,0 +1,56 @@
+{
+  "name": "@zapier/runway-connector",
+  "private": true,
+  "description": "Agent-callable Runway tools — generate images and video from text or images, edit and upscale media, animate characters, generate speech and sound effects, and run marketing recipes, plus track generation jobs. Use when the user mentions Runway or wants to generate, edit, or upscale AI media, even if they don't name Runway explicitly.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/runway-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "SKILL.md",
+    "README.md",
+    "LICENSE",
+    "references/",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepare": "node cli.js build || bun cli.js build || true",
+    "prepack": "tsup"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.4.3",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk-cli": ">=0.62.0 <1.0.0"
+  },
+  "keywords": [
+    "runway",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/runway"
+  }
+}

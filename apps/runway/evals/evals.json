@@ -1,0 +1,592 @@
+{
+  "skill_name": "runway",
+  "version": "b2bb068",
+  "description": "Intent-anchored eval scenarios for the runway connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's capability profile. Runway is an asynchronous generative-media API — most scenarios self-provision a generation task and then read or act on it in one chained session; account reads act on ambient organization state. outcome assertions grade all arms (backend-agnostic world/reply facts); mechanism assertions grade our-tool arms only (task-id-from-result, model-chosen, poll-don't-fabricate, HTTPS-URL-not-local-path). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "runway_sample_image_url",
+      "description": "A publicly-hosted sample image the image-guided scenarios pass as an input asset. The connector cannot upload or host a file in-run — an operator must host a real image at an HTTPS URL the eval connection can fetch.",
+      "env": "EVAL_RUNWAY_SAMPLE_IMAGE_URL",
+      "default": "https://assets.example.com/eval/runway/sample-image.jpg",
+      "expects": "A publicly-reachable HTTPS URL that serves a real JPEG, PNG, or WebP image under 16 MB (GIF is not accepted). The URL's host must be a domain name, not an IP address, and the eval connection must be able to fetch it directly.",
+      "provision": "operator"
+    },
+    {
+      "name": "runway_sample_video_url",
+      "description": "A publicly-hosted sample video the video-editing / character / swap scenarios pass as an input asset. The connector cannot upload or host a file in-run — an operator must host a real video at an HTTPS URL the eval connection can fetch.",
+      "env": "EVAL_RUNWAY_SAMPLE_VIDEO_URL",
+      "default": "https://assets.example.com/eval/runway/sample-video.mp4",
+      "expects": "A publicly-reachable HTTPS URL that serves a real MP4 video under 32 MB. The URL's host must be a domain name, not an IP address, and the eval connection must be able to fetch it directly.",
+      "provision": "operator"
+    },
+    {
+      "name": "runway_sample_audio_url",
+      "description": "A publicly-hosted sample spoken-voice audio clip the dub / voice-convert / voice-isolate scenarios pass as an input asset. The connector cannot upload or host a file in-run — an operator must host a real clip at an HTTPS URL the eval connection can fetch.",
+      "env": "EVAL_RUNWAY_SAMPLE_AUDIO_URL",
+      "default": "https://assets.example.com/eval/runway/sample-audio.mp3",
+      "expects": "A publicly-reachable HTTPS URL that serves a real audio clip containing spoken voice (e.g. MP3 or WAV). The URL's host must be a domain name, not an IP address, and the eval connection must be able to fetch it directly.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "generate-image-from-text",
+      "kind": "arrange-act",
+      "description": "Cold-start coverage probe: generate an image from a text prompt (no input asset) and return the finished image.",
+      "steps": [
+        {
+          "intent": "Generate an image of a red bicycle leaning against a blue wall, tagged 'eval {{run_id}}', and give me the finished image.",
+          "assertions": {
+            "outcome": [
+              "An image-generation task for the described red-bicycle scene is created and its task id is reported.",
+              "The user is ultimately given the generated image's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Supplies a concrete image model on the create call (e.g. a gen4_image / gemini / gpt_image family model) rather than leaving the required model field blank or inventing a non-existent model.",
+              "Reports the task id returned by the create call and, when it reports an image URL, obtains it by polling getTask with that id rather than fabricating a URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-image-with-reference",
+      "kind": "arrange-act",
+      "description": "Coverage probe: generate an image guided by a reference photo supplied as an HTTPS URL.",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Using this reference photo {{runway_sample_image_url}}, generate an image that places the same subject in a snowy mountain scene. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "An image-generation task guided by the supplied reference photo is created and its task id is reported.",
+              "The user is ultimately given the generated image's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL as a reference-image input rather than treating it as a local file or omitting it.",
+              "Supplies a concrete image model and reports the task id from the create result rather than fabricating an image URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-video-from-text",
+      "kind": "arrange-act",
+      "description": "Coverage probe: generate a video from a text prompt alone (no source image).",
+      "steps": [
+        {
+          "intent": "Make a short video of waves rolling onto a beach at sunset, tagged 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A text-to-video generation task for the described beach scene is created and its task id is reported.",
+              "The user is ultimately given the generated video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Supplies a concrete video model on the create call (e.g. a gen4 / veo family model) rather than leaving the required model field blank or inventing a non-existent model.",
+              "Does not claim a finished video exists without a getTask result showing the task reached a terminal SUCCEEDED status."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "animate-image-into-video",
+      "kind": "arrange-act",
+      "description": "Coverage probe: animate a still image into a video with a motion prompt (image supplied as an HTTPS URL).",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Animate this photo {{runway_sample_image_url}} so the camera slowly pushes in on the subject. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A video-generation task that animates the supplied source image with the described camera-push motion is created and its task id is reported.",
+              "The user is ultimately given the generated video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL as the source image and a motion prompt describing the camera push.",
+              "Supplies a concrete video model and reports the task id from the create result rather than fabricating a video URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "restyle-existing-video",
+      "kind": "arrange-act",
+      "description": "Coverage probe: restyle/transform an existing video with a text prompt (video supplied as an HTTPS URL).",
+      "requires": ["runway_sample_video_url"],
+      "steps": [
+        {
+          "intent": "Restyle this video {{runway_sample_video_url}} to look like hand-drawn claymation, keeping the same action. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A video-transform task that restyles the supplied video toward the claymation look is created and its task id is reported.",
+              "The user is ultimately given the restyled video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS video URL as the input video and a restyle prompt; does not treat the URL as a local file.",
+              "Reports the task id returned by the create call rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upscale-image",
+      "kind": "arrange-act",
+      "description": "Coverage probe: upscale an existing image to a higher resolution (image supplied as an HTTPS URL).",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Upscale this image {{runway_sample_image_url}} to a higher resolution and give me the result.",
+          "assertions": {
+            "outcome": [
+              "An image-upscale task for the supplied image is created and its task id is reported.",
+              "The user is ultimately given the upscaled image's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL as the input asset rather than a local path.",
+              "Reports the task id from the create result and obtains any output URL by polling getTask rather than fabricating it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upscale-video",
+      "kind": "arrange-act",
+      "description": "Coverage probe: upscale an existing video to a higher resolution (video supplied as an HTTPS URL).",
+      "requires": ["runway_sample_video_url"],
+      "steps": [
+        {
+          "intent": "Upscale this video {{runway_sample_video_url}} to a higher resolution and give me the result.",
+          "assertions": {
+            "outcome": [
+              "A video-upscale task for the supplied video is created and its task id is reported.",
+              "The user is ultimately given the upscaled video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS video URL as the input asset rather than a local path.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "animate-character-from-performance",
+      "kind": "arrange-act",
+      "description": "Coverage probe: animate a character image by transferring a performance from a driving video (both supplied as HTTPS URLs).",
+      "requires": ["runway_sample_image_url", "runway_sample_video_url"],
+      "steps": [
+        {
+          "intent": "Make the character in this image {{runway_sample_image_url}} perform the movements and expressions from this driving video {{runway_sample_video_url}}. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A character-animation task that drives the supplied character image with the supplied performance video is created and its task id is reported.",
+              "The user is ultimately given the animated video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Uses the provided image URL as the character input and the provided video URL as the driving/reference performance — not swapped and not treated as local files.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-speech-from-text",
+      "kind": "arrange-act",
+      "description": "Coverage probe: generate spoken audio from a supplied script.",
+      "steps": [
+        {
+          "intent": "Read this script aloud in a natural-sounding voice and give me the audio: 'Welcome to our product tour. In the next two minutes, we will show you how to get started.'",
+          "assertions": {
+            "outcome": [
+              "A text-to-speech task that narrates the supplied script is created and its task id is reported.",
+              "The user is ultimately given the generated audio's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Sends the supplied script text and a concrete speech model with a preset voice selection; does not require the user to host the script somewhere.",
+              "Reports the task id from the create result rather than fabricating an audio URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-sound-effect",
+      "kind": "arrange-act",
+      "description": "Coverage probe: generate a sound effect from a text description.",
+      "steps": [
+        {
+          "intent": "Generate a 5-second sound effect of rain falling on a tin roof.",
+          "assertions": {
+            "outcome": [
+              "A sound-effect generation task matching the rain-on-a-tin-roof description is created and its task id is reported.",
+              "The user is ultimately given the generated audio's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the sound description as the prompt and the requested ~5-second duration; supplies a concrete model.",
+              "Reports the task id from the create result rather than fabricating an audio URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "dub-audio-into-language",
+      "kind": "arrange-act",
+      "description": "Coverage probe: dub an existing audio clip into a target language (clip supplied as an HTTPS URL).",
+      "requires": ["runway_sample_audio_url"],
+      "steps": [
+        {
+          "intent": "Dub this clip {{runway_sample_audio_url}} into Spanish.",
+          "assertions": {
+            "outcome": [
+              "A dubbing task that renders the supplied clip in Spanish is created and its task id is reported.",
+              "The user is ultimately given the dubbed audio's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS audio URL as the input clip and a Spanish target language; does not treat the URL as a local file.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "convert-voice-in-clip",
+      "kind": "arrange-act",
+      "description": "Coverage probe: replace the voice in an existing clip with a different voice (clip supplied as an HTTPS URL).",
+      "requires": ["runway_sample_audio_url"],
+      "steps": [
+        {
+          "intent": "Replace the speaker's voice in this clip {{runway_sample_audio_url}} with a different voice, keeping the same words.",
+          "assertions": {
+            "outcome": [
+              "A voice-conversion task on the supplied clip is created and its task id is reported.",
+              "The user is ultimately given the converted audio's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS audio URL as the input clip and a target voice; does not treat the URL as a local file.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "isolate-voice-in-clip",
+      "kind": "arrange-act",
+      "description": "Coverage probe: remove background audio and isolate the voice in a clip (clip supplied as an HTTPS URL).",
+      "requires": ["runway_sample_audio_url"],
+      "steps": [
+        {
+          "intent": "Remove the background noise from this recording {{runway_sample_audio_url}} and keep just the voice.",
+          "assertions": {
+            "outcome": [
+              "A voice-isolation task on the supplied clip is created and its task id is reported.",
+              "The user is ultimately given the cleaned-up audio's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS audio URL as the input clip; does not treat the URL as a local file.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-product-ad-video",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the product-ad recipe from product images and creative direction (images supplied as HTTPS URLs).",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Make a cinematic product ad video from this product photo {{runway_sample_image_url}} with the creative direction: 'sleek, premium, slow rotating hero shot on a dark backdrop'. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A product-ad generation task built from the supplied product image and creative direction is created and its task id is reported.",
+              "The user is ultimately given the ad video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL as a product image and the creative direction as the brief; does not treat the URL as a local file.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-campaign-images",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the fashion-campaign-images recipe from a product image and a style brief.",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Create fashion campaign images from this product shot {{runway_sample_image_url}} with the style brief: 'editorial summer campaign, warm natural light, minimalist styling'. Tag them 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A campaign-images generation task built from the supplied product image and style brief is created and its task id is reported.",
+              "The user is ultimately given the campaign images' asset URLs, or told the task is still processing along with the id needed to retrieve them later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL as the product image and the style brief text; does not treat the URL as a local file.",
+              "Reports the task id from the create result rather than fabricating output URLs."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-marketing-image",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the marketing-image recipe from a brief alone (no input asset required).",
+      "steps": [
+        {
+          "intent": "Create a polished marketing stock image for a new specialty coffee brand: a steaming latte on a wooden table in soft morning light. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A marketing-image generation task matching the coffee-brand brief is created and its task id is reported.",
+              "The user is ultimately given the marketing image's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Sends the brief as the recipe input; does not demand a source image the user never provided.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "swap-product-in-video",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the product-swap recipe, replacing the product in a reference video with a new product image (both supplied as HTTPS URLs).",
+      "requires": ["runway_sample_video_url", "runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "In this reference video {{runway_sample_video_url}}, swap the product for my new product shown in this image {{runway_sample_image_url}}. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A product-swap task that replaces the product in the supplied reference video with the supplied product image is created and its task id is reported.",
+              "The user is ultimately given the resulting video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Uses the provided video URL as the reference video and the provided image URL as the replacement product — not swapped and not treated as local files.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-product-ugc-ad",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the UGC-style vertical-ad recipe from a character image, a product image, and a brief.",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Make a vertical UGC-style ad using this photo {{runway_sample_image_url}} as the on-camera person and the same photo as the product, with the brief: 'casual unboxing, enthusiastic, phone-shot vibe'. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A UGC-style ad generation task built from the supplied images and brief is created and its task id is reported.",
+              "The user is ultimately given the ad video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL(s) as the character and product inputs and the brief text; does not treat the URLs as local files.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-multishot-video",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the multi-shot-video recipe from a story prompt (no input asset required).",
+      "steps": [
+        {
+          "intent": "Turn this story into a multi-cut video: 'A lone hiker sets out at dawn, crosses a river, reaches a ridge, and watches the sun rise over the valley.' Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A multi-shot video generation task built from the supplied story is created and its task id is reported.",
+              "The user is ultimately given the video's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Sends the story as the prompt and lets the recipe derive the shots (auto) rather than demanding a shot list the user never gave.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "localize-ad-image",
+      "kind": "arrange-act",
+      "description": "Coverage probe: run the ad-localization recipe on an existing ad image for a target language (image supplied as an HTTPS URL).",
+      "requires": ["runway_sample_image_url"],
+      "steps": [
+        {
+          "intent": "Localize this ad image {{runway_sample_image_url}} for a German-speaking audience, keeping the creative the same. Tag it 'eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "An ad-localization task on the supplied image targeting German is created and its task id is reported.",
+              "The user is ultimately given the localized image's asset URL, or told the task is still processing along with the id needed to retrieve it later."
+            ],
+            "mechanism": [
+              "Passes the provided HTTPS image URL as the ad image and German as the target language; does not treat the URL as a local file.",
+              "Reports the task id from the create result rather than fabricating an output URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "cancel-running-generation",
+      "kind": "arrange-act",
+      "description": "Coverage probe: start a long generation and then cancel it before it finishes — both actions in one session.",
+      "steps": [
+        {
+          "intent": "Start generating a long video of a city timelapse tagged 'eval {{run_id}}', then cancel that generation before it finishes.",
+          "assertions": {
+            "outcome": [
+              "A generation task is started and then canceled/stopped, so it is not left running to completion; the reply confirms the cancellation."
+            ],
+            "mechanism": [
+              "Cancels the task using the id returned by the create call earlier in this turn rather than a fabricated or unrelated id.",
+              "Issues the cancel against the just-started task; does not start a second generation instead of canceling."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-credit-balance-and-limits",
+      "kind": "act-only",
+      "description": "Head-to-head account read against ambient organization state: report the current credit balance and tier limits.",
+      "steps": [
+        {
+          "intent": "How many Runway credits do I have left, and what are my current generation limits?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the organization's current credit balance and/or its per-model concurrency and daily generation limits, drawn from the account rather than invented."
+            ],
+            "mechanism": [
+              "Reads organization/account info to answer; does not fabricate a balance or limit figure."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-credit-spend-over-window",
+      "kind": "act-only",
+      "description": "Guidance-dependent: credit-usage queries are capped at a 90-day window, so a full-year request can't be answered in one call — the agent must scope or chunk rather than return a wrong figure.",
+      "steps": [
+        {
+          "intent": "How many credits have we spent on Runway over the past year, and on which models?",
+          "assertions": {
+            "outcome": [
+              "The reply does not present a single number as the full 12-month spend from one query; it either limits the answer to a supported window and says so, or covers the year across multiple windows, and it does not fabricate spend figures."
+            ],
+            "mechanism": [
+              "Queries credit usage with a UTC date range no wider than the supported ~90-day maximum per call (chunking if a longer span is needed) rather than requesting the whole year at once."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "retrieve-finished-generation",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: generation is asynchronous and video takes minutes, so the naive path stops at 'submitted' or claims a finished file that doesn't exist; the correct path confirms completion before delivering.",
+      "steps": [
+        {
+          "intent": "Generate a video of a hot-air balloon drifting over a canyon, tagged 'eval {{run_id}}', and send me the finished MP4.",
+          "assertions": {
+            "outcome": [
+              "The user is given the actual finished video's asset URL, OR is clearly told the generation is still in progress with a way to retrieve it later; the reply never presents a completed/downloadable video without having confirmed the task reached a terminal SUCCEEDED status."
+            ],
+            "mechanism": [
+              "Creates the task, then confirms completion by polling getTask (or by using a blocking wait) before claiming a finished asset; does not fabricate an asset URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "deliver-image-with-expiry-warning",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: generated asset URLs are ephemeral (expire in ~24-48h), so presenting one as a permanent link is wrong; the correct path flags that it must be saved/rehosted.",
+      "steps": [
+        {
+          "intent": "Generate an image of a mountain lake at dusk tagged 'eval {{run_id}}', then give me a link I can put on our website permanently.",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear the delivered image link is temporary and will stop working within roughly a day or two, so it must be downloaded and rehosted; it does not present the generated URL as a permanent link suitable for direct website use."
+            ],
+            "mechanism": [
+              "Obtains the image URL by polling getTask with the id from the create call rather than fabricating it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upscale-local-file-refusal",
+      "kind": "negative",
+      "description": "Graceful refusal: there is no upload tool — asset inputs must be an HTTPS URL or data URI, so a local file path can't be used directly.",
+      "steps": [
+        {
+          "intent": "Upscale the image at ~/Desktop/photo.png on my computer and give me the result.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that a local file path can't be used directly and that the image must be provided as an HTTPS URL (or a data URI); it does not claim the local file was uploaded or upscaled."
+            ],
+            "mechanism": [
+              "Does not call an upscale/generation tool passing the local path as if it were a valid asset input, and does not fabricate a task id or result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "quote-generation-price-refusal",
+      "kind": "negative",
+      "description": "Graceful refusal: the API exposes no per-generation price catalog; only actual spend after the fact is available, so an up-front price can't be quoted.",
+      "steps": [
+        {
+          "intent": "Exactly how many dollars will it cost to generate a 10-second video before I run it?",
+          "assertions": {
+            "outcome": [
+              "The reply explains it cannot quote an exact per-generation price up front (only actual spend after generation, and tier limits, are available) and does not invent a specific dollar or credit price."
+            ],
+            "mechanism": [
+              "Does not present a limits/usage read as if it were a per-generation price quote, and does not fabricate a price."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "save-custom-voice-refusal",
+      "kind": "negative",
+      "description": "Graceful refusal: custom-voice management is a separate Runway product out of this connector's scope.",
+      "steps": [
+        {
+          "intent": "Save this narration voice as a reusable custom voice in my Runway account so I can pick it next time.",
+          "assertions": {
+            "outcome": [
+              "The reply states that saving or managing custom voices isn't supported by this connector and does not claim a custom voice was saved."
+            ],
+            "mechanism": [
+              "Does not call any tool pretending to persist a custom voice, and does not fabricate a saved-voice id or confirmation."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

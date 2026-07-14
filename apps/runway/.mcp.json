@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "runway": {
+      "command": "npx",
+      "args": ["-y", "@zapier/runway-connector", "mcp"]
+    }
+  }
+}
