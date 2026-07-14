@@ -1,6 +1,6 @@
 {
   "skill_name": "google-tasks",
-  "version": "9810152",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the google-tasks connector. Google Tasks is ambient + self-provisioning, so scenarios are arrange-act: each creates a throwaway task list namespaced with {{run_id}}, exercises the capability, and deletes the list (zero residue; create/delete double as coverage). No fixtures. Assertions split into outcome (backend-agnostic world/reply facts, graded on all arms) and mechanism (tool-call hygiene, our-arm-only). Includes a default-list probe and a recurring-task refusal as guidance/eval-regression signals. Run per the agentskills.io eval methodology.",
   "evals": [
     {
