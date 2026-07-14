@@ -1,5 +1,11 @@
 # @zapier/google-contacts-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- 18990d6: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Google Contacts API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.2.9
 
 ### Patch Changes
