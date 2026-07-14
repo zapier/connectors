@@ -2,7 +2,7 @@
 name: youtube
 description: Agent-callable YouTube tools — search and read videos, update and delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
 license: Elastic-2.0
-compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
+compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
 metadata:
   title: YouTube
   source: https://github.com/zapier/connectors/blob/main/apps/youtube/SKILL.md
