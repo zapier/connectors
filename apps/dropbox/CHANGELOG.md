@@ -1,5 +1,11 @@
 # @zapier/dropbox-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- 051e926: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Dropbox API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.2.9
 
 ### Patch Changes
