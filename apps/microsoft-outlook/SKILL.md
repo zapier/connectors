@@ -2,7 +2,7 @@
 name: microsoft-outlook
 description: Agent-callable Microsoft Outlook tools — read and search mail, send/reply/forward, organize messages and folders, manage calendar events, and manage contacts. Use when the user mentions Outlook, Microsoft 365 mail/calendar/contacts, or wants to send, read, search, or organize email, schedule events, or look up contacts — even if they don't name Outlook explicitly.
 license: Elastic-2.0
-compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
+compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
 metadata:
   title: Microsoft Outlook
   source: https://github.com/zapier/connectors/blob/main/apps/microsoft-outlook/SKILL.md
