@@ -1,6 +1,6 @@
 {
   "skill_name": "google-ads",
-  "version": "ce5eb75",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the google-ads connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision in-connector assets (budgets, conversion actions); discover-act scenarios read/find against a pre-existing Google Ads account (a fixture, since the connector can't create accounts or campaigns); act-only scenarios target the ambient connection or are graceful-refusal probes for out-of-scope capabilities. outcome assertions are backend-agnostic world/reply facts graded on all arms; mechanism assertions are tool-call hygiene graded only on our-tool arms. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
