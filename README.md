@@ -67,3 +67,15 @@ node apps/notion/scripts/search.ts --help
 The connector's `SKILL.md` describes the trade-offs between the two modes (setup steps, where the third-party credential lives, how revocation works).
 
 Node (22.18+) runs the TypeScript directly — `npm install` the connector's deps first. Bun works too and auto-installs deps on first run.
+
+### Cloning the source
+
+You don't need to clone the source code for a connector to use it; various options for installing and/or using a connector directly are explained above. However, if you do want the actual source instead — to read a script's code, browse `references/`, run a connector's tests, or hack on it — clone with a path filter so you only fetch the `apps/<slug>` folders you care about, not the whole catalog:
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/zapier/connectors.git
+cd connectors
+git sparse-checkout set apps/notion apps/trello   # only the connectors you need
+```
+
+Each `apps/<slug>` is standalone-installable — no root `npm install` or workspace bootstrap is required. Just `cd apps/<slug> && npm install`.
