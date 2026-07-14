@@ -1,5 +1,11 @@
 # @zapier/microsoft-sharepoint-connector
 
+## 0.1.6
+
+### Patch Changes
+
+- 70322eb: Add app-specific `keywords` for npm registry discoverability (STAFF-5021). The published package now surfaces on searches beyond its exact slug.
+
 ## 0.1.5
 
 ### Patch Changes
