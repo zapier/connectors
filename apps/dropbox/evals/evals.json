@@ -1,6 +1,6 @@
 {
   "skill_name": "dropbox",
-  "version": "01f88c3",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the dropbox connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision files/folders (cold-start coverage probes; Dropbox is ambient, so the connection can create its own world); the shared-folder membership scenario is discover-act over a fixture the connector cannot create in-run; act-only scenarios target ambient account state. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/shape, our-arm-only). {{run_id}} namespaces created assets so re-runs don't collide. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
