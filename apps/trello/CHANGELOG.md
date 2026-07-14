@@ -1,5 +1,11 @@
 # @zapier/trello-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- ef9f949: Fix CRITICAL E006: download user-provided attachment URLs with globalThis.fetch so Trello OAuth is never injected into third-party hosts (STAFF-4516).
+
 ## 0.2.9
 
 ### Patch Changes
