@@ -25,7 +25,8 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepack": "tsup"
+    "prepack": "tsup",
+    "test": "vitest run"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.4.3",
@@ -54,5 +55,11 @@
   "version": "0.2.10",
   "publishConfig": {
     "access": "public"
+  },
+  "bugs": "https://github.com/zapier/connectors/issues",
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
   }
 }
