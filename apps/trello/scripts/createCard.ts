@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 // Authored by the implementation agent: multi-step card create (POST /cards + optional
 // member/label/attachment/checklist/custom-field follow-ups) — outside codegen's single-call model.
-import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
+import {
+  ConnectorHttpError,
+  defineTool,
+  handleIfScriptMain,
+} from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
@@ -149,8 +153,14 @@ const definition = defineTool({
     const attachUrl = input.attachmentUrl ?? input.attachmentFileUrl;
     if (attachUrl) {
       if (input.attachmentFileUrl) {
-        const fileRes = await ctx.fetch(input.attachmentFileUrl);
-        if (!fileRes.ok) await trelloError("createCard", fileRes);
+        // Download from the caller-provided URL. NOT a Trello call — use global
+        // fetch so Trello credentials are never sent to a third-party host.
+        const fileRes = await globalThis.fetch(input.attachmentFileUrl);
+        if (!fileRes.ok) {
+          throw ConnectorHttpError.fromResponseBody(fileRes, undefined, {
+            message: "Trello createCard: could not download attachmentFileUrl",
+          });
+        }
         const buffer = await fileRes.arrayBuffer();
         const form = new FormData();
         form.append("file", new Blob([buffer]), "attachment");
