@@ -1,5 +1,11 @@
 # @zapier/trello-connector
 
+## 0.2.13
+
+### Patch Changes
+
+- 765e0b5: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Trello API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.2.12
 
 ### Patch Changes
