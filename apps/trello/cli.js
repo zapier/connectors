@@ -39,35 +39,21 @@ if (!process.versions.bun && !hasDist) {
   // (native type-stripping).
   if (!nodeStripsTypes()) {
     const pkg = packageName();
-    // A connector's devDependencies (tsup) make a local build a real fix here,
-    // not just a runtime switch: build once and this Node can run the compiled
-    // dist/ it can't run the TypeScript source on. Check for the tsup bin
-    // specifically, not just node_modules/ — a prior `--omit=dev` install
-    // would have node_modules without the devDependencies build needs.
-    const buildRoute = existsSync(join(dir, "node_modules", ".bin", "tsup"))
-      ? `run \`npm run build\` in ${dir}, then re-run this command — it'll pick up ` +
-        `the dist/ that build produces.`
-      : `run \`npm install\` (the plain form — not \`--omit=dev\`, which skips the ` +
-        `devDependencies the build needs) then \`npm run build\` in ${dir}, then re-run ` +
-        `this command.`;
     // Only name the npx route when there's a package name to put in it.
-    const orWithoutBuilding = pkg
-      ? ` Or, without building: use the prebuilt npm package — \`npx ${pkg}@latest --help\` ` +
-        `(runs the last published release, not your local edits); or run with Bun: ` +
-        `\`bun ${join(dir, "cli.js")} --help\`.`
-      : ` Or, without building, use Bun: \`bun ${join(dir, "cli.js")} --help\`.`;
+    const withoutUpgrading = pkg
+      ? ` To run without upgrading: use the prebuilt npm package (ships compiled JS, ` +
+        `runs on any Node) — \`npx ${pkg}@latest --help\` (fetches from the registry, so it ` +
+        `needs network + cache-write at run time and ignores your local edits); or run with ` +
+        `Bun: \`bun ${join(dir, "cli.js")} --help\`.`
+      : ` To run without upgrading, use Bun: \`bun ${join(dir, "cli.js")} --help\`.`;
     console.error(
       `Connector setup needed: this Node (v${process.versions.node}) can't run the ` +
-        `connector's TypeScript source directly — that needs Node 22.18+, and there's no ` +
-        `prebuilt dist/ here. Build one instead: ${buildRoute}${orWithoutBuilding}`,
+        `connector's TypeScript source — that needs Node 22.18+, and there's no prebuilt ` +
+        `dist/ here.${withoutUpgrading}`,
     );
     process.exit(1);
   }
   // The source can run on this Node; now it just needs deps installed here.
-  // This gate is the consumption route only (cli.js only ever runs the
-  // connector, never builds/tests it) — --omit=dev, always. Building/testing
-  // is a separate, deliberate workflow (`npm run build`/`npm test`) invoked
-  // directly, not through cli.js.
   if (!existsSync(join(dir, "node_modules"))) {
     // Disambiguate the two sandbox failures that block an install, because the
     // fixes differ: a read-only connector dir (run unsandboxed / grant write)
@@ -76,9 +62,9 @@ if (!process.versions.bun && !hasDist) {
     // permission bits, since a sandbox can deny the write at the syscall.
     const recommendation = dirWritable()
       ? `dependencies are not installed — run ` +
-        `\`npm install --omit=dev --cache "${join(dir, ".npm-cache")}"\` in ${dir} ` +
+        `\`npm install --cache "${join(dir, ".npm-cache")}"\` in ${dir} ` +
         `(the workspace-local --cache survives a sandbox that blocks ~/.npm; plain ` +
-        `\`npm install --omit=dev\` works otherwise).`
+        `\`npm install\` works otherwise).`
       : `dependencies are not installed and ${dir} is read-only in this sandbox ` +
         `(a test write failed) — \`npm install\` can't place node_modules here. ` +
         `Run the install with the sandbox disabled, or grant write access to ${dir} ` +

@@ -1,26 +1,5 @@
 # @zapier/trello-connector
 
-## 0.2.11
-
-### Patch Changes
-
-- ad2c85f: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
-
-  - `SKILL.md`
-  - `cli.js`
-  - `package.json`
-  - `references/use-as-cli.md`
-
-- ad2c85f: Automated dependency update from Renovate.
-
-  - File changes as a result of (external) dependency updates.
-
-## 0.2.10
-
-### Patch Changes
-
-- ef9f949: Fix CRITICAL E006: download user-provided attachment URLs with globalThis.fetch so Trello OAuth is never injected into third-party hosts (STAFF-4516).
-
 ## 0.2.9
 
 ### Patch Changes

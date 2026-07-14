@@ -25,8 +25,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepack": "tsup",
-    "test": "vitest run"
+    "prepack": "tsup"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.4.3",
@@ -38,10 +37,6 @@
   },
   "keywords": [
     "trello",
-    "kanban",
-    "boards",
-    "cards",
-    "project-management",
     "zapier",
     "connector",
     "tools",
@@ -56,14 +51,8 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/trello"
   },
-  "version": "0.2.11",
+  "version": "0.2.9",
   "publishConfig": {
     "access": "public"
-  },
-  "bugs": "https://github.com/zapier/connectors/issues",
-  "devDependencies": {
-    "tsup": "8.5.1",
-    "typescript": "5.9.3",
-    "vitest": "4.1.10"
   }
 }

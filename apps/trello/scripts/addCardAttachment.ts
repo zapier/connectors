@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 // Authored by the implementation agent: multipart file upload or URL form POST to
 // POST /cards/{id}/attachments — outside codegen's single JSON-call model.
-import {
-  ConnectorHttpError,
-  defineTool,
-  handleIfScriptMain,
-} from "@zapier/connectors-sdk";
+import { defineTool, handleIfScriptMain } from "@zapier/connectors-sdk";
 import { z } from "zod";
 
 import { connectionResolvers } from "../connections.ts";
@@ -69,14 +65,8 @@ const definition = defineTool({
     const cardPath = `${TRELLO_BASE}/cards/${encodeURIComponent(input.id)}/attachments`;
 
     if (input.fileUrl) {
-      // Download from the caller-provided URL. NOT a Trello call — use global
-      // fetch so Trello credentials are never sent to a third-party host.
-      const fileRes = await globalThis.fetch(input.fileUrl);
-      if (!fileRes.ok) {
-        throw ConnectorHttpError.fromResponseBody(fileRes, undefined, {
-          message: "Trello addCardAttachment: could not download fileUrl",
-        });
-      }
+      const fileRes = await ctx.fetch(input.fileUrl);
+      if (!fileRes.ok) await trelloError("addCardAttachment", fileRes);
       const buffer = await fileRes.arrayBuffer();
       const fileName = input.name ?? "attachment";
       const form = new FormData();
