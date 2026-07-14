@@ -1,5 +1,11 @@
 # @zapier/telegram-connector
 
+## 0.2.12
+
+### Patch Changes
+
+- ade24e6: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Telegram Bot API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.2.11
 
 ### Patch Changes
