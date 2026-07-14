@@ -1,6 +1,6 @@
 {
   "skill_name": "youtube",
-  "version": "3fbd922",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the youtube connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (playlists, uploads) as cold-start coverage probes; discover-act scenarios operate on the public YouTube world or a seeded fixture via in-envelope read/find primitives; act-only scenarios target a named ambient resource (a public video, a channel handle, or an owned-video fixture). Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene and the connector's id/scope/replace-semantics traps, graded only on our-tool arms). {{run_id}} namespaces created assets so re-runs don't collide.",
   "fixtures": [
     {
