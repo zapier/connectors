@@ -1,6 +1,6 @@
 {
   "skill_name": "microsoft-sharepoint",
-  "version": "87b5897",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the microsoft-sharepoint connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world under a pre-shared eval site (cold-start coverage probes); discover-act scenarios operate on the pre-existing site/list via in-envelope find/list primitives (all arms compete); refusal scenarios probe capabilities the catalog deliberately doesn't ship. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene/shape, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
