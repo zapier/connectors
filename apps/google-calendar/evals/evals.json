@@ -1,6 +1,6 @@
 {
   "skill_name": "google-calendar",
-  "version": "5f2a9fd",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the google-calendar connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's capability profile. The connected user's primary calendar is ambient, so scenarios self-provision events/calendars with {{run_id}} namespacing and need no fixtures. Outcome assertions describe world/reply facts backend-agnostically and grade all arms; mechanism assertions check tool-call hygiene and grade our-arm-only. Run per the agentskills.io eval methodology.",
   "evals": [
     {
