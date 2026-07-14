@@ -1,6 +1,6 @@
 {
   "skill_name": "google-docs",
-  "version": "25013ee",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the google-docs connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Because the connector can create every document it needs in-run, the corpus is all arrange-act (no fixtures): each scenario self-provisions its world, exercises the capability, and where relevant cleans up. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
