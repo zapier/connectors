@@ -31,11 +31,12 @@ If the connector has not been installed as a skill yet, install it first with `n
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-| You have...                                                                                                                                        | Load                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| An MCP-aware client — tools may already be loaded (e.g. `mcp__trello__<tool>`), or you can register a local server yourself (or guide the user to) | [`references/use-as-mcp.md`](references/use-as-mcp.md) |
-| Terminal / subprocess access (you can run `node`)                                                                                                  | [`references/use-as-cli.md`](references/use-as-cli.md) |
-| Only your own code, importing this package as a dependency                                                                                         | [`references/use-as-sdk.md`](references/use-as-sdk.md) |
+| You have...                                                                                                                                                 | Load                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__trello__<tool>`), or you can register a local server yourself (or guide the user to)          | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                           | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                  | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Trello API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
