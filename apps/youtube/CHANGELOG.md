@@ -1,5 +1,11 @@
 # @zapier/youtube-connector
 
+## 0.1.12
+
+### Patch Changes
+
+- b6b7900: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the YouTube Data API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.1.11
 
 ### Patch Changes
