@@ -2,7 +2,7 @@
 name: microsoft-sharepoint
 description: Agent-callable Microsoft SharePoint tools — find sites and document libraries, browse, search, upload, move and share files, manage lists and list items, and author site pages. Use when the user mentions SharePoint or wants to work with SharePoint sites, files, folders, lists, or pages, even if they don't name SharePoint explicitly.
 license: Elastic-2.0
-compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
+compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
 metadata:
   source: https://github.com/zapier/connectors/blob/main/apps/microsoft-sharepoint/SKILL.md
   title: Microsoft SharePoint
