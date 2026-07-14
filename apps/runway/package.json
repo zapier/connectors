@@ -27,7 +27,8 @@
   "scripts": {
     "build": "tsup",
     "prepare": "node cli.js build || bun cli.js build || true",
-    "prepack": "tsup"
+    "prepack": "tsup",
+    "test": "vitest run"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.4.3",
@@ -52,5 +53,11 @@
     "type": "git",
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/runway"
+  },
+  "bugs": "https://github.com/zapier/connectors/issues",
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
   }
 }
