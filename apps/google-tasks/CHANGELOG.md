@@ -1,5 +1,11 @@
 # @zapier/google-tasks-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- 3616f38: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Google Tasks API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.2.9
 
 ### Patch Changes
