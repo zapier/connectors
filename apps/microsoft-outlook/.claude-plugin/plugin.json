@@ -3,7 +3,7 @@
   "name": "microsoft-outlook",
   "displayName": "Microsoft Outlook",
   "description": "Agent-callable Microsoft Outlook tools — read and search mail, send/reply/forward, organize messages and folders, manage calendar events, and manage contacts. Use when the user mentions Outlook, Microsoft 365 mail/calendar/contacts, or wants to send, read, search, or organize email, schedule events, or look up contacts — even if they don't name Outlook explicitly.",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
