@@ -3,7 +3,7 @@
   "name": "google-tasks",
   "displayName": "Google Tasks",
   "description": "Agent-callable Google Tasks tools — create, list, update, complete, move, and delete tasks and task lists. Use when the user wants to manage Google Tasks or to-dos, even if they don't name Google Tasks explicitly.",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
