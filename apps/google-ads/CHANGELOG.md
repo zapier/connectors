@@ -1,5 +1,11 @@
 # @zapier/google-ads-connector
 
+## 0.2.10
+
+### Patch Changes
+
+- 1b0c26b: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Google Ads API (can't load tools, run a terminal, or import this package in-process).
+
 ## 0.2.9
 
 ### Patch Changes
