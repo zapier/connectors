@@ -1,6 +1,6 @@
 {
   "skill_name": "elevenlabs",
-  "version": "d9937d8",
+  "version": "3d978c6",
   "description": "Intent-anchored eval scenarios for the elevenlabs connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run reveals native's capability profile; outcome assertions grade all arms, mechanism assertions our-arm-only. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
   "fixtures": [
     {
