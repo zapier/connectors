@@ -2,7 +2,7 @@
 name: youtube
 description: Agent-callable YouTube tools — search and read videos, update and delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.
 license: Elastic-2.0
-compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
+compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
 metadata:
   title: YouTube
   source: https://github.com/zapier/connectors/blob/main/apps/youtube/SKILL.md
@@ -31,11 +31,12 @@ If the connector has not been installed as a skill yet, install it first with `n
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-| You have...                                                                                                                                         | Load                                                   |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| An MCP-aware client — tools may already be loaded (e.g. `mcp__youtube__<tool>`), or you can register a local server yourself (or guide the user to) | [`references/use-as-mcp.md`](references/use-as-mcp.md) |
-| Terminal / subprocess access (you can run `node`)                                                                                                   | [`references/use-as-cli.md`](references/use-as-cli.md) |
-| Only your own code, importing this package as a dependency                                                                                          | [`references/use-as-sdk.md`](references/use-as-sdk.md) |
+| You have...                                                                                                                                                       | Load                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__youtube__<tool>`), or you can register a local server yourself (or guide the user to)               | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                                 | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                        | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the YouTube Data API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 

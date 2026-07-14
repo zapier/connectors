@@ -1,6 +1,6 @@
 {
   "name": "@zapier/youtube-connector",
-  "version": "0.1.10",
+  "version": "0.1.9",
   "publishConfig": {
     "access": "public"
   },
@@ -29,8 +29,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepack": "tsup",
-    "test": "vitest run"
+    "prepack": "tsup"
   },
   "dependencies": {
     "@zapier/connectors-sdk": "^0.4.3",
@@ -42,10 +41,6 @@
   },
   "keywords": [
     "youtube",
-    "video",
-    "videos",
-    "streaming",
-    "media",
     "zapier",
     "connector",
     "tools",
@@ -59,11 +54,5 @@
     "type": "git",
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/youtube"
-  },
-  "bugs": "https://github.com/zapier/connectors/issues",
-  "devDependencies": {
-    "tsup": "8.5.1",
-    "typescript": "5.9.3",
-    "vitest": "4.1.10"
   }
 }
