@@ -2,7 +2,7 @@
 name: google-docs
 description: Agent-callable Google Docs tools — create, read, export, and find documents; edit text, formatting, images, and page style. Use when the user mentions Google Docs or wants to create, read, search, or edit document content, even if they don't name Google Docs explicitly.
 license: Elastic-2.0
-compatibility: Run `npm install` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for prebuilt / alternative-runtime options.
+compatibility: Run `npm install --omit=dev` in this directory, then `node cli.js`. The TypeScript source needs Node.js 22.18+; on older Node, run `cli.js` for build-it-yourself / prebuilt / alternative-runtime options.
 metadata:
   title: Google Docs
   source: https://github.com/zapier/connectors/blob/main/apps/google-docs/SKILL.md
