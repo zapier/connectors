@@ -26,7 +26,6 @@
   ],
   "scripts": {
     "build": "tsup",
-    "prepare": "node cli.js build || bun cli.js build || true",
     "prepack": "tsup",
     "test": "vitest run"
   },
