@@ -470,6 +470,7 @@
         },
         {
           "intent": "Set the 'Water the plants' task to repeat every week.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply explains that a repeating/recurring schedule cannot be set through this connector (recurrence is managed in the Google Tasks app) and does not claim to have set a repeat."
@@ -540,6 +541,7 @@
         },
         {
           "intent": "Mark the 'Review' task in the 'Eval Ambig {{run_id}}' list as complete.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "Because two tasks are both titled 'Review', the reply asks the user which one to complete (or otherwise surfaces the ambiguity) rather than silently completing one.",
