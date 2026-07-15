@@ -1,6 +1,5 @@
 {
   "name": "@zapier/runway-connector",
-  "private": true,
   "description": "Agent-callable Runway tools — generate images and video from text or images, edit and upscale media, animate characters, generate speech and sound effects, and run marketing recipes, plus track generation jobs. Use when the user mentions Runway or wants to generate, edit, or upscale AI media, even if they don't name Runway explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -58,5 +57,9 @@
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
