@@ -27,7 +27,7 @@ Scripts for working with YouTube against the [YouTube Data API v3](https://devel
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill youtube` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill youtube` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -69,22 +69,16 @@ All scripts use the single connection `youtube`.
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-YouTube uses **Google OAuth 2.0** with a single access token, resolved into the one `youtube` connection slot. Every script uses the same credential; what a token can do is gated by **OAuth scope** (granted at connect) and by **resource ownership** (you can only modify videos, playlists, and subscriptions you own), not by token type. Two resolvers — the Zapier-managed one is recommended:
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`zapier:<connection-id>`** _(recommended)_ — Zapier-managed auth. Route through a Zapier YouTube connection; the Zapier auth, retries, and governance layer injects the token and **handles refresh for you**. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections YouTubeV2CLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
-- **`env:YOUTUBE_ACCESS_TOKEN`** _(direct)_ — direct mode, for bring-your-own-token or local testing. Read a Google OAuth access token from the named environment variable (conventionally `env:YOUTUBE_ACCESS_TOKEN`, with the token exported in `YOUTUBE_ACCESS_TOKEN`). The token must carry the scopes for the scripts you call. Google access tokens expire ~1 hour after issue and are **not** refreshed in direct mode, so this suits short-lived / testing use.
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-**Scopes.** The connection should be granted the access the scripts you use need:
-
-- `youtube.readonly` — all read / list scripts (search, videos, playlists, playlist items, channels, categories, subscriptions, comment threads).
-- `youtube` — manage scripts: playlist create/update/delete, playlist-item add/remove, subscribe/unsubscribe, video update/delete, **and rateVideo** (rating does _not_ need the comment scope).
-- `youtube.force-ssl` — **required** for all comment writes (`postComment`, `replyToComment`) and for **all caption** operations (`listCaptions`, `downloadCaption`).
-
-A request made with an insufficient scope returns **403**; reconnect YouTube with the broader access. A 403 because you don't **own** the resource is a different problem — reconnecting won't help.
-
-If no connection is passed, the script fails with an actionable error listing the resolvers in match order.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
