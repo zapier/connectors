@@ -31,7 +31,7 @@ npm install @zapier/google-docs-connector
 npx skills add zapier/connectors --skill google-docs
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection` — a _selector_, not the secret. The `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver. See [Auth](#auth) below for the with/without-Zapier tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -91,18 +91,27 @@ import { findDocuments, exportDocument } from "@zapier/google-docs-connector";
 // Each named export is the consumer-facing (input, opts) => Promise<{ data, meta }>.
 const { data } = await exportDocument(
   { documentId: "1AbC...", format: "markdown" },
-  { connection: "env:GOOGLE_DOCS_ACCESS_TOKEN" },
+  { connection: "env:<ENV_VAR>" },
 );
 console.log(data.content); // the document as Markdown
 ```
 
 `meta.outputDataValidation` reports whether any API fields were stripped against the script's `outputSchema`; pass `{ skipOutputDataValidation: true }` in the run options to get the raw result. See [`SKILL.md`](SKILL.md#output-format) for the full envelope contract.
 
+## Auth
+
+Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
+
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
+
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Google Docs API reference](https://developers.google.com/workspace/docs/api/reference/rest) — the upstream API this connector wraps
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-docs)
+- [Google Docs API reference](https://developers.google.com/workspace/docs/api/reference/rest) — vendor API docs
 
 ## Legal
 
