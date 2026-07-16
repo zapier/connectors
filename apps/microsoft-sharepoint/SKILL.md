@@ -27,7 +27,7 @@ Agent-callable tools for Microsoft SharePoint Online, over the [Microsoft Graph 
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill microsoft-sharepoint` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill microsoft-sharepoint` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -79,14 +79,16 @@ All scripts use the single connection `microsoft-sharepoint`, except `getCopySta
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-The connector uses a single Microsoft **OAuth 2.0 bearer token** (Microsoft identity platform / Entra) for every tool, resolved into the one `microsoft-sharepoint` connection. Two resolvers:
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`zapier:<connection-id>`** — Zapier-managed auth (recommended). Route through a Zapier Microsoft SharePoint connection; the Zapier auth, token-refresh, and governance layer injects and renews the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the connection id with the Zapier SDK CLI: `npx @zapier/zapier-sdk-cli list-connections MicrosoftSharePointCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
-- **`env:<ENV_VAR>`** — direct mode. Read a Microsoft Graph access token from the named environment variable. The token is sent as `Authorization: Bearer <token>`; there is no refresh in this mode, so supply a currently-valid token.
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-**Admin consent is inherent to SharePoint.** Site content is an organizational resource: the site-content scopes this connector needs (`Sites.Read.All`, `Sites.ReadWrite.All`, `Sites.Manage.All`, `Files.ReadWrite.All`) are all **admin-consent-gated**. `offline_access` and `User.Read` are user-consentable and ride along as the baseline, but there is no lower-privilege subset that reaches site content. In a typical Microsoft 365 tenant a **tenant administrator must consent once**; after that, ordinary users can connect without further prompts. A non-admin connecting in a consent-restricted tenant will see sign-in fail with an "approval required" message until an admin grants consent. At API-call time, a token missing a granted scope returns `403` — surfaced by these tools as a clear "an administrator must consent to the required SharePoint permissions" message.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
