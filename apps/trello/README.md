@@ -30,7 +30,7 @@ npm install @zapier/trello-connector
 npx skills add zapier/connectors --skill trello
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR_PREFIX>` reads the API key and token from `$<ENV_VAR_PREFIX>_API_KEY` and `$<ENV_VAR_PREFIX>_TOKEN` (they stay in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection` — a _selector_, not the secret. The `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver. See [Auth](#auth) below for the with/without-Zapier tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -113,11 +113,20 @@ const { data } = await listBoards({}, { connection: "env:TRELLO" });
 // data.items → array of boards; meta.outputDataValidation reports any stripped fields.
 ```
 
+## Auth
+
+Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
+
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
+
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Trello REST API docs](https://developer.atlassian.com/cloud/trello/rest/)
 - [Source](https://github.com/zapier/connectors/tree/main/apps/trello)
+- [Trello REST API docs](https://developer.atlassian.com/cloud/trello/rest/)
 
 ## Legal
 
