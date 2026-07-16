@@ -3,7 +3,7 @@
   "name": "youtube",
   "displayName": "YouTube",
   "description": "Agent-callable YouTube tools — search and read videos, update and delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata. Use when the user mentions YouTube or wants to find, comment on, or organize YouTube videos and playlists, even if they don't name YouTube explicitly.",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
