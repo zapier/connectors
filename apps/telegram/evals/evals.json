@@ -342,6 +342,7 @@
       "steps": [
         {
           "intent": "Send 'Heads up {{run_id}}' to the marketing team channel.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply does not claim a message was delivered to a 'marketing team channel'. Finding no chat whose name clearly matches, the agent asks the user which chat to use (or reports it cannot find a matching chat) rather than sending to an unrelated chat."
@@ -355,7 +356,7 @@
     },
     {
       "id": "create-group-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: a Telegram bot cannot create a group/chat; the agent should say so rather than fabricate success.",
       "steps": [
         {
@@ -373,7 +374,7 @@
     },
     {
       "id": "ban-member-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: member moderation (banning) is not in this connector's surface; the agent should decline cleanly. Roadmap signal for the deferred admin group.",
       "requires": ["telegram_sandbox_chat"],
       "steps": [
@@ -392,7 +393,7 @@
     },
     {
       "id": "upload-local-file-refusal",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal / reframe: the connector sends files by URL or file_id, not from local disk; the agent should ask for a URL rather than fabricate an upload.",
       "requires": ["telegram_sandbox_chat"],
       "steps": [
