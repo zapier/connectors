@@ -3,7 +3,7 @@
   "name": "telegram",
   "displayName": "Telegram",
   "description": "Agent-callable Telegram bot tools — send messages, media, locations, contacts, and polls; edit, delete, forward, copy, and pin messages; resolve chats, members, and files. Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content — including requests that don't name Telegram explicitly, e.g. \"message the team channel\", \"post this update to the group\".",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
