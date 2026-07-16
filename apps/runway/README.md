@@ -123,6 +123,15 @@ const { data: result } = await getTask(
 );
 ```
 
+## Auth
+
+Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
+
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
+
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
