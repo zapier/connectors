@@ -61,5 +61,6 @@
   "version": "0.1.0",
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/runway"
 }
