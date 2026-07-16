@@ -27,7 +27,7 @@ Tools for working with files and folders in Dropbox — upload and write files, 
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill dropbox` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill dropbox` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -85,12 +85,16 @@ The entity types most likely to collide here are **files/folders by name** (reso
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-The connector uses a single Dropbox OAuth2 connection — one credential, with no separate bot/user tokens. Capability is gated by the **OAuth scopes** granted when the connection is authorized (e.g. `files.content.write`, `sharing.read`); a call missing a scope fails with a `missing_scope` error naming the scope to reconnect with. Two resolvers, Zapier-first:
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`zapier:<connection-id>`** _(recommended)_ — Zapier holds the refresh token and **rotates the short-lived (~4h) access token for you**, so this path doesn't expire mid-session. Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections DropBoxCLIAPI` (run `login` first if unauthenticated; note the capital B; add `--json` for machine output).
-- **`access-token:<ENV_VAR>`** _(fallback, direct mode)_ — a Dropbox access token read from the named environment variable. Mint one from a Dropbox app at <https://www.dropbox.com/developers/apps> (grant the scopes the tools you'll use need). **Heads-up: this connector sends the token as-is and does not refresh it** — a static Dropbox access token is short-lived and stops working after a few hours, so re-mint it or use the Zapier-managed path above, which handles rotation. See Dropbox's [OAuth Guide](https://developers.dropbox.com/oauth-guide) for token types and lifetimes.
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
+
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
