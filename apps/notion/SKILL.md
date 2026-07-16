@@ -27,7 +27,7 @@ Tools for working with a Notion workspace against the [Notion API](https://devel
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill notion` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill notion` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -71,14 +71,16 @@ All scripts use the single connection `notion`, except `copyPage`, which uses tw
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-The script needs a single Notion **bearer token**, resolved into the one `notion` connection slot. Two resolvers:
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`env:<ENV_VAR>`** — direct mode. Read the Notion token from the named environment variable (conventionally `env:NOTION_TOKEN`, with the token exported in `NOTION_TOKEN`; the token stays in `env`, never on argv). The token is either an **internal-integration secret** (from <https://www.notion.so/profile/integrations>) or a **public-integration OAuth access token**.
-- **`zapier:<connection-id>`** — Zapier-managed auth. Route through a Zapier Notion connection; the Zapier auth / retries / governance layer injects the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>, ~1 minute). Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections NotionCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-**Capabilities gating + per-resource sharing.** A Notion token is scoped by the integration's **[capabilities](https://developers.notion.com/reference/capabilities)** (read content, update content, insert content, read/insert comments, user information with or without email) — these "enforce which API endpoints a connection or token can call, and what content and user related information they are able to see," so a call outside the granted capabilities is rejected even with a valid token. The user-information capability also controls whether `getUser` / `listUsers` return email addresses. Separately, the integration only sees resources **explicitly shared with it**: a valid token still returns `404` for any page, database, or data source that hasn't been shared with the integration in Notion's UI. If a read 404s on an id you believe exists, the resource almost certainly isn't shared yet.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
