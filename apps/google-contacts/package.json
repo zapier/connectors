@@ -56,7 +56,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-contacts"
   },
-  "version": "0.2.12",
+  "version": "0.2.13",
   "publishConfig": {
     "access": "public"
   },
