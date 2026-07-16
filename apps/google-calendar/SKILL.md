@@ -27,7 +27,7 @@ Tools for managing Google Calendar — create, read, update, move, and delete ev
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill google-calendar` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill google-calendar` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -69,20 +69,16 @@ Each script's `inputSchema` / `outputSchema` (Zod) in the script file is the sou
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-Google Calendar ships two resolvers, Zapier-first: prefer `zapier`; fall back to `env`.
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`zapier:<connection-id>`** _(recommended)_ — route through a Zapier Google Calendar connection. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). The user authorises Google once via Zapier's OAuth flow at <https://zapier.com/app/connections>; Zapier then handles token refresh transparently. A bare, UUID-shaped value auto-claims this resolver — no `zapier:` prefix needed.
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-  **Finding the connection ID** (the connections UI doesn't expose IDs):
-  1. Verify auth: `npx zapier-sdk get-profile`. If unauthenticated, run `npx zapier-sdk login` once.
-  2. `npx zapier-sdk list-connections GoogleCalendarCLIAPI` — prints `title (connection ID)` per matching connection. Add `--json` for machine-readable output. If the user has multiple Google Calendar connections, list the titles and ask which to use.
-  3. If the connection is **shared** with the user (e.g. an org-wide connection), opt in: `npx zapier-sdk --can-include-shared-connections list-connections GoogleCalendarCLIAPI --include-shared`. Ask the user first before retrying with this on.
-
-- **`env:<ENV_VAR>`** _(fallback)_ — read a Google OAuth access token from the named environment variable and send it as `Authorization: Bearer <token>`. The value is the env-var NAME, not the token; the token stays in `env` and never touches argv. **Caveat: Google access tokens expire ~1 hour after issue and this resolver does NOT refresh them** — direct mode suits short-lived/testing use; the Zapier-managed connection (recommended) refreshes transparently.
-
-The connect step grants the `https://www.googleapis.com/auth/calendar` scope (full read/write across events, calendars, freebusy, colors, and ACL). A request made with too narrow a scope returns 403 `insufficientPermissions` — the connector surfaces "reconnect with calendar access". A 403 caused by too low an access _role_ on a specific calendar (e.g. sharing changes need `owner`) is surfaced as a permission error — reconnecting won't fix it; the calendar's owner must grant access.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
