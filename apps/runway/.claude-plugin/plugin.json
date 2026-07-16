@@ -3,7 +3,7 @@
   "name": "runway",
   "displayName": "Runway",
   "description": "Agent-callable Runway tools — generate images and video from text or images, edit and upscale media, animate characters, generate speech and sound effects, and run marketing recipes, plus track generation jobs. Use when the user mentions Runway or wants to generate, edit, or upscale AI media, even if they don't name Runway explicitly.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
