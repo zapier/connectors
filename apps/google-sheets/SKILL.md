@@ -28,7 +28,7 @@ Tools for working with Google Sheets against the [Google Sheets API v4](https://
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill google-sheets` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill google-sheets` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -74,12 +74,16 @@ All scripts use the single `google-sheets` connection.
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-The connector needs a single Google **OAuth 2.0 access token**, resolved into the one `google-sheets` connection slot.
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`zapier:<connection-id>`** _(recommended)_ — Zapier-managed auth. Route through a Zapier Google Sheets connection; the Zapier auth / retries / governance layer injects the token and refreshes it for you. The connection grants Sheets + Drive access, so every tool — including `listSpreadsheets` — works. Find the id with `npx zapier-sdk list-connections GoogleSheetsV2CLIAPI`.
-- **`env:GOOGLE_SHEETS_ACCESS_TOKEN`** _(direct)_ — read a Google OAuth access token from the named env var, sent as `Authorization: Bearer`. **Google access tokens expire ~1 hour after issue and are not auto-refreshed in direct mode** — suited to short-lived / testing use. The token needs the `https://www.googleapis.com/auth/spreadsheets` scope (and `drive.file` for the spreadsheets you create / open). `listSpreadsheets` additionally needs a broader Drive read scope (`drive.readonly` / `drive`); without it, pass a spreadsheet URL or id directly to the other tools instead of finding by name.
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
+
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
