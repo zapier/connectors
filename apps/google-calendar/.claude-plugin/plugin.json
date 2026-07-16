@@ -3,7 +3,7 @@
   "name": "google-calendar",
   "displayName": "Google Calendar",
   "description": "Agent-callable Google Calendar tools — create, update, move, search, and delete events, manage calendars, check free/busy availability, resolve event colors, and manage calendar sharing. Use when the user mentions Google Calendar or wants to schedule, find, reschedule, or share events and calendars — including requests that do not name Google Calendar explicitly, e.g. \"put a meeting on my calendar Tuesday 3pm\" or \"am I free Friday afternoon\".",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
