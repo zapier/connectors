@@ -590,7 +590,7 @@
     },
     {
       "id": "refuse-create-chart",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: charts are out of scope; the agent should decline rather than fake success.",
       "steps": [
         {
