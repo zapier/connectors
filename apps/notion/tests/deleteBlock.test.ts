@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import deleteBlockDefinition from "../scripts/deleteBlock.ts";
+import deleteBlockDefinition from "../skills/notion/scripts/deleteBlock.ts";
 
 const { inputSchema, outputSchema } = deleteBlockDefinition;
 

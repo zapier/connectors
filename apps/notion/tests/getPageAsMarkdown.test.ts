@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import getPageAsMarkdownDefinition from "../scripts/getPageAsMarkdown.ts";
+import getPageAsMarkdownDefinition from "../skills/notion/scripts/getPageAsMarkdown.ts";
 
 const { inputSchema, outputSchema } = getPageAsMarkdownDefinition;
 

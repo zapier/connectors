@@ -18,7 +18,6 @@
     "zapier",
     "productivity"
   ],
-  "skills": ".",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Notion (by Zapier)",

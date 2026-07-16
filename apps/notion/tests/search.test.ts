@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import searchDefinition from "../scripts/search.ts";
+import searchDefinition from "../skills/notion/scripts/search.ts";
 
 const { inputSchema, outputSchema } = searchDefinition;
 

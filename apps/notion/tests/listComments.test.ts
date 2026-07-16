@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import listCommentsDefinition from "../scripts/listComments.ts";
+import listCommentsDefinition from "../skills/notion/scripts/listComments.ts";
 
 const { inputSchema, outputSchema } = listCommentsDefinition;
 

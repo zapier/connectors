@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import createPageDefinition from "../scripts/createPage.ts";
+import createPageDefinition from "../skills/notion/scripts/createPage.ts";
 
 const { inputSchema, outputSchema } = createPageDefinition;
 

@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import updateDataSourceDefinition from "../scripts/updateDataSource.ts";
+import updateDataSourceDefinition from "../skills/notion/scripts/updateDataSource.ts";
 
 const { inputSchema, outputSchema } = updateDataSourceDefinition;
 

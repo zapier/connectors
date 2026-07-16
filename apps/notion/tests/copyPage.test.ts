@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import copyPageDefinition from "../scripts/copyPage.ts";
+import copyPageDefinition from "../skills/notion/scripts/copyPage.ts";
 
 const { inputSchema, outputSchema } = copyPageDefinition;
 

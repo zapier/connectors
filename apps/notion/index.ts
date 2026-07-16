@@ -1,30 +1,30 @@
 import { defineConnector, toFunctions } from "@zapier/connectors-sdk";
 
-import { connectionResolvers } from "./connections.ts";
-import appendBlockChildrenDefinition from "./scripts/appendBlockChildren.ts";
-import copyPageDefinition from "./scripts/copyPage.ts";
-import createCommentDefinition from "./scripts/createComment.ts";
-import createDatabaseDefinition from "./scripts/createDatabase.ts";
-import createDataSourceDefinition from "./scripts/createDataSource.ts";
-import createPageDefinition from "./scripts/createPage.ts";
-import deleteBlockDefinition from "./scripts/deleteBlock.ts";
-import getBlockDefinition from "./scripts/getBlock.ts";
-import getBlockChildrenDefinition from "./scripts/getBlockChildren.ts";
-import getBotUserDefinition from "./scripts/getBotUser.ts";
-import getDatabaseDefinition from "./scripts/getDatabase.ts";
-import getDataSourceDefinition from "./scripts/getDataSource.ts";
-import getPageDefinition from "./scripts/getPage.ts";
-import getPageAsMarkdownDefinition from "./scripts/getPageAsMarkdown.ts";
-import getPagePropertyDefinition from "./scripts/getPageProperty.ts";
-import getUserDefinition from "./scripts/getUser.ts";
-import listCommentsDefinition from "./scripts/listComments.ts";
-import listUsersDefinition from "./scripts/listUsers.ts";
-import queryDataSourceDefinition from "./scripts/queryDataSource.ts";
-import searchDefinition from "./scripts/search.ts";
-import updateBlockDefinition from "./scripts/updateBlock.ts";
-import updateDatabaseDefinition from "./scripts/updateDatabase.ts";
-import updateDataSourceDefinition from "./scripts/updateDataSource.ts";
-import updatePageDefinition from "./scripts/updatePage.ts";
+import { connectionResolvers } from "./skills/notion/connections.ts";
+import appendBlockChildrenDefinition from "./skills/notion/scripts/appendBlockChildren.ts";
+import copyPageDefinition from "./skills/notion/scripts/copyPage.ts";
+import createCommentDefinition from "./skills/notion/scripts/createComment.ts";
+import createDatabaseDefinition from "./skills/notion/scripts/createDatabase.ts";
+import createDataSourceDefinition from "./skills/notion/scripts/createDataSource.ts";
+import createPageDefinition from "./skills/notion/scripts/createPage.ts";
+import deleteBlockDefinition from "./skills/notion/scripts/deleteBlock.ts";
+import getBlockDefinition from "./skills/notion/scripts/getBlock.ts";
+import getBlockChildrenDefinition from "./skills/notion/scripts/getBlockChildren.ts";
+import getBotUserDefinition from "./skills/notion/scripts/getBotUser.ts";
+import getDatabaseDefinition from "./skills/notion/scripts/getDatabase.ts";
+import getDataSourceDefinition from "./skills/notion/scripts/getDataSource.ts";
+import getPageDefinition from "./skills/notion/scripts/getPage.ts";
+import getPageAsMarkdownDefinition from "./skills/notion/scripts/getPageAsMarkdown.ts";
+import getPagePropertyDefinition from "./skills/notion/scripts/getPageProperty.ts";
+import getUserDefinition from "./skills/notion/scripts/getUser.ts";
+import listCommentsDefinition from "./skills/notion/scripts/listComments.ts";
+import listUsersDefinition from "./skills/notion/scripts/listUsers.ts";
+import queryDataSourceDefinition from "./skills/notion/scripts/queryDataSource.ts";
+import searchDefinition from "./skills/notion/scripts/search.ts";
+import updateBlockDefinition from "./skills/notion/scripts/updateBlock.ts";
+import updateDatabaseDefinition from "./skills/notion/scripts/updateDatabase.ts";
+import updateDataSourceDefinition from "./skills/notion/scripts/updateDataSource.ts";
+import updatePageDefinition from "./skills/notion/scripts/updatePage.ts";
 
 const connector = defineConnector({
   scripts: {

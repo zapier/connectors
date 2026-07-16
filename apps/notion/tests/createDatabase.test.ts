@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import createDatabaseDefinition from "../scripts/createDatabase.ts";
+import createDatabaseDefinition from "../skills/notion/scripts/createDatabase.ts";
 
 const { inputSchema, outputSchema } = createDatabaseDefinition;
 

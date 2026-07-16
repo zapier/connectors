@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import queryDataSourceDefinition from "../scripts/queryDataSource.ts";
+import queryDataSourceDefinition from "../skills/notion/scripts/queryDataSource.ts";
 
 const { inputSchema, outputSchema } = queryDataSourceDefinition;
 

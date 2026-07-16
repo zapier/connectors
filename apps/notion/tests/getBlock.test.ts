@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import getBlockDefinition from "../scripts/getBlock.ts";
+import getBlockDefinition from "../skills/notion/scripts/getBlock.ts";
 
 const { inputSchema, outputSchema } = getBlockDefinition;
 
