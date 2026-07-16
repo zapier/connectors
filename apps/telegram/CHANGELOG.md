@@ -1,29 +1,5 @@
 # @zapier/telegram-connector
 
-## 0.2.14
-
-### Patch Changes
-
-- b620630: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
-
-  - `references/use-as-cli.md`
-  - `references/use-as-mcp.md`
-  - `references/use-as-sdk.md`
-  - `references/use-with-zapier.md`
-  - `references/use-without-zapier.md`
-
-- b620630: Automated dependency update from Renovate.
-
-  - File changes as a result of (external) dependency updates.
-
-## 0.2.13
-
-### Patch Changes
-
-- dd41f11: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
-
-  - `package.json`
-
 ## 0.2.12
 
 ### Patch Changes

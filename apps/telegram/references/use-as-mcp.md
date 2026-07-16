@@ -8,7 +8,7 @@ Before registering anything, check whether this connector's tools are already av
 
 ## Register the server
 
-If it isn't loaded yet, `node cli.js mcp` serves every script as a tool over stdio — see [`SKILL.md`](../SKILL.md#setup) for the one-time `npm install --omit=dev` needed here first. Register it as a local MCP server:
+If it isn't loaded yet, `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server:
 
 - **You can edit the client's MCP config yourself** (e.g. Claude Desktop, Cursor, Claude Code) — add an `mcpServers` entry: `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options.
 - **You can't edit it** — guide the user through adding that same stanza to their client's config.
@@ -20,7 +20,7 @@ Once loaded — already, or after registering — every script is callable as an
 
 ## Auth
 
-`--connection` is optional in the server's `args` — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` to `args` to set a default (Zapier-managed auth always works). If this connector also accepts a direct-token resolver, set it the same way — run `node cli.js mcp --help` to see every resolver this connector accepts. See [`SKILL.md`](../SKILL.md#auth) for the resolver model. If `TS_KEYRING_BACKEND=file` was needed during login (see [`references/use-with-zapier.md`](use-with-zapier.md)), every `zapier:` connection resolved by this server needs it too — since the server process runs for the whole session, set it once in its own `env` alongside `args`, e.g. `"env": { "TS_KEYRING_BACKEND": "file" }`, rather than per tool call.
+`--connection` is optional in the server's `args` — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` to `args` to set a default (Zapier-managed auth always works). If this connector also accepts a direct-token resolver, set it the same way — run `node cli.js mcp --help` to see every resolver this connector accepts. See [`SKILL.md`](../SKILL.md#auth) for the resolver model.
 
 ## Output
 

@@ -1,6 +1,6 @@
 {
   "name": "@zapier/telegram-connector",
-  "version": "0.2.14",
+  "version": "0.2.12",
   "publishConfig": {
     "access": "public"
   },
@@ -64,6 +64,5 @@
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
-  },
-  "homepage": "https://github.com/zapier/connectors/tree/main/apps/telegram"
+  }
 }

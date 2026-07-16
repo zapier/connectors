@@ -20,7 +20,7 @@ const result = await <script>(<input>, { connection: "zapier:<connection-id>" })
 
 ## Auth
 
-Pass a connection as the `connection` field of the second (`opts`) argument — see [`SKILL.md`](../SKILL.md#auth) for the resolver model. `"zapier:<connection-id>"` (Zapier-managed auth) always works; check this connector's other accepted resolvers before assuming a direct-token one applies. If `TS_KEYRING_BACKEND=file` was needed during login (see [`references/use-with-zapier.md`](use-with-zapier.md)), set it in your own process's environment too — every call resolving a `zapier:` connection reads the same keyring.
+Pass a connection as the `connection` field of the second (`opts`) argument — see [`SKILL.md`](../SKILL.md#auth) for the resolver model. `"zapier:<connection-id>"` (Zapier-managed auth) always works; check this connector's other accepted resolvers before assuming a direct-token one applies.
 
 ## Output
 
