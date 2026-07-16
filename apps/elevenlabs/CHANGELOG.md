@@ -1,5 +1,13 @@
 # @zapier/elevenlabs-connector
 
+## 0.1.3
+
+### Patch Changes
+
+- dd41f11: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
+
+  - `package.json`
+
 ## 0.1.2
 
 ### Patch Changes
