@@ -27,7 +27,7 @@ Tools for the ElevenLabs AI-audio API: convert text to spoken audio in any of th
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill elevenlabs` (or your harness's own skill-install mechanism), then continue here.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill elevenlabs` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
@@ -72,16 +72,18 @@ All scripts share the single `elevenlabs` connection. Audio-producing scripts ac
 
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-Two resolvers serve the `elevenlabs` connection:
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **`zapier:<connection-id>`** — Zapier-managed auth. The connection id points at an ElevenLabs connection in your Zapier account (create one at zapier.com if needed); Zapier injects the API key per request, so no third-party secret enters the agent's environment. A bare UUID-shaped value is claimed by this resolver automatically.
-- **`env:<ENV_VAR>`** — direct mode. `<ENV_VAR>` names an environment variable holding an ElevenLabs API key (create one at elevenlabs.io → Settings → API keys); the connector sends it as the API's `xi-api-key` header. `ELEVENLABS_API_KEY` is the conventional name, but any env-var name works.
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-ElevenLabs API keys can be restricted per surface (text-to-speech, voices, history, …) and can carry a quota cap — a valid key can still get a 401 on an endpoint outside its granted permissions, so check the key's permissions before assuming it's dead.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
-Zapier-managed connections can't forward multipart request bodies yet, so the three audio-upload tools — `speechToSpeech`, `speechToText`, and `isolateAudio` — require direct mode (`env:<ENV_VAR>`). All other tools work over either resolver.
+Zapier-managed connections can't forward multipart request bodies yet, so the three audio-upload scripts — `speechToSpeech`, `speechToText`, and `isolateAudio` — require direct mode (the `env:<ENV_VAR>` resolver in [`references/use-without-zapier.md`](references/use-without-zapier.md)). All other scripts work over either resolver.
 
 ## Output format
 
