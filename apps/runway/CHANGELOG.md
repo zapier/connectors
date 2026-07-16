@@ -1,5 +1,11 @@
 # @zapier/runway-connector
 
+## 0.1.3
+
+### Patch Changes
+
+- d2e1a7f: Add references/use-as-recipe.md — a reference implementation for harnesses that write their own code against the Runway API (can't load tools, run a terminal, or import this package in-process). (STAFF-5067)
+
 ## 0.1.2
 
 ### Patch Changes
