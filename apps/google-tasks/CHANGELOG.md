@@ -1,5 +1,13 @@
 # @zapier/google-tasks-connector
 
+## 0.2.12
+
+### Patch Changes
+
+- dd41f11: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
+
+  - `package.json`
+
 ## 0.2.11
 
 ### Patch Changes
