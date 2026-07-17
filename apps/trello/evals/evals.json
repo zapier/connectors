@@ -381,7 +381,7 @@
     },
     {
       "id": "refuse-webhook-setup",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: webhooks are out of scope.",
       "steps": [
         {
@@ -399,7 +399,7 @@
     },
     {
       "id": "refuse-local-file-upload",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: local binary upload is out of scope.",
       "steps": [
         {
