@@ -3,7 +3,7 @@
   "name": "dataforseo",
   "displayName": "DataForSEO",
   "description": "Agent-callable DataForSEO tools — Google SERP results, keyword and domain analytics, backlinks, Google Maps business data, on-page audits, and AI-search visibility (LLM answers + brand mentions). Use when the user wants SEO or AI-search data, even if they don't name DataForSEO.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",

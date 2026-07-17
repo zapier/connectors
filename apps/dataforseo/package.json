@@ -59,7 +59,7 @@
     "vitest": "4.1.10"
   },
   "homepage": "https://github.com/zapier/connectors/tree/main/apps/dataforseo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "publishConfig": {
     "access": "public"
   }
