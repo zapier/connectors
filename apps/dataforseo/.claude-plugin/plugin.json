@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "dataforseo",
+  "displayName": "DataForSEO",
+  "description": "Agent-callable DataForSEO tools — Google SERP results, keyword and domain analytics, backlinks, Google Maps business data, on-page audits, and AI-search visibility (LLM answers + brand mentions). Use when the user wants SEO or AI-search data, even if they don't name DataForSEO.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/dataforseo",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "dataforseo",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
