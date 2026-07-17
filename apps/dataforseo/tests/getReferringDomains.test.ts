@@ -1,0 +1,70 @@
+import { describe, expect, it, vi } from "vitest";
+
+import script from "../scripts/getReferringDomains.ts";
+
+/** Build a fetch mock returning a DataForSEO envelope with the given HTTP status + JSON body. */
+const envelopeFetch = (status: number, body: unknown) =>
+  vi.fn<
+    (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+  >(async () => new Response(JSON.stringify(body), { status }));
+
+/** A well-formed success envelope wrapping one task's result rows. */
+const okEnvelope = (result: unknown[]) => ({
+  status_code: 20000,
+  status_message: "Ok.",
+  cost: 0.0025,
+  tasks: [
+    {
+      status_code: 20000,
+      status_message: "Ok.",
+      result_count: result.length,
+      result,
+    },
+  ],
+});
+
+describe("getReferringDomains", () => {
+  it("unwraps tasks[0].result into items and array-wraps the request", async () => {
+    const fetch = envelopeFetch(
+      200,
+      okEnvelope([
+        {
+          domain: "referrer.com",
+          backlinks: 88,
+          referring_pages: 42,
+          rank: 401,
+          first_seen: "2022-01-10 09:30:00 +00:00",
+        },
+      ]),
+    );
+    const { data } = await script.run({ target: "example.com" }, { fetch });
+    expect(data.items_count).toBe(1);
+    expect(data.items?.[0]).toMatchObject({
+      domain: "referrer.com",
+      backlinks: 88,
+    });
+
+    // Request goes to the live endpoint and the task params are wrapped in an array.
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).toBe(
+      "https://api.dataforseo.com/v3/backlinks/referring_domains/live",
+    );
+    expect(init?.method).toBe("POST");
+    const sent = JSON.parse(String(init?.body));
+    expect(Array.isArray(sent)).toBe(true);
+    expect(sent[0]).toMatchObject({ target: "example.com" });
+  });
+
+  it("throws on a task-level status_code error (HTTP 200, success-shaped error)", async () => {
+    const fetch = envelopeFetch(200, {
+      status_code: 20000,
+      status_message: "Ok.",
+      tasks: [
+        { status_code: 40501, status_message: "Invalid Field.", result: null },
+      ],
+    });
+    await expect(
+      script.run({ target: "example.com" }, { fetch }),
+    ).rejects.toThrow(/Invalid Field|40501/);
+  });
+});

@@ -1,0 +1,422 @@
+{
+  "skill_name": "dataforseo",
+  "version": "1feb99d",
+  "description": "Intent-anchored eval scenarios for the DataForSEO connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. This is a read-only, live-only SEO/AI-search data connector, so scenarios are act-only (a single data query against explicit values) or discover-act (a locations/languages lookup resolves the exact locale name before the query); there is nothing to create, so no arrange-act probes and no fixtures. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "find-who-ranks-for-keyword",
+      "kind": "act-only",
+      "description": "Pull the live Google organic SERP for a query and report who ranks.",
+      "steps": [
+        {
+          "intent": "Who currently ranks on Google in the United States for the search 'best running shoes'? List the top organic results with their URLs.",
+          "assertions": {
+            "outcome": [
+              "The reply lists ranked organic Google results for 'best running shoes', each with a URL/domain and its position, drawn from a live query rather than the model's own recollection.",
+              "The results are reported as the current live SERP, not as a historical or made-up ranking."
+            ],
+            "mechanism": [
+              "Retrieves the SERP with a single live organic-SERP query for the exact keyword 'best running shoes'; the ranked URLs come from the query result, not fabricated.",
+              "Passes the location as the full name 'United States', not an ISO code or abbreviation like 'US'."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "expand-seed-keyword",
+      "kind": "act-only",
+      "description": "Expand a seed keyword into related/long-tail query ideas.",
+      "steps": [
+        {
+          "intent": "Give me the top 5 long-tail keyword ideas related to 'standing desk' that I could target for SEO.",
+          "assertions": {
+            "outcome": [
+              "The reply returns multiple keyword suggestions that are related to or contain the seed 'standing desk', sourced from a live query rather than invented by the model.",
+              "The suggestions are concrete keyword strings a user could target, not a generic explanation of how keyword research works."
+            ],
+            "mechanism": [
+              "Uses a keyword-expansion query seeded with 'standing desk'; the returned keywords come from the tool result rather than being enumerated from the model's own knowledge."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-keyword-metrics",
+      "kind": "act-only",
+      "description": "Pull volume / CPC / competition / difficulty for a known keyword list.",
+      "steps": [
+        {
+          "intent": "Pull the search volume, CPC, and competition for these keywords in the US: 'crm software', 'project management tool', 'time tracking app'.",
+          "assertions": {
+            "outcome": [
+              "The reply reports search volume and CPC (and competition where available) for each of the three requested keywords, from a live query.",
+              "Every one of the three keywords given in the request is covered in the reply, none silently dropped."
+            ],
+            "mechanism": [
+              "Requests metrics for the three keywords given in the request rather than substituting different keywords.",
+              "Passes the location as the full name 'United States', not an ISO code or 'US'."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "assess-keyword-difficulty",
+      "kind": "act-only",
+      "description": "Get keyword-difficulty scores and interpret them on the documented 0-100 scale.",
+      "steps": [
+        {
+          "intent": "How hard would it be to rank for 'ai writing assistant' versus 'buy shoes online'? Give me a difficulty score for each and tell me which is easier.",
+          "assertions": {
+            "outcome": [
+              "The reply reports a keyword-difficulty score for each of the two keywords and states which is easier to rank for based on those scores.",
+              "The difficulty scores are presented on a 0-100 scale (lower = easier), consistent with how keyword difficulty is defined."
+            ],
+            "mechanism": [
+              "Obtains the difficulty scores from a keyword-difficulty query for the two keywords given in the request rather than estimating them from the model's own judgment."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "classify-search-intent",
+      "kind": "act-only",
+      "description": "Classify the search intent of a set of keywords.",
+      "steps": [
+        {
+          "intent": "Classify the search intent (informational, commercial, transactional, navigational) for these queries: 'how to tie a tie', 'best noise cancelling headphones', 'buy iphone 15'.",
+          "assertions": {
+            "outcome": [
+              "The reply assigns a search-intent classification to each of the three queries given in the request, based on a live query rather than the model guessing.",
+              "All three queries from the request are classified, none skipped."
+            ],
+            "mechanism": [
+              "Classifies the exact three queries from the request using a search-intent query rather than substituting or reasoning about intent unaided."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-keywords-domain-ranks-for",
+      "kind": "act-only",
+      "description": "List the keywords a domain ranks for in Google organic search.",
+      "steps": [
+        {
+          "intent": "What keywords does the domain 'basecamp.com' rank for in Google in the US? Show me the top 5 ranked keywords.",
+          "assertions": {
+            "outcome": [
+              "The reply lists keywords that basecamp.com ranks for, with ranking detail (e.g. position or the ranking URL), from a live query.",
+              "The keywords are reported as basecamp.com's actual ranked keywords from the data source, not the model's guesses about what the site might rank for."
+            ],
+            "mechanism": [
+              "Queries ranked keywords for the target domain 'basecamp.com' given in the request; results come from the tool call.",
+              "Passes the location as the full name 'United States', not 'US' or a country code."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "estimate-domain-traffic",
+      "kind": "act-only",
+      "description": "Estimate a domain's current monthly organic traffic.",
+      "steps": [
+        {
+          "intent": "Roughly how much monthly organic search traffic does 'shopify.com' get? Give me an estimate.",
+          "assertions": {
+            "outcome": [
+              "The reply gives an estimated monthly organic-traffic figure for shopify.com sourced from a live query.",
+              "The figure is framed as an estimate, not stated as an exact measured count."
+            ],
+            "mechanism": [
+              "Obtains the estimate from an organic-traffic query for the domain 'shopify.com' given in the request rather than fabricating a number."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "analyze-backlink-profile",
+      "kind": "act-only",
+      "description": "Summarize a target's backlink profile (totals, referring domains, rank).",
+      "steps": [
+        {
+          "intent": "Give me an overview of the backlink profile for 'basecamp.com' — total backlinks, referring domains, and its backlink rank.",
+          "assertions": {
+            "outcome": [
+              "The reply reports a backlink-profile summary for basecamp.com including total backlinks and referring-domain count, from a live query.",
+              "Any backlink-rank value reported is interpreted on its documented 0-1000 scale (higher = stronger), not confused with a 0-100 score."
+            ],
+            "mechanism": [
+              "Retrieves the summary for the target 'basecamp.com' given in the request via a backlinks-summary query; the totals come from the result rather than being invented."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-referring-domains",
+      "kind": "act-only",
+      "description": "List the domains linking to a target.",
+      "steps": [
+        {
+          "intent": "Which domains link to 'basecamp.com'? Show me the top 5 referring domains.",
+          "assertions": {
+            "outcome": [
+              "The reply lists referring domains that link to basecamp.com, sourced from a live query rather than the model's recollection.",
+              "The referring domains are concrete domain names from the data, not a generic description of what a backlink is."
+            ],
+            "mechanism": [
+              "Queries referring domains for the target 'basecamp.com' given in the request; the domains come from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "audit-page-seo",
+      "kind": "act-only",
+      "description": "Run an instant on-page SEO audit of a single URL.",
+      "steps": [
+        {
+          "intent": "Run an on-page SEO audit of 'https://example.com' and tell me what on-page issues it has.",
+          "assertions": {
+            "outcome": [
+              "The reply reports on-page SEO findings for the single URL https://example.com (e.g. title/meta, headings, or detected issues) from a live audit query.",
+              "The findings are specific to the audited page rather than generic SEO advice."
+            ],
+            "mechanism": [
+              "Audits the exact URL 'https://example.com' given in the request as a single page; does not attempt to crawl or audit additional pages of the site."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-local-businesses",
+      "kind": "act-only",
+      "description": "Search Google Maps business listings by category and location.",
+      "steps": [
+        {
+          "intent": "Find the top 5 coffee shops in Seattle on Google Maps and list them with their ratings.",
+          "assertions": {
+            "outcome": [
+              "The reply lists Google Maps business listings for coffee shops in Seattle, with identifying detail such as name and (where available) rating, from a live query.",
+              "The listings are real results from the data source rather than businesses the model recalls or invents."
+            ],
+            "mechanism": [
+              "Searches business listings for the coffee-shop category in the Seattle location given in the request; results come from the tool call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ask-ai-model",
+      "kind": "act-only",
+      "description": "Send a prompt to a named AI model via DataForSEO and return its answer.",
+      "steps": [
+        {
+          "intent": "Ask ChatGPT 'What are three good name ideas for a productivity app?' and show me its answer.",
+          "assertions": {
+            "outcome": [
+              "The reply contains an answer to the prompt that was obtained by querying the requested AI model through the DataForSEO connector, not one the agent composed itself or fetched via a direct call to another AI provider's own API.",
+              "The answer addresses the asked question (name ideas for a productivity app)."
+            ],
+            "mechanism": [
+              "Sends the prompt given in the request to a ChatGPT model via the connector rather than answering the prompt directly from the agent's own generation."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "track-brand-in-ai-answers",
+      "kind": "act-only",
+      "description": "Find where a brand/domain is mentioned across AI-generated answers.",
+      "steps": [
+        {
+          "intent": "Where does the brand 'Notion' get mentioned in AI answers about productivity tools? Show me where it shows up.",
+          "assertions": {
+            "outcome": [
+              "The reply reports where 'Notion' is mentioned in AI-generated answers (e.g. the prompts/answers or pages/domains it appears alongside), from a live query.",
+              "The mentions are drawn from the AI-mentions data source rather than the model asserting from its own knowledge where Notion tends to be mentioned."
+            ],
+            "mechanism": [
+              "Queries the LLM-mentions surface for the target brand 'Notion' given in the request; findings come from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "resolve-locale-before-keyword-query",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: DataForSEO requires exact full location/language names, so the agent should resolve the exact accepted names before running a locale-scoped query rather than guessing an ISO code.",
+      "steps": [
+        {
+          "intent": "I want search volume for 'wireless earbuds' for German searchers in Germany. First find the exact location and language names DataForSEO accepts for Germany and German.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the exact full location name for Germany and language name for German that the data source accepts (e.g. 'Germany' and 'German'), obtained from a lookup rather than assumed.",
+              "The reply surfaces accepted full-name strings, not ISO codes like 'DE' / 'de'."
+            ],
+            "mechanism": [
+              "Resolves the accepted location/language names via the locations-and-languages lookup rather than guessing or hard-coding a country/language code."
+            ]
+          }
+        },
+        {
+          "intent": "Now pull the search volume for 'wireless earbuds' using those German location and language names.",
+          "assertions": {
+            "outcome": [
+              "The reply reports search volume for 'wireless earbuds' scoped to Germany / German, from a live query.",
+              "The volume is presented as data for the German locale specifically, not worldwide or US figures."
+            ],
+            "mechanism": [
+              "Passes the location and language as the exact full names accepted by the data source (e.g. 'Germany' / 'German'), not ISO codes; the values are the ones resolved earlier in this session, not invented."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "interpret-ai-keyword-volume",
+      "kind": "act-only",
+      "description": "Guidance-dependent: AI keyword search volume is a modeled proxy derived from 'People Also Ask' data, not measured AI-tool usage — the answer should reflect that framing.",
+      "steps": [
+        {
+          "intent": "How often is the keyword 'chatgpt alternatives' searched inside AI tools? Give me the AI search volume and tell me how reliable that number is.",
+          "assertions": {
+            "outcome": [
+              "The reply reports an AI-keyword search-volume figure for 'chatgpt alternatives' from a live query.",
+              "The reply conveys that this figure is an estimate/modeled proxy rather than a directly measured count of real AI-tool usage."
+            ],
+            "mechanism": [
+              "Obtains the figure from the AI-keyword-search-volume query for the keyword given in the request rather than fabricating a usage number."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-brand-mentions-non-us-locale",
+      "kind": "negative",
+      "description": "Guidance-dependent: LLM-mentions ChatGPT-platform data is available only for United States / English, so a request for ChatGPT mentions in another locale should surface that limitation rather than silently returning unrelated data.",
+      "steps": [
+        {
+          "intent": "Show me where the brand 'Trello' is mentioned in ChatGPT's answers for French users in France.",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear that ChatGPT-platform mention data is limited to the United States / English and is not available for the France / French locale requested, rather than presenting French-locale ChatGPT results as if they were returned.",
+              "The reply does not fabricate France-specific ChatGPT mention data."
+            ],
+            "mechanism": [
+              "Does not silently pass an unsupported non-US locale to a ChatGPT-platform mentions query and report the output as the requested French data."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-account-balance",
+      "kind": "act-only",
+      "description": "Report the DataForSEO account credit balance and plan limits.",
+      "steps": [
+        {
+          "intent": "How much DataForSEO credit do I have left on my account?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the account's current credit balance (and plan/rate detail where available) from a live account query.",
+              "The balance figure comes from the account rather than being invented."
+            ],
+            "mechanism": [
+              "Retrieves the balance via the account-balance query rather than any data-query tool."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-competitor-keyword-gap",
+      "kind": "act-only",
+      "description": "Multi-query flow: compare what two competing domains rank for to surface overlap/gaps.",
+      "steps": [
+        {
+          "intent": "Compare the top 5 ranked keywords each for 'basecamp.com' and 'asana.com' in Google US search and tell me some keywords one ranks for that the other does not.",
+          "assertions": {
+            "outcome": [
+              "The reply reports ranked keywords for both basecamp.com and asana.com and identifies at least some keywords where the two domains differ, based on live queries for each domain.",
+              "The comparison is grounded in retrieved ranking data for both domains, not the model's assumptions about either site."
+            ],
+            "mechanism": [
+              "Retrieves ranked keywords for both domains given in the request (a query per domain) before comparing; the keyword lists come from the tool results.",
+              "Passes the location as the full name 'United States', not 'US'."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "monitor-rankings-over-time",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector is live-only with no scheduling/monitoring; a request to track rankings over time should be declined cleanly.",
+      "steps": [
+        {
+          "intent": "Set up daily tracking of my domain 'mystore.com' ranking for 'running shoes' and alert me whenever the position changes.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that ongoing/scheduled ranking tracking and alerting is not supported — each query returns a one-shot live result — rather than claiming monitoring was set up.",
+              "The reply does not report that any recurring task, schedule, or alert was created."
+            ],
+            "mechanism": [
+              "Does not fabricate a scheduling/monitoring action; at most it takes a single live ranking reading, and does not claim to have created a recurring job."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "crawl-entire-site",
+      "kind": "negative",
+      "description": "Graceful refusal / scope-correction: the on-page audit covers a single URL only; a full-site crawl request should be declined or scoped down honestly.",
+      "steps": [
+        {
+          "intent": "Crawl the entire 'example.com' website and give me an SEO audit of every page.",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear that a full-site crawl of every page is not supported and that only a single page can be audited at a time, rather than claiming the whole site was crawled.",
+              "The reply does not present fabricated results for many pages as though an entire-site crawl had run."
+            ],
+            "mechanism": [
+              "Does not claim to have crawled multiple pages; if it audits anything it audits a single URL and is transparent that coverage is one page."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "submit-sitemap-to-google",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector is read-only and cannot modify any Google property; a write request should be declined cleanly.",
+      "steps": [
+        {
+          "intent": "Submit my sitemap at 'https://mystore.com/sitemap.xml' to Google so my pages get indexed faster.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that submitting a sitemap (or any write to a Google property) is not something this connector can do — it only retrieves SEO/search data — rather than claiming the sitemap was submitted.",
+              "The reply does not claim any submission, indexing request, or other write action succeeded."
+            ],
+            "mechanism": [
+              "Does not call any tool in an attempt to perform the write, and does not report a fabricated success."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

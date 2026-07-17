@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "dataforseo": {
+      "command": "npx",
+      "args": ["-y", "@zapier/dataforseo-connector", "mcp"]
+    }
+  }
+}

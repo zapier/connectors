@@ -1,0 +1,112 @@
+import { describe, expect, it, vi } from "vitest";
+
+import script from "../scripts/getLlmMentionsCrossMetrics.ts";
+
+/** Build a fetch mock returning a DataForSEO envelope with the given HTTP status + JSON body. */
+const envelopeFetch = (status: number, body: unknown) =>
+  vi.fn<
+    (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+  >(async () => new Response(JSON.stringify(body), { status }));
+
+/** A well-formed success envelope wrapping one task's result rows. */
+const okEnvelope = (result: unknown[]) => ({
+  status_code: 20000,
+  status_message: "Ok.",
+  cost: 0.0025,
+  tasks: [
+    {
+      status_code: 20000,
+      status_message: "Ok.",
+      result_count: result.length,
+      result,
+    },
+  ],
+});
+
+describe("getLlmMentionsCrossMetrics", () => {
+  it("shapes tasks[0].result[0]'s {total, items} and array-wraps the request", async () => {
+    const fetch = envelopeFetch(
+      200,
+      okEnvelope([
+        {
+          total: { platform: [{ key: "chat_gpt", mentions: 64 }] },
+          items: [
+            {
+              key: "nike",
+              platform: [{ key: "chat_gpt", mentions: 64 }],
+            },
+          ],
+        },
+      ]),
+    );
+    const { data } = await script.run(
+      {
+        sets: [
+          { aggregation_key: "nike", domains: ["nike.com"] },
+          { aggregation_key: "adidas", keywords: ["adidas"] },
+        ],
+        location_name: "United States",
+        language_name: "English",
+      },
+      { fetch },
+    );
+    expect(data.items_count).toBe(1);
+    expect(data.total).toMatchObject({
+      platform: [{ key: "chat_gpt", mentions: 64 }],
+    });
+    expect(data.items?.[0]).toMatchObject({
+      key: "nike",
+    });
+
+    // Request goes to the live endpoint and the task params are wrapped in an array.
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).toBe(
+      "https://api.dataforseo.com/v3/ai_optimization/llm_mentions/cross_aggregated_metrics/live",
+    );
+    expect(init?.method).toBe("POST");
+    const sent = JSON.parse(String(init?.body));
+    expect(Array.isArray(sent)).toBe(true);
+  });
+
+  it("maps each set to a nested targets[] with aggregation_key and applies location/language defaults", async () => {
+    const fetch = envelopeFetch(200, okEnvelope([]));
+    await script.run(
+      {
+        sets: [
+          { aggregation_key: "nike", domains: ["nike.com"] },
+          { aggregation_key: "adidas", keywords: ["running shoes"] },
+        ],
+      },
+      { fetch },
+    );
+    const [, init] = fetch.mock.calls[0]!;
+    const sent = JSON.parse(String(init?.body));
+    expect(sent[0].targets).toEqual([
+      { aggregation_key: "nike", target: [{ domain: "nike.com" }] },
+      { aggregation_key: "adidas", target: [{ keyword: "running shoes" }] },
+    ]);
+    expect(sent[0].location_name).toBe("United States");
+    expect(sent[0].language_name).toBe("English");
+  });
+
+  it("throws on a task-level status_code error (HTTP 200, success-shaped error)", async () => {
+    const fetch = envelopeFetch(200, {
+      status_code: 20000,
+      status_message: "Ok.",
+      tasks: [
+        { status_code: 40501, status_message: "Invalid Field.", result: null },
+      ],
+    });
+    await expect(
+      script.run(
+        {
+          sets: [
+            { aggregation_key: "nike", domains: ["nike.com"] },
+            { aggregation_key: "adidas", keywords: ["adidas"] },
+          ],
+        },
+        { fetch },
+      ),
+    ).rejects.toThrow(/Invalid Field|40501/);
+  });
+});
