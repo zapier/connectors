@@ -1,0 +1,539 @@
+{
+  "skill_name": "heygen",
+  "version": "1ee8d34",
+  "description": "Intent-anchored eval scenarios for the HeyGen connector, arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's capability profile. Outcome assertions grade all arms; mechanism assertions grade only the our-tool arms. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "create-avatar-video-from-script",
+      "kind": "arrange-act",
+      "description": "Cold-start flagship: resolve an avatar + voice, generate an avatar video from a script, then poll for status. Exercises the async create-then-poll model.",
+      "steps": [
+        {
+          "intent": "Create a short avatar video of an avatar saying: 'Welcome to our product demo {{run_id}}.' Pick any available avatar and voice.",
+          "assertions": {
+            "outcome": [
+              "A video-generation job is started for an avatar speaking the line 'Welcome to our product demo {{run_id}}', and a video id is returned to track it."
+            ],
+            "mechanism": [
+              "Resolves a real avatar look id and a real voice id from the account's catalog before creating, rather than inventing or hard-coding ids.",
+              "Issues a single avatar-video create call; the returned video id comes from that call's result."
+            ]
+          }
+        },
+        {
+          "intent": "Is that video ready yet? If it is, give me the link to watch it.",
+          "assertions": {
+            "outcome": [
+              "The current status of the video is retrieved and reported. A playable/download URL is provided only if the status is actually completed; while it is still processing the reply says so and does not invent a URL."
+            ],
+            "mechanism": [
+              "Polls the video using the id returned when it was created earlier in this session; does not fabricate a completed status or a download URL for a job that has not finished."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-talking-image-video",
+      "kind": "arrange-act",
+      "description": "Animate a still image (photo) speaking a script from a public image URL; exercises the image source and the mutually-exclusive visual-source rule.",
+      "steps": [
+        {
+          "intent": "Turn this photo into a talking video where the person says 'Our sale starts Friday {{run_id}}': https://cdn.example.com/media/portrait.jpg. Use any available voice.",
+          "assertions": {
+            "outcome": [
+              "A video-generation job is started that animates the image at the given URL speaking 'Our sale starts Friday {{run_id}}', and a video id is returned."
+            ],
+            "mechanism": [
+              "Uses the provided public image URL as the single visual source, and does not also pass an avatar look id or a separate uploaded-image asset id alongside it.",
+              "Resolves a real voice id from the catalog rather than inventing one."
+            ]
+          }
+        },
+        {
+          "intent": "Check whether that video has finished.",
+          "assertions": {
+            "outcome": [
+              "The current status of the video is reported; a result URL is given only if the status is completed."
+            ],
+            "mechanism": [
+              "Polls by the video id created earlier in this session; does not fabricate completion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-cinematic-clip",
+      "kind": "arrange-act",
+      "description": "Generate a short cinematic clip from a natural-language prompt plus avatar looks; exercises the prompt+looks path and the 4-15s duration rule.",
+      "steps": [
+        {
+          "intent": "Make a roughly 8-second cinematic clip of an avatar walking through a neon-lit city at night. Use any available avatar look.",
+          "assertions": {
+            "outcome": [
+              "A short cinematic video-generation job (a clip in the 4-15 second range) is started from the described scene, and a video id is returned."
+            ],
+            "mechanism": [
+              "Passes one to three real avatar look ids from the catalog plus the scene description as a prompt, requests a duration within the 4-15 second range (or lets the model choose), and does not pass a spoken script.",
+              "Issues a single cinematic-clip create call."
+            ]
+          }
+        },
+        {
+          "intent": "Is the clip done?",
+          "assertions": {
+            "outcome": [
+              "The clip's current status is reported; a result URL is given only when completed."
+            ],
+            "mechanism": [
+              "Polls by the video id created earlier in this session; no fabricated completion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "generate-video-from-prompt",
+      "kind": "arrange-act",
+      "description": "Drive the prompt-to-video agent end to end: start a session from a prompt, then poll the session and retrieve the resulting video.",
+      "steps": [
+        {
+          "intent": "Have HeyGen plan and produce a 30-second explainer video about the benefits of composting {{run_id}}.",
+          "assertions": {
+            "outcome": [
+              "A prompt-to-video agent session is started from the composting-explainer request, and an identifier for the session is returned to track it."
+            ],
+            "mechanism": [
+              "Starts the video-agent session with the prompt and does not claim a finished video already exists at this point."
+            ]
+          }
+        },
+        {
+          "intent": "Check on that and give me the finished video once it's ready.",
+          "assertions": {
+            "outcome": [
+              "The session's status is reported; once it yields a video the video's result is surfaced, and a finished-video URL is provided only when the underlying video is completed."
+            ],
+            "mechanism": [
+              "Polls the session started earlier in this session and then retrieves the resulting video by its id; does not invent a video id or a completed URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-recent-videos",
+      "kind": "act-only",
+      "description": "Simple read of the account's recent videos.",
+      "steps": [
+        {
+          "intent": "Show me my most recent videos.",
+          "assertions": {
+            "outcome": [
+              "A list of the account's recent videos is returned (with identifying details such as titles, ids, and statuses), or a clear 'no videos found' message if the account has none."
+            ],
+            "mechanism": [
+              "Reads the account's video list rather than fabricating video entries."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-video-download-link",
+      "kind": "discover-act",
+      "description": "Find the most recent finished video and return its download URL, honoring that URLs exist only once a video is completed.",
+      "steps": [
+        {
+          "intent": "Get me the download link for my most recent finished video.",
+          "assertions": {
+            "outcome": [
+              "The most recent video is located and, if it is completed, its download URL is returned; if it is not finished (or the account has no videos) the reply says so rather than inventing a URL."
+            ],
+            "mechanism": [
+              "Finds the target by listing the account's videos and then reading that specific video's details; any download URL it reports comes from the video's own data and is not fabricated."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-a-video",
+      "kind": "arrange-act",
+      "description": "Destructive lifecycle: create a throwaway video, then delete exactly that one. Wrong-target scrutiny on the delete.",
+      "steps": [
+        {
+          "intent": "Create a throwaway avatar video that says 'temp clip {{run_id}}'. Use any avatar and voice.",
+          "assertions": {
+            "outcome": [
+              "A video-generation job for an avatar saying 'temp clip {{run_id}}' is started and its id is returned."
+            ],
+            "mechanism": [
+              "Resolves real avatar and voice ids and issues a single create call."
+            ]
+          }
+        },
+        {
+          "intent": "Actually, delete that video.",
+          "assertions": {
+            "outcome": [
+              "The video the agent just created is deleted, and the reply confirms the removal."
+            ],
+            "mechanism": [
+              "Deletes exactly the video id created earlier in this session; does not delete a different or unrelated video, and does not claim a deletion it did not perform."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "synthesize-speech-from-text",
+      "kind": "act-only",
+      "description": "Guidance-dependent: text-to-speech requires a Starfish-compatible voice. Outcome graded blind to the engine; the Starfish selection is the our-arm-only mechanism check.",
+      "steps": [
+        {
+          "intent": "Generate an audio voiceover that reads: 'Thanks for calling Acme support {{run_id}}. Please stay on the line and a representative will be with you shortly.'",
+          "assertions": {
+            "outcome": [
+              "Speech audio is generated for the requested line and an audio result (a URL or asset the user can retrieve) is returned."
+            ],
+            "mechanism": [
+              "Selects a voice compatible with the speech-synthesis engine (a Starfish-compatible voice, resolved from the voice catalog) rather than an arbitrary or invented voice id, then makes a single speech-generation call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "browse-voices-by-language",
+      "kind": "act-only",
+      "description": "Read the voice catalog filtered by language.",
+      "steps": [
+        {
+          "intent": "What Spanish voices are available?",
+          "assertions": {
+            "outcome": [
+              "A list of available voices for Spanish is returned with identifying details, or a clear message if none match."
+            ],
+            "mechanism": [
+              "Filters the voice catalog by language rather than returning the entire catalog or inventing voices."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "design-custom-voice",
+      "kind": "act-only",
+      "description": "Generate candidate voices from a natural-language description.",
+      "steps": [
+        {
+          "intent": "Design a warm, calm female narrator voice with a slight British accent.",
+          "assertions": {
+            "outcome": [
+              "One or more candidate voices matching the described narrator are generated and returned for the user to choose from."
+            ],
+            "mechanism": [
+              "Passes the natural-language description to a voice-design call; does not fabricate voice ids or claim a single fixed result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clone-voice-from-audio",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent (async): cloning returns a clone id to poll; the voice isn't usable until the clone completes.",
+      "steps": [
+        {
+          "intent": "Clone the voice in this recording so I can reuse it: https://cdn.example.com/media/sample-voice.mp3",
+          "assertions": {
+            "outcome": [
+              "A voice-cloning job is started from the provided audio URL and an identifier for the clone is returned."
+            ],
+            "mechanism": [
+              "Starts the clone from the provided public audio URL and does not claim the cloned voice is immediately ready to use."
+            ]
+          }
+        },
+        {
+          "intent": "Is the cloned voice ready to use yet?",
+          "assertions": {
+            "outcome": [
+              "The clone's current status is reported, and the reply confirms the voice is usable only once its status indicates the clone has completed."
+            ],
+            "mechanism": [
+              "Polls the clone using the id returned when it was started earlier in this session; does not fabricate a 'ready' status."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "browse-avatar-looks",
+      "kind": "act-only",
+      "description": "Read the avatar look catalog and understand a look id is what a video create call needs.",
+      "steps": [
+        {
+          "intent": "Show me some avatar looks I could use in a video.",
+          "assertions": {
+            "outcome": [
+              "A list of available avatar looks is returned with identifying details (ids and/or names)."
+            ],
+            "mechanism": [
+              "Reads the avatar look catalog rather than fabricating avatars, and treats a look id as the identifier usable for creating a video."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-custom-avatar",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent (async training): create an avatar from a photo, then poll until the look is trained/ready.",
+      "steps": [
+        {
+          "intent": "Create a new avatar from this photo: https://cdn.example.com/media/headshot.jpg",
+          "assertions": {
+            "outcome": [
+              "An avatar-creation job is started from the provided image and an identifier is returned to track it."
+            ],
+            "mechanism": [
+              "Starts avatar creation using the provided public image URL and does not claim the avatar is immediately ready."
+            ]
+          }
+        },
+        {
+          "intent": "Is my new avatar ready to use yet?",
+          "assertions": {
+            "outcome": [
+              "The avatar's current training status is reported, and the reply confirms it is usable only when the status is completed (surfacing a consent requirement if the service reports one)."
+            ],
+            "mechanism": [
+              "Polls the avatar/look created earlier in this session; does not fabricate a completed status."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "translate-video-to-languages",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: translate one video into multiple languages using exact supported language values, yielding one job id per language, then poll.",
+      "steps": [
+        {
+          "intent": "Translate this video into Spanish and Japanese: https://cdn.example.com/media/promo.mp4",
+          "assertions": {
+            "outcome": [
+              "Video-translation jobs are started for both Spanish and Japanese for the provided video, and an identifier is returned for each language."
+            ],
+            "mechanism": [
+              "Uses the exact language values the service accepts (resolved from the supported-languages list) rather than guessing language codes, requests both languages together, and treats the response as one translation id per language."
+            ]
+          }
+        },
+        {
+          "intent": "Are those translations done? Send me the Spanish one when it's ready.",
+          "assertions": {
+            "outcome": [
+              "The status of the translation jobs is reported; the Spanish translated-video URL is provided only once that job is completed, otherwise its in-progress status is reported."
+            ],
+            "mechanism": [
+              "Polls each translation using the ids returned earlier in this session; does not fabricate a translated-video URL."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-translation-languages",
+      "kind": "act-only",
+      "description": "Read the authoritative list of supported translation languages instead of reciting a guess.",
+      "steps": [
+        {
+          "intent": "What languages can HeyGen translate a video into?",
+          "assertions": {
+            "outcome": [
+              "The set of supported video-translation languages is returned to the user."
+            ],
+            "mechanism": [
+              "Reads the service's supported-languages list rather than reciting a guessed set of languages from memory."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "lipsync-video-with-audio",
+      "kind": "arrange-act",
+      "description": "Replace a video's audio with a new track and re-sync the lips, then poll for the result.",
+      "steps": [
+        {
+          "intent": "Replace the audio on this video with this new voiceover and re-sync the lips. Video: https://cdn.example.com/media/talk.mp4  Audio: https://cdn.example.com/media/voiceover.mp3",
+          "assertions": {
+            "outcome": [
+              "A lipsync job is started that pairs the given video with the given replacement audio, and an identifier is returned to track it."
+            ],
+            "mechanism": [
+              "Passes the provided public video URL and audio URL to a single lipsync create call; does not claim a finished output video yet."
+            ]
+          }
+        },
+        {
+          "intent": "Is the lip-synced video ready?",
+          "assertions": {
+            "outcome": [
+              "The lipsync job's status is reported; an output-video URL is provided only when completed."
+            ],
+            "mechanism": [
+              "Polls the lipsync job by the id returned earlier in this session; no fabricated completion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "revise-video-in-chat-session",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: only a chat-mode video-agent session accepts follow-up revisions, so the session must be opened in that mode to apply feedback.",
+      "steps": [
+        {
+          "intent": "Start an interactive video-agent session to make a product teaser for our new mobile app, and keep it open so I can give feedback.",
+          "assertions": {
+            "outcome": [
+              "An interactive, multi-turn video-agent session is started for the product-teaser request and a session identifier is returned."
+            ],
+            "mechanism": [
+              "Opens the session in the mode that supports follow-up messages and revisions rather than a one-shot mode, so later feedback can be applied to the same session."
+            ]
+          }
+        },
+        {
+          "intent": "Tell it to make the tone more upbeat and energetic.",
+          "assertions": {
+            "outcome": [
+              "The instruction to make the tone more upbeat is delivered to the open session and acknowledged or applied."
+            ],
+            "mechanism": [
+              "Sends the revision as a follow-up message to the session started earlier in this session; does not start a brand-new session or fabricate an agent reply."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-account-credits",
+      "kind": "act-only",
+      "description": "Read the account's remaining credit balance (the check a user should do before an expensive generation).",
+      "steps": [
+        {
+          "intent": "How many HeyGen credits do I have left?",
+          "assertions": {
+            "outcome": [
+              "The account's remaining credit or balance is retrieved and reported to the user."
+            ],
+            "mechanism": [
+              "Reads the account/profile information for the balance rather than guessing or inventing a number."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-avatar-by-name",
+      "kind": "discover-act",
+      "description": "Disambiguation: a video request names an avatar by a human name that may match zero, one, or several looks; the agent must resolve or ask rather than guess an id.",
+      "steps": [
+        {
+          "intent": "Make a short video of our avatar named 'Alex' saying 'Hello from the team {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The agent resolves which avatar look 'Alex' refers to before creating anything: if exactly one look clearly matches it proceeds, and if the name is ambiguous or matches nothing it asks the user or lists the candidates rather than silently picking one. It does not create a video against a guessed avatar id."
+            ],
+            "mechanism": [
+              "Looks up 'Alex' in the avatar catalog rather than inventing an avatar id, and on an ambiguous or empty match surfaces the choice instead of guessing."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-multi-scene-studio",
+      "kind": "act-only",
+      "description": "Graceful refusal: multi-scene / scene-by-scene 'Studio'-style composition is not supported in this connector.",
+      "steps": [
+        {
+          "intent": "Create a multi-scene video where scene one has one avatar on a beach background and scene two has a different avatar in an office, stitched together into one video.",
+          "expectsNoAction": true,
+          "assertions": {
+            "outcome": [
+              "The reply explains that multi-scene, scene-by-scene composition is not supported and does not claim to have produced such a video."
+            ],
+            "mechanism": [
+              "Does not call a create tool and report success for a multi-scene composition it cannot actually build."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-template-video",
+      "kind": "act-only",
+      "description": "Graceful refusal: generating a video from a saved template is not supported.",
+      "steps": [
+        {
+          "intent": "Generate a video from my saved HeyGen template called 'Monthly Update' and fill in this month's numbers.",
+          "expectsNoAction": true,
+          "assertions": {
+            "outcome": [
+              "The reply explains that generating from saved templates is not supported and does not claim a template-based video was produced."
+            ],
+            "mechanism": [
+              "Does not fabricate a template lookup or report a successful template-based generation."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-local-file-upload",
+      "kind": "act-only",
+      "description": "Graceful refusal / redirect: the connector can't take a local file; it should ask for a publicly accessible URL instead of faking an upload.",
+      "steps": [
+        {
+          "intent": "Here's a video file on my computer at C:\\\\Users\\\\me\\\\clip.mp4 — translate it into German.",
+          "expectsNoAction": true,
+          "assertions": {
+            "outcome": [
+              "The reply explains it cannot take a local file and asks for a publicly accessible URL (or an already-hosted video) instead, and does not claim to have uploaded the local file or started a translation of it."
+            ],
+            "mechanism": [
+              "Does not fabricate an upload of the local path or start a translation against a non-existent hosted asset."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-balance-matching-billing-type",
+      "kind": "act-only",
+      "description": "Guidance-dependent: the account balance lives in a different field depending on billing type — wallet, subscription, or usage_based — and that tracks the auth path (an API key bills the API tier and populates wallet; a Zapier/OAuth connection bills the web subscription plan and populates subscription). The agent should report the balance from the field that applies to this account rather than assuming one field or misreading an empty one.",
+      "steps": [
+        {
+          "intent": "I'm about to generate a batch of videos — what's my current HeyGen balance, and will it cover more work?",
+          "assertions": {
+            "outcome": [
+              "The account balance is retrieved and reported as a concrete value taken from the balance that actually applies to this account (e.g. a prepaid/API credit amount, or a subscription plan's credits), including reporting an explicit zero or empty balance when that is what the account holds.",
+              "The reply does not quote a balance from a category that does not apply to this account (e.g. citing a prepaid credit figure for a subscription-billed account, or vice versa)."
+            ],
+            "mechanism": [
+              "Reads the account profile once and reports the balance field that matches the returned billing type, rather than fixating on a single hard-coded field.",
+              "Does not fabricate or infer a number when the applicable balance field is absent or empty; reports what the profile actually returns."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

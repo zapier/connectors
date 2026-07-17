@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "heygen",
+  "displayName": "Heygen",
+  "description": "Agent-callable HeyGen tools — generate AI avatar videos, translate and lip-sync videos, synthesize speech, and clone or browse voices and avatars. Use when the user mentions HeyGen or wants to create, translate, or check the status of AI videos, or to generate or clone a voice — including requests that don't name HeyGen, e.g. make an avatar video from a script, translate a video to Spanish, turn a script into a voiceover, or clone a voice from a recording.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/heygen",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "heygen",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
