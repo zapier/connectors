@@ -3,7 +3,7 @@
   "name": "google-analytics",
   "displayName": "Google Analytics",
   "description": "Agent-callable Google Analytics 4 (GA4) tools — run analytics reports, discover the dimensions and metrics a property supports, navigate accounts and properties, manage key events and custom dimensions/metrics, and send Measurement Protocol events. Use when the user mentions Google Analytics or GA4, or wants website/app traffic, conversion, or reporting data — including requests that don't name GA4 explicitly, e.g. how many users visited last week, top pages by country.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
