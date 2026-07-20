@@ -634,7 +634,7 @@
     },
     {
       "id": "create-managed-shared-folder",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful-refusal probe for an unshipped capability: the connector can create shared links and manage existing shared-folder members, but cannot turn a folder into a managed shared folder.",
       "steps": [
         {
@@ -652,7 +652,7 @@
     },
     {
       "id": "restore-deleted-file",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful-refusal probe for an unshipped capability: the connector has no restore / file-revisions tool.",
       "steps": [
         {
@@ -670,7 +670,7 @@
     },
     {
       "id": "report-storage-usage",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful-refusal probe for an unshipped capability: the connector can identify the account but exposes no storage/space-usage tool.",
       "steps": [
         {
@@ -704,6 +704,7 @@
         },
         {
           "intent": "Change the title of the 'Resumes {{run_id}}' file request to 'Resumes - closed'.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply states it cannot modify an existing file request (only creating and listing are supported) and does not claim the title was changed."
