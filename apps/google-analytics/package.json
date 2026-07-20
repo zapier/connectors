@@ -1,6 +1,5 @@
 {
   "name": "@zapier/google-analytics-connector",
-  "private": true,
   "description": "Agent-callable Google Analytics 4 (GA4) tools — run analytics reports, discover the dimensions and metrics a property supports, navigate accounts and properties, manage key events and custom dimensions/metrics, and send Measurement Protocol events. Use when the user mentions Google Analytics or GA4, or wants website/app traffic, conversion, or reporting data — including requests that don't name GA4 explicitly, e.g. how many users visited last week, top pages by country.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -59,5 +58,9 @@
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
