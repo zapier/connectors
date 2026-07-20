@@ -1,0 +1,536 @@
+{
+  "skill_name": "google-analytics",
+  "version": "2bbef09",
+  "description": "Intent-anchored eval scenarios for the google-analytics connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. Most scenarios discover a pre-existing GA4 property by name and act on it (discover-act); write lifecycles self-provision and clean up their asset (arrange-act); refusals probe capabilities the connector doesn't ship. Outcome assertions grade world/reply facts on all arms; mechanism assertions grade tool-call hygiene on our arms only. {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "ga4_eval_property",
+      "description": "A GA4 property the eval Google account can access. The connector cannot create a property (that needs Terms-of-Service acceptance + acknowledgeUserDataCollection, which this connector's tools don't expose), so an operator provisions it in the GA4 UI and grants the eval connection access. The property need not have any historical or realtime traffic; report scenarios tolerate empty result sets.",
+      "env": "EVAL_GA4_PROPERTY",
+      "default": "Zapier Eval Property",
+      "expects": "The GA4 property identified by the resolved value above (matched by displayName) appears under an accessible account in the account/property listing with a distinct (unique) displayName, granted to the eval connection with at least Viewer access. It has at least one WEB data stream carrying a G-XXXXXXX measurementId. The property need not have any historical or realtime traffic; report scenarios tolerate empty result sets. 'sign_up' is NOT already configured as a key event at run start. The property has headroom below the per-property limits for event-scoped custom dimensions, custom metrics, and key events so the create-then-remove scenarios can add and then remove one. The eval connection's OAuth scope includes analytics.edit so the write scenarios (create/archive a custom dimension & metric, create/delete a key event, create a Measurement Protocol secret, send an event) succeed.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "list-accessible-properties",
+      "kind": "discover-act",
+      "description": "Navigation entry point: enumerate the Google Analytics properties the connection can reach.",
+      "steps": [
+        {
+          "intent": "Which Google Analytics properties do I have access to?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the accessible Google Analytics accounts and properties, giving each property's name alongside its numeric property id."
+            ],
+            "mechanism": [
+              "Answers from a single account-summaries listing rather than guessing or inventing property ids."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-property-config",
+      "kind": "discover-act",
+      "description": "Read a property's configuration (time zone, currency) after resolving it by name.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What time zone and currency is our '{{ga4_eval_property}}' property configured with?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the reporting time zone and the currency configured for the named property."
+            ],
+            "mechanism": [
+              "Resolves the property named in the request to its numeric property id (via the account/property listing) before reading its configuration, rather than guessing an id.",
+              "Reads the property config with the resolved numeric property id, not a G-XXXXXXX measurement id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-measurement-id",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: the G-XXXXXXX id lives on a web data stream, and is distinct from the numeric property id.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What's the measurement ID for the website data stream on our '{{ga4_eval_property}}' property?",
+          "assertions": {
+            "outcome": [
+              "The reply returns the web data stream's G-XXXXXXX measurement id for the named property, distinct from the numeric property id."
+            ],
+            "mechanism": [
+              "Obtains the measurement id from the property's data-stream listing rather than fabricating a G-XXXXXXX value or returning the numeric property id in its place."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-top-pages",
+      "kind": "discover-act",
+      "description": "Core reporting: top pages by pageviews for a relative date range, sorted descending.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What were our top 10 pages by pageviews over the last 7 days on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply returns a report result for the named property covering a page dimension and a pageviews metric for the last 7 days; an empty result set (zero rows) is a valid outcome for a traffic-free property and the reply does not fabricate page or pageview data."
+            ],
+            "mechanism": [
+              "Runs a report on the resolved numeric property id using a page dimension (e.g. pagePath or pageTitle) with a pageviews metric (e.g. screenPageViews), a ~7-day relative date range, and descending sort on the pageviews metric.",
+              "Uses valid GA4 dimension/metric API names rather than invented field names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-users-by-country",
+      "kind": "discover-act",
+      "description": "Core reporting: active users broken down by country over a 28-day window.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "How many active users did we have from each country in the last 28 days on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply returns a report result for the named property covering the country dimension and active-users metric for the last 28 days; an empty result set (zero rows) is a valid outcome for a traffic-free property and the reply does not fabricate country or user-count data."
+            ],
+            "mechanism": [
+              "Runs a report on the resolved numeric property id with the country dimension and the activeUsers metric over a ~28-day relative date range.",
+              "If the report is truncated (returned rows fewer than the reported total row count), pages the remaining rows rather than presenting a partial breakdown as complete."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-organic-sessions",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: restricting to organic search is a pre-aggregation dimension filter (WHERE), not a metric filter (HAVING).",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Show me sessions from organic search only, over the last 30 days, on '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply returns a report result for the named property scoped to organic-search traffic for the last 30 days; an empty result set (zero rows) is a valid outcome for a traffic-free property and the reply does not fabricate a sessions figure."
+            ],
+            "mechanism": [
+              "Restricts to organic search with a dimensionFilter on a channel/source dimension (e.g. sessionDefaultChannelGroup) — a pre-aggregation filter on a dimension — rather than a metricFilter.",
+              "Runs the report against the resolved numeric property id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "discover-report-fields",
+      "kind": "discover-act",
+      "description": "Field discovery: the user doesn't know GA4 field names and needs the property's supported dimensions/metrics.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "I want to build a report on '{{ga4_eval_property}}' but I don't know the field names — what dimensions and metrics can I use?",
+          "assertions": {
+            "outcome": [
+              "The reply lists dimensions and metrics available for the named property, giving usable field names (and ideally their human-readable UI names)."
+            ],
+            "mechanism": [
+              "Retrieves the available fields from the property's reporting metadata rather than enumerating field names from memory."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-field-compatibility",
+      "kind": "discover-act",
+      "description": "Guidance-dependent recovery: a report failed as incompatible; determine which fields can be combined.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "A report on '{{ga4_eval_property}}' failed saying the fields are incompatible. I wanted session duration broken down by event name — can those be combined, and if not what can?",
+          "assertions": {
+            "outcome": [
+              "The reply states whether the requested field combination is valid for the property, and if not, indicates which fields are compatible — rather than asserting the original report ran."
+            ],
+            "mechanism": [
+              "Uses a compatibility check for the field set on the resolved property id rather than guessing compatibility or blindly retrying the same failing report."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-realtime-active-users",
+      "kind": "discover-act",
+      "description": "Realtime reporting: who is on the site right now, by country.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "How many people are on our site right now, broken down by country, on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply returns a realtime report result for the named property covering the country dimension and active-users metric; an empty result set (zero currently active users) is a valid outcome and the reply does not fabricate active-user counts."
+            ],
+            "mechanism": [
+              "Uses the realtime report method (no date ranges) with the activeUsers metric and country dimension against the resolved property id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "report-realtime-unsupported-fields",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: realtime reporting accepts only a limited field set — revenue-by-page isn't available live.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Show me revenue by landing page right now, in real time, on '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply does not present fabricated live revenue-by-page figures; it either explains that realtime reporting supports only a limited set of fields (so revenue by page isn't available live) or offers a supported alternative (a realtime breakdown of supported fields, or a historical revenue-by-page report)."
+            ],
+            "mechanism": [
+              "Does not pass Core-only fields (a revenue metric or a page dimension) to the realtime report method; if it queries realtime at all, it uses only realtime-supported dimensions/metrics."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-key-events",
+      "kind": "discover-act",
+      "description": "Read the key events (conversions) configured on a property.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What conversions are set up as key events on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the key events configured on the named property (their event names)."
+            ],
+            "mechanism": [
+              "Lists key events for the resolved numeric property id rather than inventing event names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "mark-and-remove-key-event",
+      "kind": "arrange-act",
+      "description": "Key-event lifecycle: mark an existing collected event as a key event, then delete it. Free create/delete liveness.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Mark the 'sign_up' event as a key event (conversion) on '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "The 'sign_up' event is now configured as a key event on the named property, and the reply reports the created key event (including its id)."
+            ],
+            "mechanism": [
+              "Creates the key event on the resolved numeric property id with eventName 'sign_up' exactly as given in the request; does not substitute a different event name.",
+              "The created key-event id comes from the create result, not a hard-coded or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Actually, remove that key event again.",
+          "assertions": {
+            "outcome": [
+              "The 'sign_up' key event is no longer configured as a key event on the property (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the 'sign_up' key event the agent just created in this session, using its id; does not delete an unrelated key event."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-protected-key-event",
+      "kind": "discover-act",
+      "description": "Destructive-op safety: only key events flagged deletable can be deleted; a non-deletable default should not be force-removed.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Delete the 'purchase' key event from '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "If 'purchase' is not configured as a key event, or is a non-deletable one, the reply says so and does not claim a deletion happened; only a key event that actually exists and is deletable is removed."
+            ],
+            "mechanism": [
+              "Resolves the 'purchase' key event on the resolved property id before attempting deletion rather than guessing a key-event id, and does not delete a different key event when 'purchase' can't be matched or isn't deletable."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-custom-dimensions",
+      "kind": "discover-act",
+      "description": "Read the custom dimensions configured on a property.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What custom dimensions are configured on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply accurately reports the custom dimensions configured on the named property — including their display names and the event/user parameters they read when any exist; if the property has no custom dimensions configured, a reply stating 'none configured' (or equivalent) is a valid, correct outcome and the reply must not fabricate dimensions."
+            ],
+            "mechanism": [
+              "Lists custom dimensions for the resolved numeric property id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-and-archive-custom-dimension",
+      "kind": "arrange-act",
+      "description": "Custom-dimension lifecycle: register an event parameter as a custom dimension, then archive it (archive is the only removal path).",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Start tracking the 'article_id' event parameter as a custom dimension named 'Article ID {{run_id}}' on '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "A custom dimension corresponding to the requested name (with the run_id portion present, allowing GA4 to sanitize disallowed characters such as hyphens to underscores in the displayName) that reads the 'article_id' event parameter now exists on the named property, and the reply reports it (including its id)."
+            ],
+            "mechanism": [
+              "Creates the custom dimension on the resolved numeric property id with parameterName 'article_id' and EVENT scope (the appropriate scope for an event parameter).",
+              "The parameterName contains only allowed characters (letters, numbers, underscores, starting with a letter) as required by GA4."
+            ]
+          }
+        },
+        {
+          "intent": "Never mind — remove the custom dimension you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Article ID {{run_id}}' custom dimension is no longer active on the property (cleanup)."
+            ],
+            "mechanism": [
+              "Removes the dimension by archiving it (there is no delete method for custom dimensions), targeting the dimension the agent just created in this session rather than an unrelated one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-currency-custom-metric",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: a CURRENCY custom metric additionally requires a restrictedMetricType; the naive path omits it and the create fails.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Track the 'shipping_fee' event parameter as a custom metric that measures money (revenue) named 'Shipping Fee {{run_id}}' on '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "A custom metric corresponding to the requested name (with the run_id portion present, allowing GA4 to sanitize disallowed characters such as hyphens to underscores in the displayName) reading the 'shipping_fee' event parameter now exists on the named property, configured to measure a monetary/currency value, and the reply reports it (including its id)."
+            ],
+            "mechanism": [
+              "Creates the metric on the resolved property id with a CURRENCY measurement unit together with a restrictedMetricType (COST_DATA or REVENUE_DATA), which GA4 requires for currency metrics — not CURRENCY alone."
+            ]
+          }
+        },
+        {
+          "intent": "Actually, archive that custom metric again.",
+          "assertions": {
+            "outcome": [
+              "The 'Shipping Fee {{run_id}}' custom metric is no longer active on the property (cleanup)."
+            ],
+            "mechanism": [
+              "Removes the metric by archiving it (custom metrics have no delete method), targeting the metric the agent just created in this session."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-custom-metrics",
+      "kind": "discover-act",
+      "description": "Read the custom metrics configured on a property.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What custom metrics are set up on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply accurately reports the custom metrics configured on the named property — including their display names and measurement units when any exist; if the property has no custom metrics configured, a reply stating 'none configured' (or equivalent) is a valid, correct outcome and the reply must not fabricate metrics."
+            ],
+            "mechanism": [
+              "Lists custom metrics for the resolved numeric property id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-measurement-protocol-secrets",
+      "kind": "discover-act",
+      "description": "Read the Measurement Protocol secrets on a property's web data stream.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "What Measurement Protocol secrets exist for the website data stream on '{{ga4_eval_property}}'?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the Measurement Protocol secrets on the named property's web data stream (their display names)."
+            ],
+            "mechanism": [
+              "Resolves the property's web data stream first (to get its data-stream id) and lists that stream's Measurement Protocol secrets, rather than guessing a stream id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-server-event",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: send a server-side event via the Measurement Protocol, where a 2xx response does NOT confirm the event was valid.",
+      "requires": ["ga4_eval_property"],
+      "steps": [
+        {
+          "intent": "Create a Measurement Protocol secret named 'Eval MP {{run_id}}' on the website data stream of '{{ga4_eval_property}}'.",
+          "assertions": {
+            "outcome": [
+              "A Measurement Protocol secret named 'Eval MP {{run_id}}' now exists on the named property's web data stream, and the reply reports its secret value is available for sending events."
+            ],
+            "mechanism": [
+              "Resolves the property's web data stream id first, then creates the secret on that stream; the secret value comes from the create result, not an invented value."
+            ]
+          }
+        },
+        {
+          "intent": "Now send a server-side event named 'eval_ping' to that web stream, tagged with the note 'run {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "An 'eval_ping' event is sent to the property's web data stream, and the reply does NOT overstate the result — it does not claim GA4 confirmed the event as valid or recorded, since the Measurement Protocol returns success regardless of payload validity."
+            ],
+            "mechanism": [
+              "Sends the event with the web stream's measurement id plus a client id (web requires exactly one of measurementId/firebaseAppId together with the matching client identifier), authenticated by the api secret resolved from this stream's Measurement Protocol secret rather than an invented api secret.",
+              "Uses a valid GA4 event name ('eval_ping': letters/numbers/underscores, starting with a letter)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-property-selection",
+      "kind": "discover-act",
+      "description": "Underspecified target: the user hasn't said which property; the agent should surface the options and ask, not silently pick one.",
+      "steps": [
+        {
+          "intent": "Give me a users report for last week — I've got a few Google Analytics properties and I'm not sure which one to use.",
+          "assertions": {
+            "outcome": [
+              "The reply presents the accessible properties and asks the user which one to report on, rather than silently choosing one and returning a report for it."
+            ],
+            "mechanism": [
+              "Does not run a report before the user picks a property; at most it lists the accessible properties to offer the choice."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-create-property",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector does not create GA4 accounts or properties.",
+      "steps": [
+        {
+          "intent": "Create a new Google Analytics property called 'New Marketing Site' for me.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating a Google Analytics property isn't supported and does not claim a property was created."
+            ],
+            "mechanism": [
+              "Does not call any tool that would fabricate a property-creation success (e.g. repurposing a create-key-event or create-custom-dimension call)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-manage-user-access",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector does not manage user access or permissions.",
+      "steps": [
+        {
+          "intent": "Give jane@example.com viewer access to our Google Analytics property.",
+          "assertions": {
+            "outcome": [
+              "The reply states that managing user access/permissions isn't supported and does not claim access was granted."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool in an attempt to fake granting access."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-pivot-report",
+      "kind": "negative",
+      "description": "Graceful refusal (roadmap gap): the connector's flat runReport can't express a pivot/cross-tab report.",
+      "steps": [
+        {
+          "intent": "Give me a pivot table of sessions crossed by country and device category for our Google Analytics property.",
+          "assertions": {
+            "outcome": [
+              "The reply either explains a true pivot/cross-tab report isn't supported, or is explicit that it is returning a flat breakdown rather than a real pivot — it does not present post-processed flat rows as a genuine pivot report."
+            ],
+            "mechanism": [
+              "Does not fabricate a pivot result; if it reports data at all it uses a flat report and labels it as such."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-universal-analytics",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector reads GA4 only, not Universal Analytics.",
+      "steps": [
+        {
+          "intent": "Pull our Universal Analytics traffic data from 2021 for our Google Analytics account.",
+          "assertions": {
+            "outcome": [
+              "The reply states that Universal Analytics (UA) data isn't supported (this connector reads GA4) and does not fabricate UA numbers."
+            ],
+            "mechanism": [
+              "Does not attempt to satisfy the request by running a GA4 report and presenting it as Universal Analytics data."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-data-access-report",
+      "kind": "negative",
+      "description": "Graceful refusal (roadmap gap): the connector does not expose the data-access audit report (who viewed the analytics).",
+      "steps": [
+        {
+          "intent": "Who has been viewing our Google Analytics reports recently?",
+          "assertions": {
+            "outcome": [
+              "The reply states that a data-access/audit report of who viewed the analytics isn't supported, and does not fabricate a list of viewers or repurpose an analytics traffic report as an access audit."
+            ],
+            "mechanism": [
+              "Does not present a runReport traffic result as if it were an access-audit report."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

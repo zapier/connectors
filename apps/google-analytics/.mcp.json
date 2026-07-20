@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "google-analytics": {
+      "command": "npx",
+      "args": ["-y", "@zapier/google-analytics-connector", "mcp"]
+    }
+  }
+}
