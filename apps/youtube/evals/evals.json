@@ -479,7 +479,7 @@
     },
     {
       "id": "disambiguate-ambiguous-video",
-      "kind": "discover-act",
+      "kind": "negative",
       "description": "No-op/disambiguation: a like request whose title matches many videos should make the agent ask rather than rate an arbitrary match.",
       "steps": [
         {
