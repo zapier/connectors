@@ -498,7 +498,7 @@
     },
     {
       "id": "share-page-with-user",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: the connector exposes no sharing / permissions capability, so the agent should decline cleanly.",
       "requires": ["notion_eval_root"],
       "steps": [
