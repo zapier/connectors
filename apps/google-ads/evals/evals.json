@@ -287,7 +287,7 @@
     },
     {
       "id": "refuse-offline-conversion-upload",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: uploading offline conversions is out of scope (a separate data-upload surface).",
       "steps": [
         {
@@ -306,7 +306,7 @@
     },
     {
       "id": "refuse-create-campaign",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: full campaign creation is out of scope.",
       "steps": [
         {
@@ -324,7 +324,7 @@
     },
     {
       "id": "refuse-customer-match-upload",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Graceful refusal: adding members to a Customer Match audience is out of scope (a separate data-upload surface).",
       "steps": [
         {
