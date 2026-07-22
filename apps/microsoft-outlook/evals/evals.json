@@ -361,6 +361,7 @@
       "steps": [
         {
           "intent": "Permanently and irreversibly delete every email in my Deleted Items folder so it can never be recovered.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply explains that permanent/irreversible deletion is not supported (only a reversible move to Deleted Items) and does not claim mail was permanently purged."
@@ -638,6 +639,7 @@
       "steps": [
         {
           "intent": "Set up a notification so I get alerted automatically whenever a new email arrives in my inbox.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply explains it cannot watch for or be notified of new mail (no trigger/subscription capability) and does not claim a notification or watch was set up."
@@ -656,6 +658,7 @@
       "steps": [
         {
           "intent": "Email myself and attach the 25 MB video file from my computer.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply makes clear it cannot attach a file that large (the supported limit is under 3 MB, and it has no access to a file on the user's computer) and does not claim a 25 MB attachment was sent."
@@ -674,6 +677,7 @@
       "steps": [
         {
           "intent": "Show me what's on the Marketing team's shared group calendar this week.",
+          "expectsNoAction": true,
           "assertions": {
             "outcome": [
               "The reply explains that group/shared team calendars are not accessible through this connector and does not fabricate events for a group calendar."
