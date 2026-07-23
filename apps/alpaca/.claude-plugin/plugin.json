@@ -3,7 +3,7 @@
   "name": "alpaca",
   "displayName": "Alpaca",
   "description": "Agent-callable Alpaca trading tools — place and manage stock, crypto, and options orders, read account balances, positions, and portfolio history, look up assets and market hours, and read watchlists. Use when the user mentions Alpaca or wants to trade or inspect a brokerage account, even if they don't name Alpaca explicitly.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
