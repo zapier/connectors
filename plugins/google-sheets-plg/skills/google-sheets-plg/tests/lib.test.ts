@@ -6,14 +6,14 @@ import {
   columnIndexToLetter,
   columnLetterToIndex,
   quoteSheetName,
-} from "../skills/google-sheets-plg/lib/a1.ts";
+} from "../lib/a1.ts";
 import {
   buildUpdateRuns,
   parseFirstRowNumber,
   recordToAppendCells,
   rowToRecord,
-} from "../skills/google-sheets-plg/lib/headers.ts";
-import { normalizeSpreadsheetId } from "../skills/google-sheets-plg/lib/spreadsheetId.ts";
+} from "../lib/headers.ts";
+import { normalizeSpreadsheetId } from "../lib/spreadsheetId.ts";
 
 describe("a1: column letter <-> index", () => {
   it("maps 0-based index to letters", () => {

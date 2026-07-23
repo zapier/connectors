@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import updateValues from "../skills/google-sheets-plg/scripts/updateValues.ts";
+import updateValues from "../scripts/updateValues.ts";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;
