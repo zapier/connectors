@@ -1,154 +1,110 @@
-# @zapier/google-sheets-plg-connector
+# Google Sheets — Claude Code & Codex plugin
 
 _Independent, unofficial connector for Google Sheets. Not affiliated with, endorsed by, or sponsored by Google Sheets. "Google Sheets" is a trademark of its owner, used only to identify the service this connector works with._
 
-Agent-callable Google Sheets tools that operate on the data _inside_ a spreadsheet. It wraps the [Google Sheets API v4](https://developers.google.com/workspace/sheets/api/reference/rest) (with spreadsheet discovery via the [Google Drive API](https://developers.google.com/drive/api/reference/rest/v3/files/list)) and exposes two surfaces: a **record surface** — rows as objects keyed by their column headers, for "log this row", "update the status", "look up the customer" jobs — and a **cell surface** — raw A1-addressed values for formulas, precise numeric/text control, and arbitrary ranges. It also manages spreadsheet/worksheet structure and presentation (formatting, sorting, validation). Auth is Google OAuth 2.0 — recommended via a Zapier-managed connection (which also handles token refresh).
+This directory packages the [`@zapier/google-sheets-plg-connector`](skills/google-sheets-plg/README.md) connector as an installable **plugin** for [Claude Code](https://code.claude.com/docs/en/plugins) and [Codex](https://developers.openai.com/codex/plugins/build). Installing the plugin gives an agent the Google Sheets connector as both an [Agent Skill](https://agentskills.io/) (progressive, on-demand guidance) and a bundled MCP server (the scripts exposed as tools) in one step.
 
-## When to use this
+For what the connector _does_ — the full script catalog, usage, auth model, and API surface — see the connector's own [`skills/google-sheets-plg/README.md`](skills/google-sheets-plg/README.md) and [`SKILL.md`](skills/google-sheets-plg/SKILL.md). This document covers only the plugin wrapper: its shape and how to install it.
 
-- An agent needs to **read, search, or write data inside a Google spreadsheet** — append/update rows, look up a record by a column value, read or write specific cells or ranges, or pull a window of rows.
-- An agent needs to **manage spreadsheet structure** — create a spreadsheet, add/copy/rename/delete worksheets, add columns — or apply **formatting, sorting, and validation**.
+> [!WARNING]
+> **Experimental — this whole `plugins/**` tree is a pilot.** It's a trial of a new plugin shape/wrapper that nests the connector as a bundled skill + MCP server, distributed through the [`zapier/marketplace`](https://github.com/zapier/marketplace) catalog. Once the shape is proven, it will be folded directly into `apps/**` and this `plugins/**` tree will be **deleted**. Treat paths and the `-plg` suffix here as provisional.
 
-## When NOT to use this
+## Plugin shape
 
-- **File-level Drive operations** (move, share, set permissions, trash a whole spreadsheet) — use a Google Drive tool; this connector operates on spreadsheet _contents_, not the file.
-- **Charts, pivot tables, named/protected ranges, or filters** — not exposed by this connector.
-- **Event triggers** ("when a new row is added…") — connectors are non-trigger; use a Zapier trigger for change detection.
+The connector is nested as a skill under `skills/`, alongside the two host manifests and a bundled MCP config at the plugin root:
 
-## Install
-
-This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](skills/google-sheets-plg/SKILL.md). Pick the shape that matches how your agent runs.
-
-```bash
-# Run a script with zero install — npx fetches the package on first use
-export <ENV_VAR>=xxx
-npx @zapier/google-sheets-plg-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
-
-# Install as a dependency to import the functions in your own code
-npm install @zapier/google-sheets-plg-connector
-
-# Or install as an Agent Skill (https://agentskills.io)
-npx skills add zapier/connectors --skill google-sheets-plg
+```text
+google-sheets-plg/                 # ← the plugin root
+├── .claude-plugin/
+│   └── plugin.json                # Claude Code manifest → skills + mcpServers
+├── .codex-plugin/
+│   └── plugin.json                # Codex manifest → skills + mcpServers
+├── .mcp.json                      # bundled MCP server (npx the published package)
+└── skills/
+    └── google-sheets-plg/         # the connector, as an Agent Skill
+        ├── SKILL.md               # runtime guidance an agent loads on demand
+        ├── scripts/               # the tools (createRow, lookupRow, getValues, …)
+        ├── lib/                   # shared helpers
+        ├── references/            # deep-dive docs (auth, A1 notation, gotchas)
+        ├── cli.js / index.ts      # CLI + importable entry points
+        ├── package.json           # the npm package (@zapier/google-sheets-plg-connector)
+        └── README.md              # connector docs (start here for what it does)
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](skills/google-sheets-plg/SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Both host manifests point at the same two things — the skill directory and the MCP config — so a single artifact works across hosts:
 
-### MCP server
-
-Run the connector as an MCP server over stdio so any MCP-aware client (Claude Desktop, Cursor, Claude Code, …) auto-discovers the scripts as tools — add one stanza to the client's config:
+- **`skills`: `./skills/`** — every `SKILL.md` under this directory is discovered and made available to the agent. Only `plugin.json` lives inside `.claude-plugin/` / `.codex-plugin/`; every other component (`skills/`, `.mcp.json`) sits at the plugin root, as both hosts require.
+- **`mcpServers`: `./.mcp.json`** — starts the connector as an MCP server over stdio so its scripts show up as callable tools:
 
 <!-- prettier-ignore -->
 ```jsonc
-// e.g. claude_desktop_config.json or .cursor/mcp.json
+// .mcp.json
 {
   "mcpServers": {
     "google-sheets-plg": {
       "command": "npx",
-      "args": ["@zapier/google-sheets-plg-connector", "mcp"]
+      "args": ["-y", "@zapier/google-sheets-plg-connector", "mcp"]
     }
   }
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+Note the MCP server runs the **published** `@zapier/google-sheets-plg-connector` from npm (fetched by `npx` on first use), not the in-tree skill copy — so the plugin needs no local build step to expose its tools.
 
-## Scripts
+## Install
 
-**Rows — records (header-keyed)**
+Once wired into the marketplace, this plugin installs from the [`zapier/marketplace`](https://github.com/zapier/marketplace) catalog as `google-sheets-plg` — add the marketplace once, then install the plugin. Both hosts share the same `skills` + `mcpServers` wiring (from `.claude-plugin/plugin.json` and its `.codex-plugin/plugin.json` mirror), so the same artifact serves both.
 
-| Script       | Description                                                             |
-| ------------ | ----------------------------------------------------------------------- |
-| `createRow`  | Append a single row, given values keyed by column header.               |
-| `createRows` | Append multiple rows in one batched call.                               |
-| `updateRow`  | Update specific columns of a row by row number (other cells preserved). |
-| `updateRows` | Update multiple rows (each by row number) in one batched call.          |
-| `lookupRow`  | Find the first row where a column matches a value.                      |
-| `findRows`   | Find all rows matching a column/value filter (bounded).                 |
-| `listRows`   | Read a window of rows as records.                                       |
-| `clearRows`  | Clear the contents of specific rows (rows stay).                        |
-| `deleteRows` | Delete specific rows; everything below shifts up.                       |
+### Claude Code
 
-**Cells — raw A1 values**
+```bash
+# CLI (from your terminal)
+claude plugin marketplace add zapier/marketplace
+claude plugin install google-sheets-plg@zapier
 
-| Script         | Description                                              |
-| -------------- | -------------------------------------------------------- |
-| `getValues`    | Read a raw cell range in A1 notation.                    |
-| `updateValues` | Write values to a raw cell range (RAW or USER_ENTERED).  |
-| `clearValues`  | Clear the values in a raw cell range (formatting stays). |
-
-**Spreadsheets & worksheets**
-
-| Script                      | Description                                                            |
-| --------------------------- | ---------------------------------------------------------------------- |
-| `createSpreadsheet`         | Create a new spreadsheet, optionally with worksheets and a header row. |
-| `getSpreadsheet`            | Get a spreadsheet's metadata and worksheet list.                       |
-| `listSpreadsheets`          | Find spreadsheets in Drive by name.                                    |
-| `addWorksheet`              | Add a worksheet (tab), optionally with a header row.                   |
-| `listWorksheets`            | List the worksheets in a spreadsheet.                                  |
-| `copyWorksheet`             | Copy a worksheet into another spreadsheet.                             |
-| `updateWorksheetProperties` | Rename, move, freeze, hide, or recolor a worksheet.                    |
-| `deleteWorksheet`           | Permanently delete a worksheet and its data.                           |
-| `addColumn`                 | Insert a column, optionally with a header label.                       |
-
-**Formatting & ranges**
-
-| Script                     | Description                                                       |
-| -------------------------- | ----------------------------------------------------------------- |
-| `formatCells`              | Apply number/date/currency formatting or text styling to a range. |
-| `sortRange`                | Sort a range by one or more columns.                              |
-| `copyRange`                | Copy a range (values + formatting) to another location.           |
-| `setDataValidation`        | Set a dropdown / number / date validation rule on a range.        |
-| `addConditionalFormatRule` | Add a conditional-formatting rule to a range.                     |
-
-Run `npx @zapier/google-sheets-plg-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
-
-## Usage
-
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
-
-```ts
-import { lookupRow } from "@zapier/google-sheets-plg-connector";
-
-// Each named export is the consumer-facing (input, opts) => Promise<{ data, meta }>.
-const { data } = await lookupRow(
-  {
-    spreadsheet: "https://docs.google.com/spreadsheets/d/1AbC.../edit",
-    worksheet: "Sheet1",
-    column: "Email",
-    value: "sam@example.com",
-  },
-  { connection: "zapier:<connection-id>" }, // or "env:GOOGLE_SHEETS_ACCESS_TOKEN"
-);
-// data => { found: true, row_number: 12, values: { Name: "Sam", Email: "sam@example.com", ... } }
+# …or in-session
+/plugin marketplace add zapier/marketplace
+/plugin install google-sheets-plg@zapier
 ```
 
-Every script returns a `{ data, meta }` envelope; `meta.outputDataValidation` reports what output validation did. Pass `{ skipOutputDataValidation: true }` in the run options for the raw, unvalidated result. See [`SKILL.md`](skills/google-sheets-plg/SKILL.md#output-format).
+Prefer to test straight from this checkout, before it's in the catalog? Point Claude Code at the plugin directory when launching:
+
+```bash
+claude --plugin-dir /path/to/connectors/plugins/google-sheets-plg
+```
+
+Once enabled, the skill loads on demand and the MCP tools appear namespaced under the plugin. Manage it any time with `/plugin`.
+
+### Codex
+
+```bash
+codex plugin marketplace add zapier/marketplace
+codex plugin add google-sheets-plg@zapier
+```
+
+Or install straight from this checkout while iterating:
+
+```bash
+codex plugin install ./plugins/google-sheets-plg
+```
+
+Start a new thread after installing so Codex picks up the skill and MCP server.
+
+> [!NOTE]
+> GitHub Copilot CLI is a third host the `zapier/marketplace` catalog serves, but this plugin ships only Claude Code and Codex manifests — Copilot support needs a `.github/plugin/plugin.json` mirror that doesn't exist yet.
 
 ## Auth
 
-Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
-
-|                                      | Load                                                                                            |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Pass the credential directly         | [`references/use-without-zapier.md`](skills/google-sheets-plg/references/use-without-zapier.md) |
-| Route it through a Zapier connection | [`references/use-with-zapier.md`](skills/google-sheets-plg/references/use-with-zapier.md)       |
+Auth is Google OAuth 2.0, passed as one `[<resolver>:]<value>` connection string — `zapier:<connection-id>` (recommended; routes through Zapier-managed auth) or `env:<ENV_VAR>` (a direct token). You can set a default by adding `"--connection", "<value>"` to the `args` in `.mcp.json`, or pass one per tool call. See [`SKILL.md`](skills/google-sheets-plg/SKILL.md#auth) and [`references/use-with-zapier.md`](skills/google-sheets-plg/references/use-with-zapier.md) for how to obtain a connection.
 
 ## Links
 
-- [`SKILL.md`](skills/google-sheets-plg/SKILL.md) — runtime guidance for agents
-- [Google Sheets API reference](https://developers.google.com/workspace/sheets/api/reference/rest) — the upstream API this connector wraps
+- [`skills/google-sheets-plg/README.md`](skills/google-sheets-plg/README.md) — the connector: what it does, its scripts, usage, and auth
+- [`skills/google-sheets-plg/SKILL.md`](skills/google-sheets-plg/SKILL.md) — runtime guidance for agents
+- [`zapier/marketplace`](https://github.com/zapier/marketplace) — the plugin marketplace this installs from
+- [Claude Code plugins](https://code.claude.com/docs/en/plugins) · [Codex plugins](https://developers.openai.com/codex/plugins/build) — host plugin docs
 - [Source](https://github.com/zapier/connectors/tree/main/plugins/google-sheets-plg)
 
 ## Legal
 
-**Scope of license.** Zapier licenses only the connector code in this package. Zapier grants no rights in Google Sheets's API, services, data, schemas, documentation, or other materials, which remain the property of Google Sheets. Your use of Google Sheets's API is governed by your own agreement with Google Sheets.
-
-**Trademarks and affiliation.** Google Sheets and its logos are trademarks of their owner, used here only to identify the service this connector works with. This connector is not affiliated with, endorsed by, or sponsored by Google Sheets.
-
-**Your responsibility.** This connector calls Google Sheets's API using credentials you supply. You are responsible for holding a valid Google Sheets account, for complying with Google Sheets's API terms, developer policies, and acceptable use rules, and for the data you send and receive through it.
-
-**No warranty.** This connector is provided "as is," without warranty of any kind, and is not an official Google Sheets product. Zapier is not responsible for changes Google Sheets makes to its API or for any consequence of your use of Google Sheets's API. See the repository LICENSE for the full disclaimer.
-
-**Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
-
-Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+This plugin distributes the `@zapier/google-sheets-plg-connector` connector; the connector's own [README](skills/google-sheets-plg/README.md#legal), [`LICENSE`](skills/google-sheets-plg/LICENSE), and [`NOTICE`](skills/google-sheets-plg/NOTICE) govern its use. Google Sheets and its logos are trademarks of their owner, used here only to identify the service this connector works with; this connector is not affiliated with, endorsed by, or sponsored by Google Sheets. Licensed under the Elastic License 2.0.
