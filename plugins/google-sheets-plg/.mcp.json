@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "google-sheets-plg": {
+      "command": "npx",
+      "args": ["-y", "@zapier/google-sheets-plg-connector", "mcp"]
+    }
+  }
+}

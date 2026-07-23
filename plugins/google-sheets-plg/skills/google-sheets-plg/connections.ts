@@ -1,0 +1,13 @@
+import {
+  defineEnvTokenResolver,
+  zapierConnectionResolver,
+} from "@zapier/connectors-sdk";
+
+// Google Sheets uses OAuth 2.0 with a single access token. One connection slot covers
+// every tool — the same bearer token authorizes both the Sheets host
+// (sheets.googleapis.com) and the Drive host (www.googleapis.com, used by
+// listSpreadsheets). Zapier-managed auth (zapierConnectionResolver) auto-refreshes the
+// token; direct/env mode uses a short-lived, NON-refreshed token via Authorization: Bearer.
+export const connectionResolvers = {
+  "google-sheets-plg": [zapierConnectionResolver, defineEnvTokenResolver()],
+} as const;

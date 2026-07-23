@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "google-sheets-plg",
+  "displayName": "Google Sheets",
+  "description": "Agent-callable Google Sheets tools — read and write spreadsheet data as rows or raw cells, manage worksheets and columns, and apply formatting, sorting, and validation. Use when the user mentions Google Sheets or wants to read, add, update, look up, or organize spreadsheet data, even if they don't name Sheets explicitly.",
+  "version": "0.2.14",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/plugins/google-sheets-plg",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "google-sheets",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "spreadsheet",
+    "spreadsheets",
+    "cells",
+    "google-workspace",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}
