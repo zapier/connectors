@@ -1,0 +1,270 @@
+{
+  "skill_name": "clay",
+  "version": "80d7ae8",
+  "description": "Intent-anchored eval scenarios for the clay connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. discover-act scenarios operate on a pre-existing table via in-envelope read/find primitives (all arms compete); act-only scenarios target the ambient identity or a named row. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created rows. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "clay_sandbox_table",
+      "description": "A pre-existing Clay table the scenarios write to and read from (the connector cannot create tables in-run). Should have a text field for a company/name and a single-select field for a status/stage.",
+      "env": "EVAL_CLAY_SANDBOX_TABLE",
+      "default": "Eval Sandbox",
+      "expects": "A Clay table named 'Eval Sandbox' in the workspace the eval API key is bound to, containing at least one text field (e.g. 'Company') and one single-select field (e.g. 'Stage'), with the eval key able to read the table schema and create/update/find rows.",
+      "provision": "seed"
+    }
+  ],
+  "evals": [
+    {
+      "id": "add-row-to-table",
+      "kind": "discover-act",
+      "description": "Discover a table's schema, then create a row with correctly-keyed cell values.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "In my Clay table named {{clay_sandbox_table}}, add a new row for a company called 'Acme {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A new row whose company/name cell is 'Acme {{run_id}}' now exists in the {{clay_sandbox_table}} table, and the created row's id is reported."
+            ],
+            "mechanism": [
+              "Resolves the table's field ids from the table schema (getTable) rather than inventing an 'f_...' field id, and keys the company value onto the correct field.",
+              "Creates the row with a single create call; the row id comes from the create result, not a hard-coded id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-select-cell-on-new-row",
+      "kind": "discover-act",
+      "description": "Create a row that sets a single-select field, which requires resolving the option id from the schema.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "Add a row to the {{clay_sandbox_table}} table for company 'Globex {{run_id}}' and set its stage/status to the first available option.",
+          "assertions": {
+            "outcome": [
+              "A new row for 'Globex {{run_id}}' exists in {{clay_sandbox_table}} with its single-select stage/status field set to a valid option."
+            ],
+            "mechanism": [
+              "Reads the select field's option ids from the table schema and sends the select value in the option-id shape (e.g. { optionIds: [...] }), not the raw option label.",
+              "Does not fabricate an option id that is absent from the schema."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-row-by-field-value",
+      "kind": "discover-act",
+      "description": "Seed a uniquely-named row, then find it by matching a field value.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "Add a row to {{clay_sandbox_table}} for company 'Initech {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A row whose company/name cell is 'Initech {{run_id}}' now exists in {{clay_sandbox_table}}."
+            ],
+            "mechanism": [
+              "Keys the value onto the correct field id resolved from the table schema."
+            ]
+          }
+        },
+        {
+          "intent": "Find the row in {{clay_sandbox_table}} whose company is 'Initech {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The row with company 'Initech {{run_id}}' is located and its record id is returned."
+            ],
+            "mechanism": [
+              "Searches by matching the company field to the value given in the request; does not guess a hard-coded record id, and does not page the whole table when a field-match search is available."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-a-row",
+      "kind": "discover-act",
+      "description": "Find a row by field value, then update one of its cells.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "Add a row to {{clay_sandbox_table}} for company 'Umbrella {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A row whose company cell is 'Umbrella {{run_id}}' now exists in {{clay_sandbox_table}}."
+            ],
+            "mechanism": [
+              "Keys the value onto the correct field id from the schema."
+            ]
+          }
+        },
+        {
+          "intent": "Find the 'Umbrella {{run_id}}' row and change its stage/status to a different valid option.",
+          "assertions": {
+            "outcome": [
+              "The row for company 'Umbrella {{run_id}}' now has its stage/status set to a different valid option than before."
+            ],
+            "mechanism": [
+              "Resolves the record id of the 'Umbrella {{run_id}}' row it just created in this session before updating, rather than guessing one.",
+              "Sends only the changed cell in the update, keyed by the correct field id, using the option-id shape for the select value."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-rows-in-a-view",
+      "kind": "discover-act",
+      "description": "Pick a view of a table and read a page of its rows.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "Show me a page of rows from the {{clay_sandbox_table}} table.",
+          "assertions": {
+            "outcome": [
+              "A page of rows from the {{clay_sandbox_table}} table is returned, each with its record id and cell values (or an explicit statement that the table is empty)."
+            ],
+            "mechanism": [
+              "Resolves a view id for the table from the schema before listing rows, rather than inventing a view id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-tables-in-workspace",
+      "kind": "discover-act",
+      "description": "Navigate from the workspace to the list of tables.",
+      "steps": [
+        {
+          "intent": "What Clay tables do I have access to?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the tables the caller can access, with each table's name and id (or states that there are none)."
+            ],
+            "mechanism": [
+              "Navigates from the caller's workspace(s) to their tables rather than asking the user for a workspace or table id up front."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "describe-table-schema",
+      "kind": "discover-act",
+      "description": "Report a table's fields and their types.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "What fields does my {{clay_sandbox_table}} table have, and what type is each?",
+          "assertions": {
+            "outcome": [
+              "The reply describes the {{clay_sandbox_table}} table's fields, each with its name and type (e.g. text, select, users), and lists the options for any select field."
+            ],
+            "mechanism": [
+              "Resolves the table by name to its id before fetching the schema; does not fabricate field ids or types."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "identify-current-user",
+      "kind": "act-only",
+      "description": "Report the authenticated Clay identity.",
+      "steps": [
+        {
+          "intent": "Who am I connected as in Clay?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the authenticated caller's Clay identity — their email and/or user id."
+            ],
+            "mechanism": [
+              "Reads the identity from the connector's current-user tool rather than asking the user to supply their own id or email."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-workspace-members",
+      "kind": "discover-act",
+      "description": "List the members of a workspace.",
+      "steps": [
+        {
+          "intent": "Who are the members of my Clay workspace?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the members of the caller's workspace, with each member's name and/or email (or states there are none besides the caller)."
+            ],
+            "mechanism": [
+              "Resolves the caller's workspace before listing members rather than asking for a workspace id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-ambiguous-row-update",
+      "kind": "discover-act",
+      "description": "When two rows tie on the searched name, the agent should ask which one rather than silently updating one.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "Add a row to {{clay_sandbox_table}} for company 'Duplico {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A first row with company 'Duplico {{run_id}}' now exists in {{clay_sandbox_table}}."
+            ],
+            "mechanism": [
+              "Keys the value onto the correct field id from the schema."
+            ]
+          }
+        },
+        {
+          "intent": "Add another, separate row to {{clay_sandbox_table}} also for company 'Duplico {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A second, distinct row with company 'Duplico {{run_id}}' now exists in {{clay_sandbox_table}} (two rows now share that company value)."
+            ],
+            "mechanism": [
+              "Creates a new row rather than updating the existing 'Duplico {{run_id}}' row."
+            ]
+          }
+        },
+        {
+          "intent": "Update the 'Duplico {{run_id}}' row to set its stage/status to a valid option.",
+          "assertions": {
+            "outcome": [
+              "The agent does not update either row; instead it reports that more than one row matches 'Duplico {{run_id}}' and asks which one to update (or lists the candidates with a distinguishing detail)."
+            ],
+            "mechanism": [
+              "Issues no update/write call for this step; it stops on the ambiguous match rather than picking one arbitrarily."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-unsupported-delete-row",
+      "kind": "act-only",
+      "description": "Deleting rows is not a supported capability; the agent should decline rather than fake it.",
+      "requires": ["clay_sandbox_table"],
+      "steps": [
+        {
+          "intent": "Delete every row in my {{clay_sandbox_table}} table.",
+          "assertions": {
+            "outcome": [
+              "The reply states that deleting rows is not something this connector can do, and does not claim any rows were deleted."
+            ],
+            "mechanism": [
+              "Makes no write/update call in an attempt to simulate a delete (e.g. does not blank out cells or create a replacement row and report it as a deletion)."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "clay": {
+      "command": "npx",
+      "args": ["-y", "@zapier/clay-connector", "mcp"]
+    }
+  }
+}
