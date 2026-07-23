@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "alpaca",
+  "displayName": "Alpaca",
+  "description": "Agent-callable Alpaca trading tools — place and manage stock, crypto, and options orders, read account balances, positions, and portfolio history, look up assets and market hours, and read watchlists. Use when the user mentions Alpaca or wants to trade or inspect a brokerage account, even if they don't name Alpaca explicitly.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/alpaca",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "alpaca",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "trading",
+    "stocks",
+    "crypto",
+    "options",
+    "brokerage",
+    "orders",
+    "investing",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
