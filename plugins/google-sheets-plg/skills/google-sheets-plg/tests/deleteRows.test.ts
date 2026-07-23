@@ -4,7 +4,7 @@ import {
 } from "@zapier/connectors-sdk";
 import { describe, expect, it } from "vitest";
 
-import deleteRows from "../skills/google-sheets-plg/scripts/deleteRows.ts";
+import deleteRows from "../scripts/deleteRows.ts";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;
