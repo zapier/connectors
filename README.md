@@ -1,5 +1,7 @@
 # Zapier Connectors
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/zapier/connectors)
+
 > [!NOTE]
 > **Status: prototype.** First-cohort connectors are being written to validate the artifact shape against eval, installation and consumption from various agent harnesses. **Treat nothing here as a stable contract.** Pre-1.0 (`0.x`): breaking changes ship as a minor bump, features and fixes as a patch. Pin with a caret (`^0.x.y`) so you don't pick up a breaking minor automatically. Licensed under the [Elastic License 2.0](./LICENSE).
 
