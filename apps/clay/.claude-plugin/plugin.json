@@ -3,7 +3,7 @@
   "name": "clay",
   "displayName": "Clay",
   "description": "Agent-callable Clay tools — create, update, and find rows in Clay tables, and navigate workspaces, tables, views, and users. Use when the user mentions Clay or wants to add, update, or look up rows in a Clay table, even if they don't name Clay explicitly.",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
