@@ -54,7 +54,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "plugins/google-sheets-plg"
   },
-  "version": "0.2.14",
+  "version": "0.2.15",
   "publishConfig": {
     "access": "restricted"
   },

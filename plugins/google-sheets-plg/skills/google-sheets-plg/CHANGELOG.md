@@ -1,5 +1,11 @@
 # @zapier/google-sheets-connector
 
+## 0.2.15
+
+### Patch Changes
+
+- 90675ee: Fix stale `skills/google-sheets-plg/` import paths in `index.ts` and `tests/*.test.ts` left over from nesting the connector under its own `skills/google-sheets-plg/` folder — these previously resolved to a non-existent doubly-nested path.
+
 ## 0.2.14
 
 ### Patch Changes
