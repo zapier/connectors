@@ -1,5 +1,13 @@
 # @zapier/google-sheets-connector
 
+## 0.3.0
+
+### Minor Changes
+
+- 83f9228: Move `SKILL.md`, `references/`, `scripts/`, `lib/`, and `connections.ts` into `skills/google-sheets/`, the directory shape Codex and GitHub Copilot both require for skill discovery (Claude Code and skills.sh already support it). `index.ts` and every test file's imports are updated to match, and `package.json`'s `files` array now points at `skills/` instead of the old flat paths.
+
+  Known gap: this doesn't pass `connectors-dev validate` yet — the `scripts-dir`, `package.json`, and `index-ts` rules in `@zapier/connectors-dev` still assume the flat layout and need a matching update in connectors-platform before this is mergeable. Opened as a draft to track the migration shape while that follow-up lands.
+
 ## 0.2.14
 
 ### Patch Changes
