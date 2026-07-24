@@ -249,7 +249,7 @@
     },
     {
       "id": "refuse-unsupported-delete-row",
-      "kind": "act-only",
+      "kind": "negative",
       "description": "Deleting rows is not a supported capability; the agent should decline rather than fake it.",
       "requires": ["clay_sandbox_table"],
       "steps": [

@@ -85,8 +85,25 @@ const definition = defineTool({
     await throwIfNotOk(res, "Clay getTable");
     type WireJson = { readonly [key: string]: WireJson } & readonly WireJson[];
     const wirePayload = (await res.json()) as WireJson;
-    const payload = wirePayload.table;
-    return payload;
+    const table = wirePayload.table;
+    // Clay returns a select field's options nested under
+    // `typeSettings.dataTypeSettings.options`, but this tool's outputSchema (and
+    // its contract — "fields (id, type, select options)") declares them at
+    // `fields[].options`. Without this remap, output validation drops the whole
+    // `typeSettings` subtree and callers never see the select options.
+    const rawFields = Array.isArray(table.fields) ? table.fields : [];
+    const fields = rawFields.map((field) => {
+      const options = field?.typeSettings?.dataTypeSettings?.options;
+      if (!Array.isArray(options)) return field;
+      return {
+        ...field,
+        options: options.map((option) => ({
+          id: option.id,
+          text: option.text,
+        })),
+      };
+    });
+    return { ...table, fields };
   },
 });
 
