@@ -54,6 +54,7 @@ All scripts use the single `clay` connection. Cell and filter values are keyed b
 ## Disambiguation & refusals
 
 - **Before updating a row looked up by name, confirm the match.** `findRecord` / `listRecords` can return several rows that share a value (e.g. two records with the same company or person name). Count exact (case-insensitive) matches on the field you searched: exactly one → act on it, don't over-ask; two or more that tie → stop, list the candidates with a distinguishing field (another cell value or the record id), and ask which one before calling `updateRecord`. Never silently pick the first.
+  - **Always re-resolve the row with a fresh `findRecord` at update time — never reuse a `recordId` you created or saw earlier in the conversation.** A row you added moments ago may no longer be unique (another row with the same value may have been added since), so a stale id hides the ambiguity. Search by the named value again, then apply the count rule above before writing.
 - **Don't fake unsupported operations.** This connector cannot create or delete tables, views, or columns, run an enrichment on demand, or delete rows — there is no tool for those. If asked, say it's unsupported and stop; do not substitute a different tool (e.g. writing a new row in place of deleting one) and report it as done.
 
 ## Auth
