@@ -1,5 +1,11 @@
 # @zapier/clay-connector
 
+## 0.0.2
+
+### Patch Changes
+
+- 85552c6: Fix `getTable` to surface select-field options. Clay returns a select field's options nested under `typeSettings.dataTypeSettings.options`, which output validation dropped — so callers never saw a select field's choices (needed to build `optionIds` cells). They are now mapped onto the documented `fields[].options`. Also strengthens the skill's row-disambiguation guidance: re-run `findRecord` at update time rather than reusing a `recordId` remembered from earlier in the conversation, so newly-added duplicates aren't missed.
+
 ## 0.0.1
 
 ### Patch Changes
