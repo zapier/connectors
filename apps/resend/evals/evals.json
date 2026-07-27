@@ -1,0 +1,516 @@
+{
+  "skill_name": "resend",
+  "version": "b34c901",
+  "description": "Intent-anchored eval scenarios for the resend connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run (with_skill / without_skill / native) reveals native's capability profile. arrange-act scenarios self-provision their world (Resend is ambient — a single API-key connection creates contacts, segments, and broadcasts directly), discover-act scenarios operate on a pre-existing world via in-envelope reads, and act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created assets. Send scenarios use the onboarding@resend.dev sandbox sender and target {{eval_recipient}} (the eval account's own address) because the test account has no verified sending domain; delivery-dependent outcomes are asserted as issue-plus-no-fabrication rather than confirmed delivery. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "eval_recipient",
+      "description": "The eval Resend account's own sign-in email address, supplied via the EVAL_RESEND_RECIPIENT environment variable. With no verified sending domain, the sandbox only permits sending from onboarding@resend.dev to this one address — any other recipient returns a 403 validation_error. The operator sets the env var to the address the eval connection's account is registered under; the committed default is a non-routable placeholder.",
+      "env": "EVAL_RESEND_RECIPIENT",
+      "default": "eval-recipient@example.com",
+      "expects": "An email address equal to the sign-in email of the Resend account the eval connection is bound to, so that sends from onboarding@resend.dev to this address are accepted in test mode (unverified-domain sandbox) instead of returning a 403 'You can only send testing emails to your own email address'. Provided via the EVAL_RESEND_RECIPIENT environment variable at run time.",
+      "provision": "operator"
+    }
+  ],
+  "evals": [
+    {
+      "id": "send-transactional-email",
+      "kind": "act-only",
+      "description": "Flagship: send a single transactional email to one recipient and report the resulting email id.",
+      "requires": ["eval_recipient"],
+      "steps": [
+        {
+          "intent": "Send an email from onboarding@resend.dev with the subject 'Welcome {{run_id}}' and the body 'Thanks for signing up.' to {{eval_recipient}}.",
+          "assertions": {
+            "outcome": [
+              "An email with subject 'Welcome {{run_id}}' is submitted to Resend for delivery to the address given in the request and the resulting email id is reported back.",
+              "The reply does not fabricate a delivery confirmation beyond what the send call returned (e.g. it does not claim the recipient opened or received it)."
+            ],
+            "mechanism": [
+              "Issues a single send-email call whose recipient list contains the address given in the request and whose subject carries the 'Welcome {{run_id}}' text given in the request; does not invent a different recipient.",
+              "The reported email id comes from the send result, not a hard-coded or invented id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "email-html-not-markdown",
+      "kind": "act-only",
+      "description": "Guidance-dependent: send a formatted email; the body must reach the recipient as real HTML, not raw Markdown syntax the reader would see literally.",
+      "requires": ["eval_recipient"],
+      "steps": [
+        {
+          "intent": "Send a formatted announcement email from onboarding@resend.dev to {{eval_recipient}} with subject 'Launch {{run_id}}'. It should have a bold heading that reads 'We shipped it' and a bulleted list of three features: fast, simple, reliable.",
+          "assertions": {
+            "outcome": [
+              "The email is submitted for delivery to the address given in the request with subject 'Launch {{run_id}}' and an email id is reported.",
+              "The formatting is expressed as real HTML markup (e.g. bold/strong and list elements) so a recipient sees rendered formatting, not literal Markdown characters like '**' or '- ' in the delivered body."
+            ],
+            "mechanism": [
+              "Supplies the formatted body via the html field using HTML tags rather than putting Markdown syntax into a plain-text body."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-email-delivery-status",
+      "kind": "arrange-act",
+      "description": "arrange-act: send an email, then read its current delivery status back by the id just returned.",
+      "requires": ["eval_recipient"],
+      "steps": [
+        {
+          "intent": "Send an email from onboarding@resend.dev with subject 'Status probe {{run_id}}' and body 'Checking delivery.' to {{eval_recipient}}.",
+          "assertions": {
+            "outcome": [
+              "An email with subject 'Status probe {{run_id}}' is submitted for delivery to the address given in the request and its email id is reported."
+            ],
+            "mechanism": [
+              "Issues a single send-email call; the email id comes from the send result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Check the current delivery status of the email you just sent.",
+          "assertions": {
+            "outcome": [
+              "The current delivery status (last event, e.g. sent / delivered / queued / bounced) of the email just sent in this session is reported."
+            ],
+            "mechanism": [
+              "Reads the status using the email id produced by the send earlier in this session; does not fabricate a status or invent an email id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-recent-emails",
+      "kind": "discover-act",
+      "description": "discover-act: list the most recently sent emails so the user can review recent send activity.",
+      "steps": [
+        {
+          "intent": "Show me the emails I've sent most recently.",
+          "assertions": {
+            "outcome": [
+              "The account's sent emails are retrieved and reported most-recent-first, reflecting exactly what the API returned — including reporting that there are none if the list comes back empty. No email records are fabricated."
+            ],
+            "mechanism": [
+              "Retrieves the list via a list-emails read; does not invent email records that weren't returned by the API."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-and-find-contact",
+      "kind": "arrange-act",
+      "description": "arrange-act: add a contact to the list, then look them up by email — a cold-start create-then-read probe.",
+      "steps": [
+        {
+          "intent": "Add a contact to my Resend list: email eval+{{run_id}}@example.com, first name Dana, last name Lee.",
+          "assertions": {
+            "outcome": [
+              "A contact with email eval+{{run_id}}@example.com and the name Dana Lee now exists in the contact list and its id is reported."
+            ],
+            "mechanism": [
+              "Issues a single create-contact call with the email, first name, and last name given in the request; the contact id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Look up the contact with email eval+{{run_id}}@example.com and show me their details.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com is located and its details (name, subscription status) are returned."
+            ],
+            "mechanism": [
+              "Resolves the contact by the email address given in the request rather than guessing a contact id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the contact you just looked up.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the contact addressed by the eval+{{run_id}}@example.com email resolved earlier in this session; does not delete an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-contact-details",
+      "kind": "arrange-act",
+      "description": "arrange-act: create a contact, then change their name — a create-then-update probe addressing the contact by email.",
+      "steps": [
+        {
+          "intent": "Create a contact with email eval+{{run_id}}@example.com and first name Robin.",
+          "assertions": {
+            "outcome": [
+              "A contact with email eval+{{run_id}}@example.com and first name Robin now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Issues a single create-contact call; the contact id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Update that contact's last name to Alvarez.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com now has last name Alvarez, with the rest of their details unchanged."
+            ],
+            "mechanism": [
+              "Updates the contact addressed by the eval+{{run_id}}@example.com email just created in this session; does not create a second contact and does not invent a contact id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that contact.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the contact addressed by the eval+{{run_id}}@example.com email resolved earlier in this session; does not delete an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "unsubscribe-contact",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: create a subscribed contact, then unsubscribe them so they stop receiving broadcasts.",
+      "steps": [
+        {
+          "intent": "Add a contact with email eval+{{run_id}}@example.com to my list.",
+          "assertions": {
+            "outcome": [
+              "A contact with email eval+{{run_id}}@example.com now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Issues a single create-contact call; the contact id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "That person asked to stop receiving our emails — unsubscribe them.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com is now unsubscribed, so they will no longer receive broadcasts."
+            ],
+            "mechanism": [
+              "Sets the contact's subscription status to unsubscribed via an update on the contact addressed by eval+{{run_id}}@example.com; does not delete the contact to achieve the unsubscribe."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that contact.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the contact addressed by the eval+{{run_id}}@example.com email resolved earlier in this session; does not delete an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "organize-contact-into-segment",
+      "kind": "arrange-act",
+      "description": "arrange-act: create a segment and a contact, add the contact to the segment, then confirm membership.",
+      "steps": [
+        {
+          "intent": "Create a segment named 'Newsletter {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A segment named 'Newsletter {{run_id}}' now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Issues a single create-segment call; the segment id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Add a contact with email eval+{{run_id}}@example.com to the segment you just created.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com is a member of the 'Newsletter {{run_id}}' segment."
+            ],
+            "mechanism": [
+              "Adds the contact to the segment created earlier in this session, targeting that segment's id rather than a substituted or invented segment id; creates the contact first if it does not yet exist."
+            ]
+          }
+        },
+        {
+          "intent": "List the members of that segment.",
+          "assertions": {
+            "outcome": [
+              "The listing is the membership of the 'Newsletter {{run_id}}' segment specifically: it includes eval+{{run_id}}@example.com and does not spill in unrelated contacts who were never added to this segment."
+            ],
+            "mechanism": [
+              "Retrieves the segment's members through a segment-scoped read for the segment created earlier in this session (its members endpoint), not by listing all account contacts and hoping a segment filter applied; does not invent membership."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that segment and the contact you added to it.",
+          "assertions": {
+            "outcome": [
+              "The 'Newsletter {{run_id}}' segment no longer exists and the contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the segment and the contact created earlier in this session, targeting their resolved ids rather than unrelated resources."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "remove-contact-from-segment",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: removing a contact from a segment is a membership change, not deletion — the contact must still exist afterward.",
+      "steps": [
+        {
+          "intent": "Create a segment named 'VIP {{run_id}}' and add a contact with email eval+{{run_id}}@example.com to it.",
+          "assertions": {
+            "outcome": [
+              "A segment named 'VIP {{run_id}}' exists and the contact eval+{{run_id}}@example.com is a member of it."
+            ],
+            "mechanism": [
+              "Creates the segment and adds the contact using ids resolved in this session; does not invent a segment or contact id."
+            ]
+          }
+        },
+        {
+          "intent": "Take eval+{{run_id}}@example.com out of that segment, but keep them in my contact list.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com is no longer a member of the 'VIP {{run_id}}' segment.",
+              "The contact eval+{{run_id}}@example.com still exists in the contact list — removing them from the segment did not delete the contact."
+            ],
+            "mechanism": [
+              "Changes segment membership via a remove-from-segment operation rather than deleting the contact; targets the segment created earlier in this session."
+            ]
+          }
+        },
+        {
+          "intent": "Now delete that segment and delete the contact too.",
+          "assertions": {
+            "outcome": [
+              "The 'VIP {{run_id}}' segment no longer exists and the contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the segment and the contact resolved earlier in this session, targeting their resolved ids rather than unrelated resources."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-named-person-to-named-segment",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two segments share a name; adding a contact to 'the Partners segment' must resolve the ambiguity by asking, not silently pick one.",
+      "steps": [
+        {
+          "intent": "Create two segments both named 'Partners {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Two distinct segments, each named 'Partners {{run_id}}', now exist, each with its own id."
+            ],
+            "mechanism": [
+              "Issues two create-segment calls; both segment ids come from the create results."
+            ]
+          }
+        },
+        {
+          "intent": "Add the contact eval+{{run_id}}@example.com to the Partners {{run_id}} segment.",
+          "assertions": {
+            "outcome": [
+              "Because more than one segment is named 'Partners {{run_id}}', the reply reports the ambiguity and asks which segment to use (or lists the tied candidates) rather than silently adding the contact to one of them.",
+              "The contact is not silently added to an arbitrarily-chosen one of the two tied segments."
+            ],
+            "mechanism": [
+              "Resolves the segment by listing segments and counting exact name matches before any membership write; on finding two matches it stops rather than issuing an add-to-segment call against a guessed id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete both 'Partners {{run_id}}' segments, and delete the contact eval+{{run_id}}@example.com if it exists.",
+          "assertions": {
+            "outcome": [
+              "Neither 'Partners {{run_id}}' segment still exists, and the contact eval+{{run_id}}@example.com does not exist either (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes both segments created earlier in this session by their resolved ids; deletes the contact only if it was actually created, without inventing a contact id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-custom-contact-property",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: custom contact properties use account-defined keys. Writing a value under an undefined key returns a deceptive success — the API accepts the call but silently drops the value — so the agent must discover valid keys first and not trust a bare success response.",
+      "steps": [
+        {
+          "intent": "Create a contact with email eval+{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A contact with email eval+{{run_id}}@example.com now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Issues a single create-contact call; the contact id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Set a custom property on that contact recording their plan tier as 'enterprise'.",
+          "assertions": {
+            "outcome": [
+              "The reply reflects the true persisted state of the contact's custom properties: it only reports the plan-tier property as set if that value actually persisted on the contact, and if no matching custom-property key is defined on the account (so the value would not persist) it says the key must exist first rather than claiming the property was saved.",
+              "The agent does not treat a bare success response from the property write as proof the value was stored — a value written under an undefined key is silently dropped."
+            ],
+            "mechanism": [
+              "Discovers the account's valid custom-property keys (via a list-contact-properties read) before writing the property, rather than inventing a property key name and writing it blind.",
+              "If it does write and report success, it confirms persistence (e.g. by reading the contact back) rather than relying on the write call's status alone."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that contact.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the contact addressed by the eval+{{run_id}}@example.com email resolved earlier in this session; does not delete an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "trigger-automation-event",
+      "kind": "arrange-act",
+      "description": "arrange-act, net-new capability: fire a named event for a contact to trigger an automation, identifying the contact by email.",
+      "steps": [
+        {
+          "intent": "Create a contact with email eval+{{run_id}}@example.com.",
+          "assertions": {
+            "outcome": [
+              "A contact with email eval+{{run_id}}@example.com now exists and its id is reported."
+            ],
+            "mechanism": [
+              "Issues a single create-contact call; the contact id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Trigger our 'user.created' automation event for that contact.",
+          "assertions": {
+            "outcome": [
+              "A 'user.created' event is triggered for the contact eval+{{run_id}}@example.com (or, if no automation is configured for that event name, the reply reports that no matching automation exists rather than claiming an automation ran)."
+            ],
+            "mechanism": [
+              "Sends the event identifying the contact by exactly one identifier (the eval+{{run_id}}@example.com email or its resolved id), not both at once; the event name sent is 'user.created' as given in the request."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that contact.",
+          "assertions": {
+            "outcome": [
+              "The contact eval+{{run_id}}@example.com no longer exists (cleanup)."
+            ],
+            "mechanism": [
+              "Deletes the contact addressed by the eval+{{run_id}}@example.com email resolved earlier in this session; does not delete an unrelated contact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "diagnose-failed-send-domain",
+      "kind": "discover-act",
+      "description": "Guidance-dependent: when a send is blocked by an unverified sending domain, the agent diagnoses via the read-only domains list and reports which domain is unverified — it must not claim to have verified or fixed the domain.",
+      "steps": [
+        {
+          "intent": "My emails from notify@example.com keep failing. Can you figure out why and fix it so they send?",
+          "assertions": {
+            "outcome": [
+              "The reply diagnoses the likely cause by reporting the verification status of the relevant sending domain(s) — e.g. that the domain for notify@example.com is not verified.",
+              "The reply makes clear the connector cannot verify or provision the domain itself (that is DNS work done in the Resend dashboard) and does not claim to have fixed or verified the domain."
+            ],
+            "mechanism": [
+              "Reads sending-domain status via a read-only domains list; does not attempt to call any domain create/verify/provision operation (there is none) to fake a fix."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verify-sending-domain",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector is read-only on domains; a request to add/verify a domain should be declined, not faked.",
+      "steps": [
+        {
+          "intent": "Add and verify the sending domain newbrand-{{run_id}}.com in Resend for me.",
+          "assertions": {
+            "outcome": [
+              "The reply states that adding or verifying a sending domain is not supported by this connector (verification is DNS work done in the Resend dashboard) and does not claim the domain was added or verified."
+            ],
+            "mechanism": [
+              "Does not call any tool that would fake domain creation or verification; at most reads existing domain status."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-automation-flow",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector can trigger a preconfigured automation event but cannot author automation flows; a build request should be declined.",
+      "steps": [
+        {
+          "intent": "Build me a new automation in Resend that emails a welcome message whenever a contact is created.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating or editing automation flows is not supported by this connector (it can only trigger an automation a human already configured) and does not claim an automation was built."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool in an attempt to fabricate having built the automation."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "send-email-with-file-attachment-bytes",
+      "kind": "negative",
+      "description": "Guidance-dependent refusal: attachments are supported only by hosted URL, not raw bytes; the agent should say so and ask for a hosted URL rather than fabricating a byte upload.",
+      "requires": ["eval_recipient"],
+      "steps": [
+        {
+          "intent": "Send an email from onboarding@resend.dev to {{eval_recipient}} with subject 'Invoice {{run_id}}' and attach the invoice PDF file I have on my computer.",
+          "assertions": {
+            "outcome": [
+              "The reply explains that this connector can only attach files hosted at a URL (not raw file bytes from the user's computer) and asks for a hosted URL, rather than claiming to have attached a local file it has no access to.",
+              "No email is sent with a fabricated or hallucinated attachment."
+            ],
+            "mechanism": [
+              "Does not invent a file path or attachment payload; if it sends anything, it either omits the attachment or waits for a hosted URL rather than fabricating one."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
