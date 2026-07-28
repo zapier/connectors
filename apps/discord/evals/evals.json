@@ -1,0 +1,411 @@
+{
+  "skill_name": "discord",
+  "version": "5c578c2",
+  "description": "Intent-anchored eval scenarios for the Discord connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. The connector authenticates as a bot already added to one or more servers (guilds), so it can see and act ambiently — an operator supplies the server the bot belongs to (it can't add itself), and a text channel is seeded under that server for the write/read scenarios. arrange-act scenarios self-provision a resource under the server and act on it (cold-start coverage probes); discover-act scenarios operate on the pre-existing world via in-envelope read/find primitives (all arms compete); act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency/shape diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "discord_eval_guild",
+      "description": "A Discord server (guild) the eval bot has already been added to. An operator adds the bot to the server via the OAuth2 authorize URL (bot scope) with Manage Channels, Manage Roles, Manage Messages, and Manage Webhooks permissions, and enables the Server Members Intent on the app's Bot page — the bot cannot add itself, and member-listing needs the privileged intent. This is the server all server-scoped scenarios resolve their guild_id against.",
+      "env": "EVAL_DISCORD_GUILD",
+      "default": "Eval Server",
+      "expects": "A Discord server (guild) named 'Eval Server' that the eval bot is a member of, where the bot holds the Manage Channels, Manage Roles, Manage Messages, and Manage Webhooks permissions with its top role positioned above any role it must assign, and where the app's Server Members Intent is enabled so the bot can list and search members. The server appears in the bot's listGuilds result.",
+      "provision": "operator"
+    },
+    {
+      "name": "discord_sandbox_channel",
+      "description": "A text channel in the eval server that the discover/act write scenarios post into and read from. The bot can create it directly under the server once the server is provisioned.",
+      "env": "EVAL_DISCORD_SANDBOX_CHANNEL",
+      "default": "sandbox-eval-1",
+      "expects": "A text channel (type 0) named 'sandbox-eval-1' in the 'Eval Server' guild, where the eval bot can read message history and send messages.",
+      "provision": "seed",
+      "root": "discord_eval_guild"
+    }
+  ],
+  "evals": [
+    {
+      "id": "list-my-servers",
+      "kind": "act-only",
+      "description": "Read-only entry point: discover which servers the bot belongs to — the guild_id resolution step every server-scoped scenario depends on.",
+      "steps": [
+        {
+          "intent": "Which Discord servers is this bot a member of? List them with their ids.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the server(s) the bot belongs to, each with its id, drawn from the account rather than fabricated."
+            ],
+            "mechanism": [
+              "Enumerates the bot's servers via the guild-listing tool rather than guessing a server id or name."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-channels-in-server",
+      "kind": "discover-act",
+      "description": "Resolve a server by name, then list its channels — the channel_id resolution path write scenarios build on.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "List the channels in the server named {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "The channels in the server named in the request are returned, each with its id, rather than a fabricated list."
+            ],
+            "mechanism": [
+              "Resolves the server's id from the name given in the request (via the guild listing) before listing channels, rather than guessing a guild id.",
+              "Lists the server's channels rather than inventing channel names or ids."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-recent-messages",
+      "kind": "discover-act",
+      "description": "Read the latest history of a named channel — exercises resolving a channel by name then reading its messages.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Show me the most recent messages in the {{discord_sandbox_channel}} channel of the {{discord_eval_guild}} server.",
+          "assertions": {
+            "outcome": [
+              "The recent messages in the channel named in the request are returned (an empty channel is acceptable and reported as such), rather than fabricated message content."
+            ],
+            "mechanism": [
+              "Resolves the channel's id by finding the channel named in the request among the server's channels, rather than guessing a channel id.",
+              "Reads the channel's message history rather than inventing messages or timestamps."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "post-message-to-channel",
+      "kind": "discover-act",
+      "description": "Post a status update to a named channel — the highest-reach write, resolving the channel by name first.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Post a status update to the {{discord_sandbox_channel}} channel in {{discord_eval_guild}}: 'Deploy {{run_id}} is complete.'",
+          "assertions": {
+            "outcome": [
+              "A message with the content given in the request is posted to the channel named in the request."
+            ],
+            "mechanism": [
+              "Resolves the channel's id by the name given in the request before sending rather than guessing an id, and does not create a new channel.",
+              "Sends a single message with the content given in the request; the message id comes from the send result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reply-to-message",
+      "kind": "arrange-act",
+      "description": "Seed a message then reply to it in-thread of conversation — exercises message_reference threading of a reply.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Post a message to the {{discord_sandbox_channel}} channel in {{discord_eval_guild}}: 'Question {{run_id}}: are we shipping today?'",
+          "assertions": {
+            "outcome": [
+              "A message with the content given in the request is posted to the channel named in the request and its message id is reported."
+            ],
+            "mechanism": [
+              "Sends a single message to the channel resolved by the name given in the request; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Reply to that message with 'Yes, shipping this afternoon.'",
+          "assertions": {
+            "outcome": [
+              "A reply with the content given in the request is posted to the same channel as a reply referencing the message just posted in this turn."
+            ],
+            "mechanism": [
+              "References the message just posted earlier in this session as the reply target (a message reference), rather than posting an unlinked standalone message or inventing a message id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit-own-message",
+      "kind": "arrange-act",
+      "description": "Post a message then edit its content — exercises editing a message the bot itself sent.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Post a message to the {{discord_sandbox_channel}} channel in {{discord_eval_guild}}: 'Status {{run_id}}: in progress.'",
+          "assertions": {
+            "outcome": [
+              "A message with the content given in the request is posted to the channel named in the request and its message id is reported."
+            ],
+            "mechanism": [
+              "Sends one message to the channel resolved by the name given in the request; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Update that message to read 'Status {{run_id}}: done.'",
+          "assertions": {
+            "outcome": [
+              "The message just posted in this session now shows the updated content given in the request rather than its original text."
+            ],
+            "mechanism": [
+              "Edits the exact message id created earlier in this session rather than posting a new message or targeting a different id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-message",
+      "kind": "arrange-act",
+      "description": "Post a message then delete it — gives create/delete liveness for free.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Post a message to the {{discord_sandbox_channel}} channel in {{discord_eval_guild}}: 'Temporary note {{run_id}}.'",
+          "assertions": {
+            "outcome": [
+              "A message with the content given in the request is posted to the channel named in the request and its message id is reported."
+            ],
+            "mechanism": [
+              "Sends one message to the channel resolved by the name given in the request; the message id comes from the send result."
+            ]
+          }
+        },
+        {
+          "intent": "Delete that message.",
+          "assertions": {
+            "outcome": [
+              "The message just posted in this session no longer exists in the channel."
+            ],
+            "mechanism": [
+              "Deletes the exact message id created earlier in this session rather than a different or invented message id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "react-to-latest-message",
+      "kind": "act-only",
+      "description": "Single-capability probe against a named ambient target: add a reaction to the most recent message in the sandbox channel. No run-created ids.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Add a 👍 reaction to the most recent message in the {{discord_sandbox_channel}} channel of {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "The reaction requested is present on the most recent message in the channel named in the request."
+            ],
+            "mechanism": [
+              "Reads the channel's history to resolve the latest message id rather than fabricating a message or inventing a timestamp.",
+              "Targets that resolved message id and channel id when adding the reaction."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-text-channel",
+      "kind": "arrange-act",
+      "description": "Cold-start coverage probe: create a new text channel in the server. Requires Manage Channels.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "Create a new text channel named 'eval-room-{{run_id}}' in the server named {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "A text channel with the name given in the request now exists in the server named in the request and its id is reported."
+            ],
+            "mechanism": [
+              "Resolves the server's id by the name given in the request before creating, and creates a single text-type channel; the channel id comes from the create result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "set-channel-topic",
+      "kind": "arrange-act",
+      "description": "Create a channel then rename it and set its topic — exercises modifyChannel on a self-provisioned channel.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "Create a text channel named 'eval-topic-{{run_id}}' in the {{discord_eval_guild}} server.",
+          "assertions": {
+            "outcome": [
+              "A text channel with the name given in the request now exists in the server named in the request and its id is reported."
+            ],
+            "mechanism": [
+              "Creates a single text channel under the server resolved by the name given in the request; the channel id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Rename that channel to 'eval-launch-{{run_id}}' and set its topic to 'Q3 launch planning'.",
+          "assertions": {
+            "outcome": [
+              "The channel just created in this session now carries the new name and topic given in the request."
+            ],
+            "mechanism": [
+              "Modifies the exact channel id created earlier in this session rather than creating another channel or targeting a different id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "start-forum-post",
+      "kind": "arrange-act",
+      "description": "Cold-start: create a forum channel then start a forum post (thread) in it — exercises that a forum can only hold threads, so posting means creating a thread with an opening message.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "Create a forum channel named 'eval-forum-{{run_id}}' in the {{discord_eval_guild}} server.",
+          "assertions": {
+            "outcome": [
+              "A forum channel with the name given in the request now exists in the server named in the request and its id is reported."
+            ],
+            "mechanism": [
+              "Creates a single forum-type channel under the server resolved by the name given in the request; the channel id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Start a forum post titled 'Launch checklist {{run_id}}' in that forum with an opening message 'Please add your items.'",
+          "assertions": {
+            "outcome": [
+              "A forum post (thread) with the title and opening message given in the request now exists in the forum channel just created in this session, and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the forum post as a thread under the forum channel created earlier in this session, supplying the opening message, rather than attempting to send a plain message to the forum channel."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-member-by-name",
+      "kind": "discover-act",
+      "description": "Resolve a member from a name prefix — the member-lookup entry point role scenarios depend on; needs the Server Members privileged intent.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "Find a member named 'alex' in the server named {{discord_eval_guild}} and report their user id.",
+          "assertions": {
+            "outcome": [
+              "Members of the server named in the request matching the name given are reported with their user ids (or the reply states plainly that no member matches), rather than a fabricated member."
+            ],
+            "mechanism": [
+              "Searches the server's members by the name/nickname prefix given in the request rather than inventing a user id.",
+              "If two or more members match the name exactly, lists the tied candidates with a distinguishing field and asks which is meant rather than silently picking one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "assign-role-to-member",
+      "kind": "discover-act",
+      "description": "List roles, resolve a member, and grant the role — exercises listRoles then addMemberRole with the role-hierarchy constraint. Requires Manage Roles and the bot's top role above the target.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "List the roles in the server named {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "The roles of the server named in the request are returned, each with its id and name, rather than a fabricated list."
+            ],
+            "mechanism": [
+              "Resolves the server by the name given in the request, then lists its roles rather than guessing role ids or names."
+            ]
+          }
+        },
+        {
+          "intent": "Give the member named 'alex' the 'Contributors' role.",
+          "assertions": {
+            "outcome": [
+              "The member named 'alex' now holds the 'Contributors' role, or — if no such member or role exists, or the bot's role hierarchy or permissions block it — the reply states plainly why it could not be assigned rather than claiming a false success."
+            ],
+            "mechanism": [
+              "Adds the role using the member's user id and the role's id resolved in this session rather than inventing either id, and does not use role removal as a substitute for assignment."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "post-via-webhook-identity",
+      "kind": "arrange-act",
+      "description": "Cold-start: create a webhook on a channel then post through it under a custom identity — exercises createWebhook then executeWebhook with a custom username. Requires Manage Webhooks.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Create a webhook named 'eval-hook-{{run_id}}' on the {{discord_sandbox_channel}} channel in {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "A webhook with the name given in the request now exists on the channel named in the request, and its id (and token) are reported."
+            ],
+            "mechanism": [
+              "Creates a single webhook on the channel resolved by the name given in the request; the webhook id and token come from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Post 'Build {{run_id}} published' through that webhook as the display name 'Release Bot'.",
+          "assertions": {
+            "outcome": [
+              "A message with the content given in the request is posted to the channel, attributed to the display name given in the request."
+            ],
+            "mechanism": [
+              "Executes the webhook created earlier in this session using its id and token, passing the display name given in the request as the custom username, rather than sending an ordinary channel message as the bot."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ban-member-unsupported",
+      "kind": "act-only",
+      "description": "Graceful refusal: the connector deliberately ships no moderation capability (no bans, kicks, or timeouts), so the agent must decline cleanly and not substitute role removal.",
+      "requires": ["discord_eval_guild"],
+      "steps": [
+        {
+          "intent": "Ban the member named 'spammer' from the server named {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "The reply states plainly that banning / kicking / timing-out members (moderation) is not supported, and does not claim the member was banned or otherwise removed."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool to fake the ban, and in particular does not substitute role removal as a stand-in for moderation."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload-attachment-unsupported",
+      "kind": "act-only",
+      "description": "Graceful refusal: the connector deliberately does not support uploading files or image attachments, so the agent must decline cleanly rather than pretend to attach something.",
+      "requires": ["discord_eval_guild", "discord_sandbox_channel"],
+      "steps": [
+        {
+          "intent": "Upload the image report.png as an attachment to the {{discord_sandbox_channel}} channel in {{discord_eval_guild}}.",
+          "assertions": {
+            "outcome": [
+              "The reply states plainly that uploading files or image attachments is not supported, and does not claim a file was attached or uploaded."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool to fake the upload, and does not fabricate an attachment URL or pass a file off as posted."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
