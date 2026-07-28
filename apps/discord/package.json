@@ -1,6 +1,5 @@
 {
   "name": "@zapier/discord-connector",
-  "private": true,
   "description": "Agent-callable Discord tools — send and manage messages, start threads and forum posts, manage channels, members, and roles, and post via webhooks. Use when the user mentions Discord or wants to post, read, or manage Discord servers, channels, or members, even if they don't name Discord explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -59,5 +58,9 @@
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
