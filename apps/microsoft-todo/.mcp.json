@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "microsoft-todo": {
+      "command": "npx",
+      "args": ["-y", "@zapier/microsoft-todo-connector", "mcp"]
+    }
+  }
+}

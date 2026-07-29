@@ -1,0 +1,462 @@
+{
+  "skill_name": "microsoft-todo",
+  "version": "80d7ae8",
+  "description": "Intent-anchored eval scenarios for the microsoft-todo connector arranged on the setup spectrum (arrange-act / discover-act / act-only) so a 3-arm run reveals native's capability profile; outcome assertions grade all arms, mechanism assertions our-arm-only. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "capture-quick-task-to-default-list",
+      "kind": "arrange-act",
+      "description": "Guidance-derived: add a task without naming a list, then confirm it landed in the default list — probes the default-list shortcut without an extra list-lookup round trip.",
+      "steps": [
+        {
+          "intent": "Add a task to my to-do list: 'Buy milk {{run_id}}', with a note: 'Also get eggs.'",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Buy milk {{run_id}}' now exists with a note reading 'Also get eggs.' and its id is reported."
+            ],
+            "mechanism": [
+              "Creates the task directly in the default list without first calling a separate list-lookup step to resolve a list id."
+            ]
+          }
+        },
+        {
+          "intent": "Confirm the 'Buy milk {{run_id}}' task is in my to-do list and not yet completed.",
+          "assertions": {
+            "outcome": [
+              "The task titled 'Buy milk {{run_id}}' is found and its status is reported as not yet completed."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-task-with-due-date",
+      "kind": "arrange-act",
+      "description": "Guidance-derived: create a task with an explicit due date/time, then read it back rather than assuming a naive round trip (documented due-date time-of-day quirk).",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Submit expense report {{run_id}}' due this Friday at 3:00 PM Pacific time.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Submit expense report {{run_id}}' now exists with a due date set and its id is reported."
+            ],
+            "mechanism": [
+              "Sets both a date/time and an explicit time zone on the due date rather than a bare date string with no zone."
+            ]
+          }
+        },
+        {
+          "intent": "Read back the due date on the 'Submit expense report {{run_id}}' task and tell me exactly what's stored.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the due date and time zone actually stored on the task, rather than just repeating the originally-requested value without checking."
+            ],
+            "mechanism": [
+              "Re-fetches the task to read the stored due date rather than answering from memory of the create call."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-open-tasks",
+      "kind": "arrange-act",
+      "description": "Create two tasks then list open (incomplete) items in the same list, confirming both appear.",
+      "steps": [
+        {
+          "intent": "Create two tasks in my to-do list: 'Draft agenda {{run_id}}' and 'Book room {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Both 'Draft agenda {{run_id}}' and 'Book room {{run_id}}' now exist as tasks and their ids are reported."
+            ]
+          }
+        },
+        {
+          "intent": "Show me my open, not-yet-completed to-do items.",
+          "assertions": {
+            "outcome": [
+              "Both 'Draft agenda {{run_id}}' and 'Book room {{run_id}}' appear in the reported list of open items."
+            ],
+            "mechanism": [
+              "Excludes completed tasks from the listing rather than returning every task unfiltered."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-task-and-raise-priority",
+      "kind": "arrange-act",
+      "description": "Find-then-act: create a task, find it by name, then raise its importance.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Renew passport {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Renew passport {{run_id}}' now exists and its id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Find the 'Renew passport {{run_id}}' task and mark it high importance.",
+          "assertions": {
+            "outcome": [
+              "The 'Renew passport {{run_id}}' task's importance is now high."
+            ],
+            "mechanism": [
+              "Looks up the task by title before updating it rather than acting on a guessed or hard-coded id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "complete-task",
+      "kind": "arrange-act",
+      "description": "Create a task then mark it done — the single most common task mutation.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Buy milk {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A task titled 'Buy milk {{run_id}}' now exists."]
+          }
+        },
+        {
+          "intent": "I finished the 'Buy milk {{run_id}}' task — mark it done.",
+          "assertions": {
+            "outcome": [
+              "The 'Buy milk {{run_id}}' task's status is now completed."
+            ],
+            "mechanism": [
+              "Updates the existing task's status rather than deleting it or creating a duplicate."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen-completed-task",
+      "kind": "arrange-act",
+      "description": "Guidance-derived: complete a task, then ask to undo that — there's no dedicated reopen tool, so the agent must recognize completion is reversed via the same update path.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Water plants {{run_id}}' and mark it done.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Water plants {{run_id}}' exists and its status is completed."
+            ]
+          }
+        },
+        {
+          "intent": "Actually, I marked 'Water plants {{run_id}}' done by mistake — undo that.",
+          "assertions": {
+            "outcome": [
+              "The 'Water plants {{run_id}}' task's status is back to not completed."
+            ],
+            "mechanism": [
+              "Reopens the task by changing its status field rather than declining, deleting it, or creating a new task."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-unwanted-task",
+      "kind": "arrange-act",
+      "description": "Create a task then delete it.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Old reminder {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A task titled 'Old reminder {{run_id}}' now exists."]
+          }
+        },
+        {
+          "intent": "Delete the 'Old reminder {{run_id}}' task, I don't need it.",
+          "assertions": {
+            "outcome": ["The 'Old reminder {{run_id}}' task no longer exists."],
+            "mechanism": [
+              "Deletes only the task resolved in this session, not an unrelated task."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "break-task-into-steps",
+      "kind": "arrange-act",
+      "description": "Create a task then add several checklist items (steps) to it.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Plan offsite {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A task titled 'Plan offsite {{run_id}}' now exists."]
+          }
+        },
+        {
+          "intent": "Break 'Plan offsite {{run_id}}' into these steps: book venue, send invites, order catering.",
+          "assertions": {
+            "outcome": [
+              "The 'Plan offsite {{run_id}}' task now has three steps: book venue, send invites, and order catering."
+            ],
+            "mechanism": [
+              "Adds each step as a separate checklist item on the task rather than putting them into the task's note text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-task-steps",
+      "kind": "arrange-act",
+      "description": "Create a task with steps, check one off, then remove another — exercises both checklist-item mutations in one continuing flow.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Plan offsite {{run_id}}' with steps: book venue, send invites, order catering.",
+          "assertions": {
+            "outcome": [
+              "The 'Plan offsite {{run_id}}' task exists with three steps: book venue, send invites, and order catering."
+            ]
+          }
+        },
+        {
+          "intent": "I've booked the venue for 'Plan offsite {{run_id}}' — check that step off.",
+          "assertions": {
+            "outcome": [
+              "The 'book venue' step on 'Plan offsite {{run_id}}' is now checked off; the other two steps remain unchecked."
+            ],
+            "mechanism": [
+              "Updates only the matching step's checked state rather than the whole task's status."
+            ]
+          }
+        },
+        {
+          "intent": "We're doing potluck instead — remove the 'order catering' step from 'Plan offsite {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "'Plan offsite {{run_id}}' now has only 'book venue' (checked) and 'send invites' (unchecked); 'order catering' is gone."
+            ],
+            "mechanism": [
+              "Deletes only the matching step, leaving the task and its other steps intact."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-new-list",
+      "kind": "arrange-act",
+      "description": "Create a new task list for a specific purpose.",
+      "steps": [
+        {
+          "intent": "Create a new to-do list called 'Groceries {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task list named 'Groceries {{run_id}}' now exists and its id is reported."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-custom-list",
+      "kind": "arrange-act",
+      "description": "Create a list then rename it — contrasts with the built-in-list refusal case below.",
+      "steps": [
+        {
+          "intent": "Create a to-do list called 'Groceries {{run_id}}'.",
+          "assertions": {
+            "outcome": ["A task list named 'Groceries {{run_id}}' now exists."]
+          }
+        },
+        {
+          "intent": "Rename 'Groceries {{run_id}}' to 'Shopping {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The list formerly named 'Groceries {{run_id}}' is now named 'Shopping {{run_id}}'."
+            ],
+            "mechanism": [
+              "Renames the same list id resolved in this session rather than creating a new list."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "see-all-my-lists",
+      "kind": "arrange-act",
+      "description": "Create a distinctly-named list then confirm it shows up when asked to see all lists.",
+      "steps": [
+        {
+          "intent": "Create a to-do list called 'Side Projects {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task list named 'Side Projects {{run_id}}' now exists."
+            ]
+          }
+        },
+        {
+          "intent": "What to-do lists do I have?",
+          "assertions": {
+            "outcome": [
+              "The 'Side Projects {{run_id}}' list is included among the lists reported."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-list-and-its-tasks",
+      "kind": "arrange-act",
+      "description": "Destructive, higher-scrutiny case: create a list with a task in it, delete the list, and confirm both the list and its task are gone.",
+      "steps": [
+        {
+          "intent": "Create a to-do list called 'Temp Project {{run_id}}' with one task in it: 'Kickoff notes {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A list named 'Temp Project {{run_id}}' exists containing a task titled 'Kickoff notes {{run_id}}'."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Temp Project {{run_id}}' list entirely.",
+          "assertions": {
+            "outcome": [
+              "The 'Temp Project {{run_id}}' list no longer exists, and its 'Kickoff notes {{run_id}}' task is also gone."
+            ],
+            "mechanism": [
+              "Deletes the exact list resolved in this session rather than a different or built-in list."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-default-list-declines",
+      "kind": "arrange-act",
+      "description": "Guidance-derived, vendor constraint: asks to rename the built-in default list, which Microsoft To Do does not allow — the agent should surface the real failure rather than fabricate success.",
+      "steps": [
+        {
+          "intent": "Rename my default to-do list to 'Inbox {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply states the rename did not succeed and that the default/built-in list can't be renamed, rather than claiming it was renamed."
+            ],
+            "mechanism": [
+              "Attempts the rename against the real default list and surfaces the resulting error rather than silently doing nothing or fabricating a success message."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-recurring-task-declines",
+      "kind": "arrange-act",
+      "description": "Graceful refusal: recurrence authoring isn't supported by the connector — the agent should decline clearly instead of fabricating a repeating task.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Water plants {{run_id}}' that repeats every Monday morning.",
+          "assertions": {
+            "outcome": [
+              "The reply states that recurring/repeating tasks aren't supported and does not claim a repeating task was created; if it creates a one-time task as a fallback, it says so explicitly rather than implying recurrence was set."
+            ],
+            "mechanism": [
+              "Does not call a create or update tool with fabricated recurrence data to fake the behavior."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-duplicate-task-titles",
+      "kind": "arrange-act",
+      "description": "Disambiguation: two tasks share the same title; asking to update 'the' task by that title should prompt the agent to disambiguate rather than silently pick one.",
+      "steps": [
+        {
+          "intent": "Create two separate tasks, both titled 'Follow up {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Two distinct tasks titled 'Follow up {{run_id}}' now exist, each with its own id."
+            ]
+          }
+        },
+        {
+          "intent": "Mark the 'Follow up {{run_id}}' task as high importance.",
+          "assertions": {
+            "outcome": [
+              "Given that two tasks share that exact title, the reply either asks which one is meant or clearly acts on both — it does not silently update only one without acknowledging that more than one match exists."
+            ],
+            "mechanism": [
+              "Recognizes more than one task matches the given title before acting, rather than picking the first result with no acknowledgment."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-for-missing-task",
+      "kind": "arrange-act",
+      "description": "Search for a task that was never created; the agent should report it wasn't found rather than fabricate one.",
+      "steps": [
+        {
+          "intent": "Has the task 'Renew car registration {{run_id}}' been completed yet?",
+          "assertions": {
+            "outcome": [
+              "The reply states that no such task was found, and does not fabricate a status or details for a task that doesn't exist."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "relocate-task-to-different-list",
+      "kind": "arrange-act",
+      "description": "Guidance-derived: moving a task to a different list has no single tool — the agent must recreate it in the target list and remove the original, and should not claim the original task id survived the move.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Buy milk {{run_id}}' in my default to-do list, and create a new list called 'Groceries {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Buy milk {{run_id}}' exists, and a list named 'Groceries {{run_id}}' exists."
+            ]
+          }
+        },
+        {
+          "intent": "Move the 'Buy milk {{run_id}}' task into the 'Groceries {{run_id}}' list.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Buy milk {{run_id}}' now exists in the 'Groceries {{run_id}}' list, and it is no longer present in the original list."
+            ],
+            "mechanism": [
+              "Recreates the task under the new list and removes the original rather than claiming the same task id was relocated in place."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "view-linked-source-declines",
+      "kind": "arrange-act",
+      "description": "Graceful refusal / roadmap gap: linked-resource details (e.g. an originating email) aren't exposed by any tool.",
+      "steps": [
+        {
+          "intent": "Create a task titled 'Follow up on vendor email {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A task titled 'Follow up on vendor email {{run_id}}' now exists."
+            ]
+          }
+        },
+        {
+          "intent": "Show me the original email that 'Follow up on vendor email {{run_id}}' links back to.",
+          "expectsNoAction": true,
+          "assertions": {
+            "outcome": [
+              "The reply states that this connector can't retrieve or show a task's linked source item, rather than fabricating an email reference."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "name": "@zapier/microsoft-todo-connector",
+  "description": "Agent-callable tools for Microsoft To Do — manage task lists, tasks, and checklist steps.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/microsoft-todo-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "lib/",
+    "SKILL.md",
+    "README.md",
+    "NOTICE",
+    "LICENSE",
+    "references/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.4.3",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk-cli": ">=0.62.0 <1.0.0"
+  },
+  "keywords": [
+    "microsoft-todo",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/microsoft-todo"
+  },
+  "bugs": "https://github.com/zapier/connectors/issues",
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/microsoft-todo",
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}
