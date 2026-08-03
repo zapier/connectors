@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "algolia": {
+      "command": "npx",
+      "args": ["-y", "@zapier/algolia-connector", "mcp"]
+    }
+  }
+}

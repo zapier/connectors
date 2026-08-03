@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "algolia",
+  "displayName": "Algolia",
+  "description": "Agent-callable Algolia tools — index records, search and browse them, manage index settings, synonyms, and query rules, and read AI recommendations.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/algolia",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "algolia",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "search",
+    "search-engine",
+    "indexing",
+    "recommendations",
+    "faceted-search",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}

@@ -1,0 +1,517 @@
+{
+  "skill_name": "algolia",
+  "version": "2fb558c",
+  "description": "Intent-anchored eval scenarios for the Algolia connector. Mostly arrange-act coverage probes: the connector self-provisions its world (indices auto-create on first write) namespaced by {{run_id}}, exercises the capability, and cleans up. Post-write verification prefers getObject/getTask over search because Algolia indexing is asynchronous. Assertions split into outcome (backend-agnostic world/reply facts, graded on all arms) and mechanism (tool-call hygiene, our-arm-only).",
+  "evals": [
+    {
+      "id": "index-and-retrieve-record",
+      "kind": "arrange-act",
+      "description": "Add a record with a known objectID to a fresh index, retrieve it by id, then delete the index.",
+      "steps": [
+        {
+          "intent": "Add a record to the index 'eval-index-{{run_id}}' with objectID 'sku-1' and fields {\"name\":\"Wireless Earbuds\",\"price\":79}.",
+          "assertions": {
+            "outcome": [
+              "A record with objectID 'sku-1' is added to the 'eval-index-{{run_id}}' index and a task id is reported."
+            ],
+            "mechanism": [
+              "Sends the record with the caller-supplied objectID 'sku-1' rather than letting Algolia auto-generate one; the objectID is passed as a string."
+            ]
+          }
+        },
+        {
+          "intent": "Get the record with objectID 'sku-1' from 'eval-index-{{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The record 'sku-1' is returned with name 'Wireless Earbuds' and price 79."
+            ],
+            "mechanism": [
+              "Retrieves the record by its objectID directly rather than scanning or searching."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-index-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-index-{{run_id}}' index is deleted and a task id is reported (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-index-with-filter",
+      "kind": "arrange-act",
+      "description": "Seed a couple of records, confirm indexing, then search with a query and a filter.",
+      "steps": [
+        {
+          "intent": "Add two records to 'eval-search-{{run_id}}': objectID 'a' {\"title\":\"Red Shoes\",\"inStock\":true}, and objectID 'b' {\"title\":\"Blue Hat\",\"inStock\":false}.",
+          "assertions": {
+            "outcome": [
+              "Both records ('a' and 'b') are added to the 'eval-search-{{run_id}}' index and a task id is reported."
+            ],
+            "mechanism": [
+              "Adds both records with their caller-supplied objectIDs; may use a single batch call or two adds."
+            ]
+          }
+        },
+        {
+          "intent": "Wait until indexing for 'eval-search-{{run_id}}' has finished (the last write is published).",
+          "assertions": {
+            "outcome": [
+              "The prior write's task is confirmed published/applied for 'eval-search-{{run_id}}'."
+            ],
+            "mechanism": [
+              "Checks task status for the index rather than assuming the write is instantly searchable."
+            ]
+          }
+        },
+        {
+          "intent": "Search 'eval-search-{{run_id}}' for 'shoes' returning only in-stock records.",
+          "assertions": {
+            "outcome": [
+              "The search returns the 'Red Shoes' record and not the out-of-stock 'Blue Hat', with a total-hits count reported."
+            ],
+            "mechanism": [
+              "Passes the in-stock condition as a filter/facet parameter rather than filtering results client-side after retrieving everything."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-search-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-search-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "partial-update-preserves-other-fields",
+      "kind": "arrange-act",
+      "description": "Create a record, partial-update one attribute, and confirm the other attributes survive (partial update must not drop siblings).",
+      "steps": [
+        {
+          "intent": "Add a record to 'eval-patch-{{run_id}}' with objectID 'p1' and fields {\"name\":\"Desk\",\"price\":100,\"color\":\"oak\"}.",
+          "assertions": {
+            "outcome": [
+              "A record 'p1' with name 'Desk', price 100, color 'oak' exists in 'eval-patch-{{run_id}}'."
+            ]
+          }
+        },
+        {
+          "intent": "Update only the price of record 'p1' in 'eval-patch-{{run_id}}' to 120.",
+          "assertions": {
+            "outcome": ["Record 'p1' now has price 120."],
+            "mechanism": [
+              "Uses a partial-update (patch) call that sends only the price attribute, not a full-record replace."
+            ]
+          }
+        },
+        {
+          "intent": "Get record 'p1' from 'eval-patch-{{run_id}}' and report all its fields.",
+          "assertions": {
+            "outcome": [
+              "Record 'p1' has price 120 and still has name 'Desk' and color 'oak' (the untouched attributes were preserved)."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-patch-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-patch-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "batch-index-records",
+      "kind": "arrange-act",
+      "description": "Bulk-index several records in one request, then confirm they landed by id.",
+      "steps": [
+        {
+          "intent": "Add these three records to 'eval-batch-{{run_id}}' in one operation: {\"objectID\":\"1\",\"n\":\"one\"}, {\"objectID\":\"2\",\"n\":\"two\"}, {\"objectID\":\"3\",\"n\":\"three\"}.",
+          "assertions": {
+            "outcome": [
+              "All three records are indexed into 'eval-batch-{{run_id}}' and a task id (with the affected object ids) is reported."
+            ],
+            "mechanism": [
+              "Uses a single batch operation rather than three separate add calls."
+            ]
+          }
+        },
+        {
+          "intent": "Retrieve records with objectIDs '1', '2', and '3' from 'eval-batch-{{run_id}}' in one request.",
+          "assertions": {
+            "outcome": [
+              "All three records are returned, each matching its objectID."
+            ],
+            "mechanism": [
+              "Uses a single multi-get request rather than three separate gets."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-batch-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-batch-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "browse-all-records",
+      "kind": "arrange-act",
+      "description": "Seed records and export the whole index via cursor browse (not paginated search).",
+      "steps": [
+        {
+          "intent": "Add two records to 'eval-browse-{{run_id}}': {\"objectID\":\"x\",\"v\":1} and {\"objectID\":\"y\",\"v\":2}, and wait for indexing to finish.",
+          "assertions": {
+            "outcome": [
+              "Both records are indexed into 'eval-browse-{{run_id}}' and the write is confirmed applied."
+            ]
+          }
+        },
+        {
+          "intent": "Export every record from 'eval-browse-{{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "All records in 'eval-browse-{{run_id}}' (objectIDs 'x' and 'y') are returned."
+            ],
+            "mechanism": [
+              "Uses the cursor browse capability for a full export rather than paginated search."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-browse-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-browse-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-records-by-filter",
+      "kind": "arrange-act",
+      "description": "Delete a subset of records by filter; the connector requires a non-empty filter.",
+      "steps": [
+        {
+          "intent": "Add to 'eval-delby-{{run_id}}': {\"objectID\":\"keep\",\"status\":\"active\"} and {\"objectID\":\"drop\",\"status\":\"obsolete\"}, and wait for indexing.",
+          "assertions": {
+            "outcome": [
+              "Both records are indexed into 'eval-delby-{{run_id}}' and the write is confirmed applied."
+            ]
+          }
+        },
+        {
+          "intent": "Delete all records in 'eval-delby-{{run_id}}' whose status is 'obsolete'.",
+          "assertions": {
+            "outcome": [
+              "The delete-by-filter operation is accepted for the obsolete records and a task id is reported; the 'keep' record is not targeted."
+            ],
+            "mechanism": [
+              "Passes a non-empty filter selecting status:obsolete rather than an empty/match-all delete."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-delby-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-delby-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "clear-index-records",
+      "kind": "arrange-act",
+      "description": "Empty an index of all records while keeping the index and its config.",
+      "steps": [
+        {
+          "intent": "Add {\"objectID\":\"z\",\"v\":1} to 'eval-clear-{{run_id}}' and wait for indexing.",
+          "assertions": {
+            "outcome": [
+              "The record is indexed into 'eval-clear-{{run_id}}' and the write is confirmed applied."
+            ]
+          }
+        },
+        {
+          "intent": "Remove all records from 'eval-clear-{{run_id}}' but keep the index.",
+          "assertions": {
+            "outcome": [
+              "All records are cleared from 'eval-clear-{{run_id}}' and a task id is reported."
+            ],
+            "mechanism": [
+              "Uses the clear-records capability, not delete-index and not an unfiltered delete-by-query."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-clear-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-clear-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "configure-faceting-and-search-facet-values",
+      "kind": "arrange-act",
+      "description": "Make an attribute facetable via settings, then search its facet values.",
+      "steps": [
+        {
+          "intent": "Add to 'eval-facet-{{run_id}}': {\"objectID\":\"1\",\"brand\":\"Nike\"}, {\"objectID\":\"2\",\"brand\":\"Nintendo\"}, {\"objectID\":\"3\",\"brand\":\"Adidas\"}.",
+          "assertions": {
+            "outcome": [
+              "The three records are indexed into 'eval-facet-{{run_id}}'."
+            ]
+          }
+        },
+        {
+          "intent": "Configure 'eval-facet-{{run_id}}' so that 'brand' can be faceted and searched as a facet.",
+          "assertions": {
+            "outcome": [
+              "The index settings now include 'brand' as a facetable (searchable-facet) attribute and a task id is reported."
+            ],
+            "mechanism": [
+              "Updates the index settings' attributesForFaceting to include brand (as a searchable facet) rather than attempting to facet without configuring it."
+            ]
+          }
+        },
+        {
+          "intent": "In 'eval-facet-{{run_id}}', find brand facet values starting with 'ni'.",
+          "assertions": {
+            "outcome": [
+              "The facet-value search returns brand values matching 'ni' (Nike and Nintendo) and not Adidas."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-facet-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-facet-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-and-update-index-settings",
+      "kind": "arrange-act",
+      "description": "Set searchable attributes on an index and read them back.",
+      "steps": [
+        {
+          "intent": "Create the index 'eval-settings-{{run_id}}' by adding a record {\"objectID\":\"1\",\"title\":\"hi\",\"body\":\"there\"}.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-settings-{{run_id}}' index exists with the record indexed."
+            ]
+          }
+        },
+        {
+          "intent": "Set the searchable attributes of 'eval-settings-{{run_id}}' to 'title' then 'body'.",
+          "assertions": {
+            "outcome": [
+              "The index settings update is accepted (searchable attributes set to title, then body) and a task id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "Show the current settings of 'eval-settings-{{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The returned settings show searchableAttributes as ['title','body']."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-settings-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-settings-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-synonyms",
+      "kind": "arrange-act",
+      "description": "Create a synonym, find it, and delete it.",
+      "steps": [
+        {
+          "intent": "Create the index 'eval-syn-{{run_id}}' by adding {\"objectID\":\"1\",\"name\":\"phone\"}.",
+          "assertions": {
+            "outcome": ["The 'eval-syn-{{run_id}}' index exists."]
+          }
+        },
+        {
+          "intent": "In 'eval-syn-{{run_id}}', create a synonym with id 'syn1' making 'phone', 'mobile', and 'cell' equivalent.",
+          "assertions": {
+            "outcome": [
+              "A synonym 'syn1' equating phone/mobile/cell is saved to 'eval-syn-{{run_id}}' and a task id is reported."
+            ]
+          }
+        },
+        {
+          "intent": "List the synonyms in 'eval-syn-{{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The synonym 'syn1' is returned with its equivalent terms."
+            ]
+          }
+        },
+        {
+          "intent": "Delete synonym 'syn1' from 'eval-syn-{{run_id}}', then delete the index.",
+          "assertions": {
+            "outcome": [
+              "The 'syn1' synonym is deleted and the 'eval-syn-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-query-rules",
+      "kind": "arrange-act",
+      "description": "Create a query rule, search for it, and delete it.",
+      "steps": [
+        {
+          "intent": "Create the index 'eval-rule-{{run_id}}' by adding {\"objectID\":\"1\",\"name\":\"widget\"}.",
+          "assertions": {
+            "outcome": ["The 'eval-rule-{{run_id}}' index exists."]
+          }
+        },
+        {
+          "intent": "In 'eval-rule-{{run_id}}', create a query rule with id 'rule1' that fires when the query is 'promo' and applies a simple consequence.",
+          "assertions": {
+            "outcome": [
+              "A query rule 'rule1' is saved to 'eval-rule-{{run_id}}' and a task id is reported."
+            ],
+            "mechanism": [
+              "Saves a single rule with a consequence; does not require batch."
+            ]
+          }
+        },
+        {
+          "intent": "List the query rules in 'eval-rule-{{run_id}}'.",
+          "assertions": { "outcome": ["The rule 'rule1' is returned."] }
+        },
+        {
+          "intent": "Delete rule 'rule1' from 'eval-rule-{{run_id}}', then delete the index.",
+          "assertions": {
+            "outcome": [
+              "The 'rule1' rule is deleted and the 'eval-rule-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-indices",
+      "kind": "discover-act",
+      "description": "List the application's indices (read-only against ambient state).",
+      "steps": [
+        {
+          "intent": "List the Algolia indices in this application and report how many there are.",
+          "assertions": {
+            "outcome": [
+              "A list of the application's indices is returned, each with a name (and record count where available)."
+            ],
+            "mechanism": [
+              "Uses the list-indices capability rather than guessing index names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "confirm-write-with-task",
+      "kind": "arrange-act",
+      "description": "After a write, confirm it was applied via task status (async indexing).",
+      "steps": [
+        {
+          "intent": "Add {\"objectID\":\"t1\",\"v\":1} to 'eval-task-{{run_id}}' and then confirm the write has actually been applied (not just accepted).",
+          "assertions": {
+            "outcome": [
+              "The record write is confirmed applied/published for 'eval-task-{{run_id}}' (not merely acknowledged)."
+            ],
+            "mechanism": [
+              "Checks the returned task id's status until it is published rather than assuming immediate consistency."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-task-{{run_id}}' index.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-task-{{run_id}}' index is deleted (cleanup)."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "get-recommendations",
+      "kind": "arrange-act",
+      "description": "Request related-product recommendations for a record. The Recommend model is likely untrained, so an empty result is the valid, graceful outcome — the point is the tool is called correctly and empty is handled, not that recommendations exist.",
+      "steps": [
+        {
+          "intent": "Add a record to 'eval-rec-{{run_id}}' with objectID 'demo-1' and fields {\"name\":\"Blue Sneakers\",\"category\":\"shoes\"}, and wait for indexing.",
+          "assertions": {
+            "outcome": [
+              "The record 'demo-1' is indexed into 'eval-rec-{{run_id}}' and the write is confirmed applied."
+            ]
+          }
+        },
+        {
+          "intent": "Get related-product recommendations for objectID 'demo-1' in 'eval-rec-{{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A recommendations result is returned for 'demo-1' — a possibly-empty list of recommended records; if the model has no trained data the reply conveys that none are available rather than erroring out or fabricating results."
+            ],
+            "mechanism": [
+              "Calls the recommendations capability with the related-products model and objectID 'demo-1'."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-rec-{{run_id}}' index.",
+          "assertions": {
+            "outcome": ["The 'eval-rec-{{run_id}}' index is deleted (cleanup)."]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-api-key-management",
+      "kind": "act-only",
+      "description": "Graceful refusal: managing Algolia API keys is out of scope for this connector.",
+      "steps": [
+        {
+          "intent": "Create a new search-only Algolia API key restricted to the 'products' index.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating or managing Algolia API keys is not supported by this connector (pointing to the Algolia dashboard) and does not claim a key was created."
+            ],
+            "mechanism": ["Does not call any tool to fabricate key creation."]
+          }
+        }
+      ]
+    }
+  ]
+}
