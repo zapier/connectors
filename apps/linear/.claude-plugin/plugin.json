@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "linear",
+  "displayName": "Linear",
+  "description": "Agent-callable Linear tools — create, update, find, and comment on issues; manage projects; and resolve teams, states, labels, users, and cycles. Use when the user mentions Linear or wants to track issues, even if they don't name Linear explicitly.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/linear",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "linear",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}

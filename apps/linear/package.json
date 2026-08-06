@@ -1,0 +1,66 @@
+{
+  "name": "@zapier/linear-connector",
+  "description": "Agent-callable Linear tools — create, update, find, and comment on issues; manage projects; and resolve teams, states, labels, users, and cycles. Use when the user mentions Linear or wants to track issues, even if they don't name Linear explicitly.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/linear-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "SKILL.md",
+    "README.md",
+    "NOTICE",
+    "LICENSE",
+    "references/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.4.3",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk-cli": ">=0.62.0 <1.0.0"
+  },
+  "keywords": [
+    "linear",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "bugs": "https://github.com/zapier/connectors/issues",
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/linear",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/linear"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
+  }
+}

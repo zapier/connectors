@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "@zapier/linear-connector", "mcp"]
+    }
+  }
+}

@@ -1,0 +1,394 @@
+{
+  "skill_name": "linear",
+  "version": "44b588a",
+  "description": "Intent-anchored eval scenarios for the linear connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (cold-start coverage probes); discover-act scenarios operate on the ambient workspace via in-envelope read/find primitives (all arms compete); act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "create-and-progress-issue",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create an issue in a team, then assign it to the current user and move it to a started state — one chained session.",
+      "steps": [
+        {
+          "intent": "Create an issue titled 'Fix login crash {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which), with the description 'Users hit a crash on login.'",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Fix login crash {{run_id}}' now exists in a team, and its identifier (e.g. ENG-123) and URL are reported."
+            ],
+            "mechanism": [
+              "Resolves a real team by listing teams and using a returned team id, rather than guessing a team id.",
+              "Creates the issue with a single create call; the identifier comes from the create result, not a hard-coded or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Update the existing 'Fix login crash {{run_id}}' issue you just created: assign it to me and move it to an in-progress / started state (don't create a new issue).",
+          "assertions": {
+            "outcome": [
+              "The 'Fix login crash {{run_id}}' issue is assigned to the authenticated user and set to a started/in-progress workflow state."
+            ],
+            "mechanism": [
+              "Resolves the authenticated user's id (a viewer / 'me' lookup) and a started-type workflow state for the issue's team rather than guessing ids.",
+              "Updates the existing issue rather than creating a new one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "comment-and-attach-on-issue",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create an issue, comment on it, then attach a link — one chained session.",
+      "steps": [
+        {
+          "intent": "Create an issue titled 'Investigate flaky test {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Investigate flaky test {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call after resolving a team id from a list; does not invent a team id."
+            ]
+          }
+        },
+        {
+          "intent": "Add a comment to the 'Investigate flaky test {{run_id}}' issue that says 'Reproduced on CI, see the logs.'",
+          "assertions": {
+            "outcome": [
+              "A comment containing 'Reproduced on CI, see the logs.' is posted on the 'Investigate flaky test {{run_id}}' issue."
+            ],
+            "mechanism": [
+              "Posts the comment to the issue created earlier in this session (by its identifier), not to a different issue."
+            ]
+          }
+        },
+        {
+          "intent": "Attach the link https://example.com/ci/run/42 to the 'Investigate flaky test {{run_id}}' issue, titled 'CI run'.",
+          "assertions": {
+            "outcome": [
+              "A link attachment pointing to https://example.com/ci/run/42 (titled 'CI run') is added to the 'Investigate flaky test {{run_id}}' issue."
+            ],
+            "mechanism": [
+              "Uses a link/attachment call with the given URL; does not attempt a binary file upload."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-and-archive-issue",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a scratch issue then archive it (Linear's reversible delete) — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a scratch issue titled 'Temp {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Temp {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call using a resolved team id."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Temp {{run_id}}' issue.",
+          "assertions": {
+            "outcome": [
+              "The 'Temp {{run_id}}' issue is archived (removed from the active list but recoverable)."
+            ],
+            "mechanism": [
+              "Archives the issue created earlier in this session using an archive operation; does not attempt a permanent hard delete."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "add-and-remove-issue-label",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create an issue, add an existing label, then remove it — one chained session (labels pre-exist; the connector has no create-label tool).",
+      "steps": [
+        {
+          "intent": "Create an issue titled 'Triage me {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Triage me {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call using a resolved team id."
+            ]
+          }
+        },
+        {
+          "intent": "Add one of the workspace's existing labels to the 'Triage me {{run_id}}' issue.",
+          "assertions": {
+            "outcome": [
+              "An existing label is added to the 'Triage me {{run_id}}' issue, and the label name is reported."
+            ],
+            "mechanism": [
+              "Resolves an existing label by listing labels and using a returned label id; does not invent a label id or try to create a new label."
+            ]
+          }
+        },
+        {
+          "intent": "Actually, remove that label from the 'Triage me {{run_id}}' issue again.",
+          "assertions": {
+            "outcome": [
+              "The label previously added to the 'Triage me {{run_id}}' issue is removed, leaving it without that label."
+            ],
+            "mechanism": [
+              "Removes the same label id that was added, targeting the same issue; uses a remove-label operation rather than replacing the whole label set."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-issue-by-title",
+      "kind": "arrange-act",
+      "description": "Coverage probe: self-seed a uniquely-named issue, then find it by title and summarize it.",
+      "steps": [
+        {
+          "intent": "Create an issue titled 'Unique marker {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Unique marker {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call using a resolved team id."
+            ]
+          }
+        },
+        {
+          "intent": "Search my Linear issues for 'Unique marker {{run_id}}' and report the match's status and assignee.",
+          "assertions": {
+            "outcome": [
+              "The 'Unique marker {{run_id}}' issue is found and its workflow state and assignee (or 'unassigned') are reported."
+            ],
+            "mechanism": [
+              "Finds the issue via a search/filter on the title rather than guessing an id; does not fabricate a status or assignee."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-my-assigned-issues",
+      "kind": "discover-act",
+      "description": "Head-to-head read over the ambient workspace: list issues assigned to the authenticated user.",
+      "steps": [
+        {
+          "intent": "List the Linear issues currently assigned to me.",
+          "assertions": {
+            "outcome": [
+              "Issues assigned to the authenticated user are listed (or, if there are none, that is reported without inventing issues)."
+            ],
+            "mechanism": [
+              "Resolves the authenticated user's id (a viewer / 'me' lookup) and filters issues by that assignee; does not fabricate issue identifiers."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-comments-on-issue",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create an issue, post two comments, then read them back — one chained session.",
+      "steps": [
+        {
+          "intent": "Create an issue titled 'Discussion {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Discussion {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call using a resolved team id."
+            ]
+          }
+        },
+        {
+          "intent": "Post two comments on the 'Discussion {{run_id}}' issue: first 'First note', then 'Second note'.",
+          "assertions": {
+            "outcome": [
+              "Two comments — 'First note' and 'Second note' — are posted on the 'Discussion {{run_id}}' issue."
+            ],
+            "mechanism": [
+              "Posts both comments to the same issue created earlier in this session."
+            ]
+          }
+        },
+        {
+          "intent": "List the comments on the 'Discussion {{run_id}}' issue.",
+          "assertions": {
+            "outcome": [
+              "The comments on the 'Discussion {{run_id}}' issue are listed and include 'First note' and 'Second note'."
+            ],
+            "mechanism": [
+              "Lists comments for the issue created earlier in this session; does not fabricate comment text."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-project-and-post-update",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a project in a team, then post a status update on it — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a Linear project called 'Q4 Launch {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which), described 'Ship the Q4 release.'",
+          "assertions": {
+            "outcome": [
+              "A project named 'Q4 Launch {{run_id}}' now exists and its URL is reported."
+            ],
+            "mechanism": [
+              "Resolves a team id from a list and creates the project with a single create call; does not invent a team id."
+            ]
+          }
+        },
+        {
+          "intent": "Post a status update on the 'Q4 Launch {{run_id}}' project: 'Kickoff done, on track.' with an on-track health.",
+          "assertions": {
+            "outcome": [
+              "A status update reading 'Kickoff done, on track.' with an on-track health is posted to the 'Q4 Launch {{run_id}}' project."
+            ],
+            "mechanism": [
+              "Posts the update to the project created earlier in this session using its id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-project-by-name",
+      "kind": "arrange-act",
+      "description": "Coverage probe: self-seed a uniquely-named project, then find it and report its state.",
+      "steps": [
+        {
+          "intent": "Create a project named 'Findable {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "A project named 'Findable {{run_id}}' now exists and its URL is reported."
+            ],
+            "mechanism": [
+              "Creates the project with a single create call using a resolved team id."
+            ]
+          }
+        },
+        {
+          "intent": "Find the Linear project named 'Findable {{run_id}}' and report its state.",
+          "assertions": {
+            "outcome": [
+              "The 'Findable {{run_id}}' project is located and its state is reported."
+            ],
+            "mechanism": [
+              "Finds the project by listing/searching projects for the name; does not guess a project id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "explore-team-workflow-states",
+      "kind": "discover-act",
+      "description": "Head-to-head read over the ambient workspace: resolve a team, then list its workflow states.",
+      "steps": [
+        {
+          "intent": "What workflow states (statuses) does one of my Linear teams use?",
+          "assertions": {
+            "outcome": [
+              "The workflow states of a team are listed with their names and categories (e.g. backlog, started, completed)."
+            ],
+            "mechanism": [
+              "Resolves a team id via a teams listing, then lists that team's workflow states; does not invent state names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-workspace-users",
+      "kind": "discover-act",
+      "description": "Head-to-head read over the ambient workspace: list the workspace's members.",
+      "steps": [
+        {
+          "intent": "Who is in my Linear workspace? List the members.",
+          "assertions": {
+            "outcome": [
+              "The workspace's users are listed with their names and/or emails (or a single user for a solo workspace)."
+            ],
+            "mechanism": [
+              "Uses a user-listing call; does not fabricate user identities."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "identify-current-cycle",
+      "kind": "discover-act",
+      "description": "Head-to-head read over the ambient workspace: resolve a team and identify its current cycle (or report none).",
+      "steps": [
+        {
+          "intent": "What is the current cycle for one of my Linear teams?",
+          "assertions": {
+            "outcome": [
+              "The team's cycles are listed and the current cycle (the one whose date range spans now) is identified — or, if the team has no cycles enabled, that is reported without inventing a cycle."
+            ],
+            "mechanism": [
+              "Resolves a team id, then lists that team's cycles; does not fabricate a cycle name or date range."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-hard-delete-issue",
+      "kind": "arrange-act",
+      "description": "Graceful refusal: the connector supports reversible archiving, not permanent hard deletion — the agent should say so rather than fabricate a delete.",
+      "steps": [
+        {
+          "intent": "Create a scratch issue titled 'Delete me {{run_id}}' in any of your Linear teams (pick one yourself — don't ask me which).",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Delete me {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call using a resolved team id."
+            ]
+          }
+        },
+        {
+          "intent": "Can you permanently and irreversibly delete the 'Delete me {{run_id}}' issue so it can never be recovered (not archived)? If that isn't possible, tell me directly and stop.",
+          "assertions": {
+            "outcome": [
+              "The reply states that permanent hard deletion is not supported and offers reversible archiving as the alternative; it does not claim the issue was permanently deleted."
+            ],
+            "mechanism": [
+              "Makes no permanent-delete tool call and fabricates no deletion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-customer-management",
+      "kind": "arrange-act",
+      "description": "Graceful partial-refusal: the connector can track a request as an issue, but customer / customer-request management is out of scope this version — the agent should do the supported part and decline the unsupported one rather than fabricate a customer.",
+      "steps": [
+        {
+          "intent": "A customer, 'Acme Corp' (acme.com), asked for a dark-mode feature. Create an issue titled 'Dark mode for Acme {{run_id}}' in any of your Linear teams (pick one yourself) to track it, and also register Acme Corp as a customer in Linear with a linked customer request.",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Dark mode for Acme {{run_id}}' is created to track the request, and its identifier is reported.",
+              "The reply explains that registering a customer / customer request in Linear is not supported by this connector, and does not claim to have created a customer or a customer request."
+            ],
+            "mechanism": [
+              "Creates the issue with a single create call using a resolved team id; makes no customer-creating tool call and fabricates no customer id."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
