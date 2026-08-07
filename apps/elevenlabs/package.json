@@ -57,7 +57,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/elevenlabs"
   },
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publishConfig": {
     "access": "public"
   },
