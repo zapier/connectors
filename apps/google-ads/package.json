@@ -29,7 +29,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@zapier/connectors-sdk": "^0.4.3",
+    "@zapier/connectors-sdk": "^0.4.5",
     "zod": "^4.0.0",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
