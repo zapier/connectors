@@ -3,7 +3,7 @@
   "name": "linear",
   "displayName": "Linear",
   "description": "Agent-callable Linear tools — create, update, find, and comment on issues; manage projects; and resolve teams, states, labels, users, and cycles. Use when the user mentions Linear or wants to track issues, even if they don't name Linear explicitly.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
