@@ -1,5 +1,13 @@
 # @zapier/runway-connector
 
+## 0.1.4
+
+### Patch Changes
+
+- 3515715: Automated dependency update from Renovate.
+
+  - `@zapier/connectors-sdk`: ^0.4.3 → ^0.4.5
+
 ## 0.1.3
 
 ### Patch Changes
