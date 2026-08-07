@@ -3,7 +3,7 @@
   "name": "discord",
   "displayName": "Discord",
   "description": "Agent-callable Discord tools — send and manage messages, start threads and forum posts, manage channels, members, and roles, and post via webhooks. Use when the user mentions Discord or wants to post, read, or manage Discord servers, channels, or members, even if they don't name Discord explicitly.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
