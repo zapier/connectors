@@ -1,5 +1,13 @@
 # @zapier/gitlab-connector
 
+## 0.1.1
+
+### Patch Changes
+
+- 6c9eb50: Automated dependency update from Renovate.
+
+  - `@zapier/connectors-sdk`: ^0.4.3 → ^0.4.5
+
 ## 0.1.0
 
 ### Minor Changes

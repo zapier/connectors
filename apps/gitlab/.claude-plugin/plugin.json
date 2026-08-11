@@ -3,7 +3,7 @@
   "name": "gitlab",
   "displayName": "Gitlab",
   "description": "Agent-callable GitLab tools — manage issues and merge requests, review diffs, commit files, run pipelines, and search. Use when the user mentions GitLab or wants to review or merge an MR, commit code, run CI, or manage issues — even if they don't name GitLab explicitly.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
