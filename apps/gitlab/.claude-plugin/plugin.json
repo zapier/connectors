@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "gitlab",
+  "displayName": "Gitlab",
+  "description": "Agent-callable GitLab tools — manage issues and merge requests, review diffs, commit files, run pipelines, and search. Use when the user mentions GitLab or wants to review or merge an MR, commit code, run CI, or manage issues — even if they don't name GitLab explicitly.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/gitlab",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "gitlab",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}

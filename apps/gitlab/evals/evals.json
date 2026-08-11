@@ -1,0 +1,495 @@
+{
+  "skill_name": "gitlab",
+  "version": "d3005e2",
+  "description": "Intent-anchored eval scenarios for the GitLab connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (cold-start coverage probes); discover-act scenarios operate on a pre-existing project via in-envelope read/find primitives (all arms compete); act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "fixtures": [
+    {
+      "name": "gitlab_sandbox_project",
+      "description": "A GitLab project the eval connection can read and write (create issues, branches, commits, merge requests). The scenarios namespace everything they create with {{run_id}}, so one long-lived project is reused across runs.",
+      "env": "EVAL_GITLAB_SANDBOX_PROJECT",
+      "default": "gitlab-connector-eval",
+      "expects": "The GitLab project identified by this fixture's resolved value (its full path or numeric id, from EVAL_GITLAB_SANDBOX_PROJECT), on gitlab.com, that the eval access token can read and write: create/list issues, create branches and commits on the default branch, open merge requests, and list labels. Its default branch (e.g. main) exists with at least one commit so branches can be created from it. Do not require any specific project name — verify capabilities against the resolved value.",
+      "provision": "seed"
+    }
+  ],
+  "evals": [
+    {
+      "id": "triage-a-new-bug-report",
+      "kind": "arrange-act",
+      "description": "Coverage probe: open an issue with a markdown body and a label, find it, comment on it, then close it — one chained session.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "Open an issue titled 'Login crashes on save {{run_id}}' in the project {{gitlab_sandbox_project}}, with a short description of the bug and the label 'bug'.",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'Login crashes on save {{run_id}}' now exists in the {{gitlab_sandbox_project}} project, carrying the 'bug' label, and its iid is reported."
+            ],
+            "mechanism": [
+              "Creates the issue in a single call against the {{gitlab_sandbox_project}} project; the issue iid comes from the create result, not an invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Find the open issue titled 'Login crashes on save {{run_id}}' in {{gitlab_sandbox_project}}.",
+          "assertions": {
+            "outcome": [
+              "The issue titled 'Login crashes on save {{run_id}}' is located and its iid is returned."
+            ],
+            "mechanism": [
+              "Locates the issue by listing/searching issues in the project; does not guess a hard-coded issue iid."
+            ]
+          }
+        },
+        {
+          "intent": "Add a comment to that issue saying you're investigating.",
+          "assertions": {
+            "outcome": [
+              "A comment is added to the 'Login crashes on save {{run_id}}' issue and is visible on it."
+            ],
+            "mechanism": [
+              "Targets the issue iid resolved earlier in this session; does not comment on a different issue."
+            ]
+          }
+        },
+        {
+          "intent": "Close that issue.",
+          "assertions": {
+            "outcome": [
+              "The 'Login crashes on save {{run_id}}' issue is now in the closed state."
+            ],
+            "mechanism": [
+              "Closes the issue via a state change on the issue resolved earlier this session; does not delete it or touch an unrelated issue."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "open-a-merge-request-from-a-code-change",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a branch, commit a file to it, then open a merge request into the default branch — one chained session.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "In {{gitlab_sandbox_project}}, create a branch named 'eval/readme-{{run_id}}' from the default branch.",
+          "assertions": {
+            "outcome": [
+              "A branch named 'eval/readme-{{run_id}}' now exists in {{gitlab_sandbox_project}}, created from the default branch."
+            ],
+            "mechanism": [
+              "Creates the branch from an explicit source ref (the project's default branch), not from a guessed branch name."
+            ]
+          }
+        },
+        {
+          "intent": "Commit a new file 'eval/notes-{{run_id}}.md' with the content '# Eval {{run_id}}' to the 'eval/readme-{{run_id}}' branch.",
+          "assertions": {
+            "outcome": [
+              "A commit adding the file 'eval/notes-{{run_id}}.md' with the given content now exists on the 'eval/readme-{{run_id}}' branch, and the commit id is reported."
+            ],
+            "mechanism": [
+              "Commits the file as a create action on the named branch in a single commit; the file path and content match the request."
+            ]
+          }
+        },
+        {
+          "intent": "Open a merge request from 'eval/readme-{{run_id}}' into the default branch titled 'Add eval notes {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A merge request titled 'Add eval notes {{run_id}}' now exists from source branch 'eval/readme-{{run_id}}' into the default branch, and its iid is reported."
+            ],
+            "mechanism": [
+              "Opens the MR with the source branch it created earlier this session and the project's default branch as target; the iid comes from the create result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "review-a-merge-request",
+      "kind": "arrange-act",
+      "description": "Coverage probe: set up an MR, then read its diffs and leave a top-level review comment — the core review loop.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "In {{gitlab_sandbox_project}}, create a branch 'eval/review-{{run_id}}' from the default branch, commit a file 'eval/change-{{run_id}}.txt' containing 'hello {{run_id}}' to it, and open a merge request titled 'Review me {{run_id}}' into the default branch.",
+          "assertions": {
+            "outcome": [
+              "A merge request titled 'Review me {{run_id}}' now exists in {{gitlab_sandbox_project}} with a committed change on its source branch, and its iid is reported."
+            ],
+            "mechanism": [
+              "Builds the branch, commit, and MR against {{gitlab_sandbox_project}}; the MR iid comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Show the file diffs for the merge request titled 'Review me {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The diffs for the 'Review me {{run_id}}' merge request are returned, showing the added 'eval/change-{{run_id}}.txt' file."
+            ],
+            "mechanism": [
+              "Reads the diffs for the MR iid resolved earlier this session; does not fetch a different MR's diffs."
+            ]
+          }
+        },
+        {
+          "intent": "Leave a comment on that merge request saying the change looks good.",
+          "assertions": {
+            "outcome": [
+              "A comment is posted on the 'Review me {{run_id}}' merge request and is visible on it."
+            ],
+            "mechanism": [
+              "Comments on the MR iid resolved earlier this session; does not comment on an unrelated MR or issue."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-a-merge-request",
+      "kind": "arrange-act",
+      "description": "Coverage probe: open an MR, then retitle it and add a label.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "In {{gitlab_sandbox_project}}, create a branch 'eval/wip-{{run_id}}' from the default branch, commit a file 'eval/wip-{{run_id}}.txt' with 'wip', and open a merge request titled 'WIP {{run_id}}' into the default branch.",
+          "assertions": {
+            "outcome": [
+              "A merge request titled 'WIP {{run_id}}' now exists in {{gitlab_sandbox_project}} and its iid is reported."
+            ],
+            "mechanism": [
+              "Creates the MR against {{gitlab_sandbox_project}}; the iid comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Rename that merge request to 'Ready {{run_id}}' and add the label 'review'.",
+          "assertions": {
+            "outcome": [
+              "The merge request's title is now 'Ready {{run_id}}' and it carries the 'review' label."
+            ],
+            "mechanism": [
+              "Updates the MR iid resolved earlier this session; applies the label additively rather than replacing the title with an id or touching a different MR."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "commit-and-read-back-a-file",
+      "kind": "arrange-act",
+      "description": "Coverage probe: commit a file to a branch, then read its contents back at that ref.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "In {{gitlab_sandbox_project}}, create a branch 'eval/file-{{run_id}}' from the default branch and commit a file 'eval/config-{{run_id}}.json' with the content '{\"eval\": \"{{run_id}}\"}' to it.",
+          "assertions": {
+            "outcome": [
+              "The file 'eval/config-{{run_id}}.json' with the given JSON content now exists on the 'eval/file-{{run_id}}' branch."
+            ],
+            "mechanism": [
+              "Commits the file to the named branch in a single commit with the exact path and content from the request."
+            ]
+          }
+        },
+        {
+          "intent": "Read the contents of 'eval/config-{{run_id}}.json' from the 'eval/file-{{run_id}}' branch.",
+          "assertions": {
+            "outcome": [
+              "The returned file contents are the JSON '{\"eval\": \"{{run_id}}\"}' that was committed."
+            ],
+            "mechanism": [
+              "Reads the file at the exact path and branch ref given in the request; does not fabricate the contents."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "explore-a-repository",
+      "kind": "discover-act",
+      "description": "Head-to-head: list the top-level files of the project and read one of them, using in-envelope read primitives.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "List the files and folders at the root of the {{gitlab_sandbox_project}} repository on its default branch.",
+          "assertions": {
+            "outcome": [
+              "A listing of the {{gitlab_sandbox_project}} repository root is returned, naming its top-level files/folders."
+            ],
+            "mechanism": [
+              "Lists the repository tree for {{gitlab_sandbox_project}}; does not invent file names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compare-two-branches",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a branch with a change, then compare it against the default branch.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "In {{gitlab_sandbox_project}}, create a branch 'eval/cmp-{{run_id}}' from the default branch and commit a file 'eval/cmp-{{run_id}}.txt' with 'diff me' to it.",
+          "assertions": {
+            "outcome": [
+              "The branch 'eval/cmp-{{run_id}}' now exists in {{gitlab_sandbox_project}} with a committed change."
+            ],
+            "mechanism": [
+              "Creates the branch and commit against {{gitlab_sandbox_project}} in this session."
+            ]
+          }
+        },
+        {
+          "intent": "Compare the default branch with 'eval/cmp-{{run_id}}' and summarize what changed.",
+          "assertions": {
+            "outcome": [
+              "The comparison reports the difference between the default branch and 'eval/cmp-{{run_id}}', including the added 'eval/cmp-{{run_id}}.txt' file."
+            ],
+            "mechanism": [
+              "Compares the two refs named in the request; does not fabricate a diff."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-ci-status-for-a-project",
+      "kind": "discover-act",
+      "description": "Head-to-head: read the project's recent pipelines and, if any exist, inspect the latest one's jobs — read-only CI inspection.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "Show the most recent CI/CD pipelines for {{gitlab_sandbox_project}}.",
+          "assertions": {
+            "outcome": [
+              "The recent pipelines for {{gitlab_sandbox_project}} are returned (with their status), or the reply clearly states the project has no pipelines."
+            ],
+            "mechanism": [
+              "Lists pipelines for {{gitlab_sandbox_project}}; does not fabricate a pipeline id or status."
+            ]
+          }
+        },
+        {
+          "intent": "For the most recent pipeline, list its jobs and their statuses.",
+          "assertions": {
+            "outcome": [
+              "The jobs of the most recent pipeline are listed with their statuses, or the reply states there is no pipeline to inspect."
+            ],
+            "mechanism": [
+              "Resolves the pipeline id from the prior listing rather than inventing one; if none exists, reports that instead of calling with a fabricated id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-issues-in-a-project",
+      "kind": "arrange-act",
+      "description": "Head-to-head after self-seeding: create a uniquely-titled issue, then find it via project search.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "Open an issue titled 'searchable marker {{run_id}}' in {{gitlab_sandbox_project}}.",
+          "assertions": {
+            "outcome": [
+              "An issue titled 'searchable marker {{run_id}}' now exists in {{gitlab_sandbox_project}} and its iid is reported."
+            ],
+            "mechanism": [
+              "Creates a single issue in {{gitlab_sandbox_project}}; the iid comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Search {{gitlab_sandbox_project}} for 'searchable marker {{run_id}}' and report what you find.",
+          "assertions": {
+            "outcome": [
+              "The search finds the 'searchable marker {{run_id}}' issue and reports it."
+            ],
+            "mechanism": [
+              "Uses a project-scoped search for the term in the request; does not fabricate a result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-a-user-to-assign",
+      "kind": "discover-act",
+      "description": "Head-to-head: identify the authenticated user, then look that user up by username to get the id an assignment would need.",
+      "steps": [
+        {
+          "intent": "Who am I authenticated as on GitLab? Report the username.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the username (and/or name) of the authenticated GitLab account."
+            ],
+            "mechanism": [
+              "Reads the current-user identity rather than guessing a username."
+            ]
+          }
+        },
+        {
+          "intent": "Look up that same user by their username and report their numeric user id.",
+          "assertions": {
+            "outcome": [
+              "A GitLab user matching the requested username is found and their numeric user id is reported."
+            ],
+            "mechanism": [
+              "Resolves the user via a username lookup rather than fabricating a user id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-a-work-item",
+      "kind": "arrange-act",
+      "description": "Coverage probe (Premium/Ultimate): create a work item, then close it via the GraphQL work-items surface. On tiers without work items, a clean decline is the expected, informative result.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "Create a task work item titled 'Eval task {{run_id}}' in {{gitlab_sandbox_project}}.",
+          "assertions": {
+            "outcome": [
+              "A task work item titled 'Eval task {{run_id}}' is created in {{gitlab_sandbox_project}} and its id is reported, OR the reply clearly states work items aren't available for this project/tier without claiming success."
+            ],
+            "mechanism": [
+              "Attempts creation against {{gitlab_sandbox_project}} with the type 'task'; on failure surfaces the error rather than fabricating a created work item."
+            ]
+          }
+        },
+        {
+          "intent": "Close the 'Eval task {{run_id}}' work item you just created.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval task {{run_id}}' work item is now closed, OR the reply states there was no work item to close (consistent with the prior step)."
+            ],
+            "mechanism": [
+              "Targets the work item id created earlier this session; does not close an unrelated work item."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-labels-before-tagging",
+      "kind": "discover-act",
+      "description": "Head-to-head: list the project's labels — the resolver an agent uses before tagging an issue or MR.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "What labels are available in the {{gitlab_sandbox_project}} project?",
+          "assertions": {
+            "outcome": [
+              "The labels available in {{gitlab_sandbox_project}} are listed, or the reply states the project has none."
+            ],
+            "mechanism": [
+              "Lists labels for {{gitlab_sandbox_project}}; does not invent label names."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-a-project-by-name",
+      "kind": "discover-act",
+      "description": "Head-to-head: locate a project the token can access by name — the resolver that yields the project id other tools need.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "Find the GitLab project named {{gitlab_sandbox_project}} and report its full path or id.",
+          "assertions": {
+            "outcome": [
+              "The {{gitlab_sandbox_project}} project is located and its full path or numeric id is reported."
+            ],
+            "mechanism": [
+              "Finds the project by searching by name; does not guess a numeric id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "comment-on-a-specific-line-of-a-diff",
+      "kind": "arrange-act",
+      "description": "Coverage probe: open an MR, then leave an inline review comment anchored to a line of the diff, then read the discussion back.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "In {{gitlab_sandbox_project}}, create a branch 'eval/inline-{{run_id}}' from the default branch, commit a file 'eval/inline-{{run_id}}.txt' with three lines of text, and open a merge request titled 'Inline review {{run_id}}' into the default branch.",
+          "assertions": {
+            "outcome": [
+              "A merge request titled 'Inline review {{run_id}}' with a committed multi-line file now exists in {{gitlab_sandbox_project}} and its iid is reported."
+            ],
+            "mechanism": [
+              "Creates the branch, commit, and MR against {{gitlab_sandbox_project}} this session."
+            ]
+          }
+        },
+        {
+          "intent": "Leave an inline comment on the first line of the added file in that merge request saying 'nit: rename this'.",
+          "assertions": {
+            "outcome": [
+              "An inline review comment 'nit: rename this' is attached to the first line of the added file in the 'Inline review {{run_id}}' merge request."
+            ],
+            "mechanism": [
+              "Anchors the comment to the file path and line of the MR resolved this session, using the diff refs from that MR rather than fabricated positions."
+            ]
+          }
+        },
+        {
+          "intent": "Show the review discussions on that merge request.",
+          "assertions": {
+            "outcome": [
+              "The discussions on the 'Inline review {{run_id}}' merge request are returned, including the inline 'nit: rename this' thread."
+            ],
+            "mechanism": [
+              "Lists discussions for the MR iid resolved this session; does not fetch a different MR's discussions."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-to-create-a-project",
+      "kind": "act-only",
+      "description": "Graceful-refusal coverage probe: creating a new GitLab project is out of scope (admin surface). The agent should decline cleanly, not fake it.",
+      "steps": [
+        {
+          "intent": "Create a brand-new GitLab project called 'eval-new-project-{{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating a project isn't something this connector can do and does not claim a project was created."
+            ],
+            "mechanism": [
+              "Does not call any tool that fabricates a project-creation success."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-to-manage-project-members",
+      "kind": "act-only",
+      "description": "Graceful-refusal coverage probe: adding/removing project members is out of scope (admin surface). Expect a clean decline.",
+      "requires": ["gitlab_sandbox_project"],
+      "steps": [
+        {
+          "intent": "Add the user 'someone' as a maintainer of the {{gitlab_sandbox_project}} project.",
+          "assertions": {
+            "outcome": [
+              "The reply states that managing project members isn't supported by this connector and does not claim the member was added."
+            ],
+            "mechanism": [
+              "Does not call a mutating tool to fake adding a member."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
