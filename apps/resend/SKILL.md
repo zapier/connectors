@@ -12,16 +12,26 @@ metadata:
 
 # Resend
 
-_Independent, unofficial connector for Resend. Not affiliated with, endorsed by, or sponsored by Resend. "Resend" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for Resend, the email API. Send transactional email to one or more recipients, manage a contact list (create, look up, update, delete contacts and their custom properties), organize contacts into segments and manage segment membership, send a broadcast to an entire segment, read the delivery status of sent email, and check which sending domains are verified. Wraps the public [Resend API](https://resend.com/docs/api-reference/introduction) over a single API-key credential.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Resend. Not affiliated with, endorsed by, or sponsored by Resend. "Resend" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Send email** — a transactional message to specific recipients (`sendEmail`), or a marketing broadcast to a whole segment (`createBroadcast` + `sendBroadcast`).
 - **Manage contacts** — create, retrieve, update, list, and delete contacts, and read a contact's segments; contacts are addressable by id **or** email address.
 - **Manage segments** — create, list, get, and delete segments (named groupings a contact can belong to), and add or remove contacts.
 - **Check delivery and diagnose sends** — read a sent email's status (`getEmail`, `listEmails`), discover custom contact-property keys (`listContactProperties`), verify sending domains (`listDomains`), and trigger a configured automation (`sendEvent`).
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 Every script uses the single `resend` connection. Contact-referencing tools accept a contact **id or email address** interchangeably.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                | Script name                | Connections | Description                                                                                            |
 | ------------------------------------- | -------------------------- | ----------- | ------------------------------------------------------------------------------------------------------ |
@@ -66,6 +81,10 @@ Every script uses the single `resend` connection. Contact-referencing tools acce
 | `scripts/listDomains.ts`              | `listDomains`              | `resend`    | List sending domains and their verification status.                                                    |
 | `scripts/sendEvent.ts`                | `sendEvent`                | `resend`    | Trigger a configured automation by sending a named event.                                              |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 **Before writing to a segment or contact looked up by name, resolve the id first and count matches.** Segment names and contact names are not unique. When an instruction names a segment (e.g. "add Sarah to the VIP segment") or a person, resolve it via `listSegments` / `listContacts` (or `getContact` by email) and count _exact_ (case-insensitive) matches:
@@ -85,11 +104,16 @@ Prefer addressing contacts by **email address** when you have it — `getContact
 - **Author automations** — `sendEvent` triggers an automation a human already configured in the dashboard; it does not create or edit the automation graph. If asked to build an automation flow, say it's unsupported.
 - **Manage API keys, webhooks, templates, or suppressions**, or send batch/base64-attachment email. Attachments are supported only by hosted URL (`path`), not raw bytes.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -112,6 +136,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -119,3 +145,5 @@ Load the matching reference file before working in that area:
 | Reference                                                              | Load when                                                                                                                                                                                                                                                                                 |
 | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/resend-api-gotchas.md`](references/resend-api-gotchas.md) | Before or after any Resend call — API key permissions, verified-sender/403 rules, rate limits and quotas, the error-code table, `sendEmail` limits (recipients, tags, attachments), `last_event` and domain-status enums, pagination defaults, and broadcast/segment/automation behavior. |
+
+<!-- END:skill-references-table -->
