@@ -12,16 +12,26 @@ metadata:
 
 # Notion
 
-_Independent, unofficial connector for Notion. Not affiliated with, endorsed by, or sponsored by Notion. "Notion" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for working with a Notion workspace against the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): find pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 24 scripts across search, read, write, schema, comments, and cross-workspace copy. This version uses Notion's **data sources** model: a _database_ is a container that holds one or more _data sources_, and a _data source_ carries the property schema + the rows (pages).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Notion. Not affiliated with, endorsed by, or sponsored by Notion. "Notion" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to **find or read** content — search pages and data sources by title, then read a page, its block body, a data source's schema, or its rows.
 - An agent needs to **create or edit** pages and content — add a page (a row in a data source or a sub-page), update properties, append blocks, or edit / delete blocks.
 - An agent needs to **query data sources** — filter and sort the rows of a data source, or read a single page property.
 - An agent needs to **manage schemas** — create or update databases and data sources (add / rename / retype / remove properties), read or post **comments**.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `notion`, except `copyPage`, which uses two slots (`source` + `target`) to copy a page across workspaces.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                             | Script name           | Connections        | Description                                                                                       |
 | ------------------------------------------------------------------ | --------------------- | ------------------ | ------------------------------------------------------------------------------------------------- |
@@ -69,11 +84,35 @@ All scripts use the single connection `notion`, except `copyPage`, which uses tw
 | [`scripts/createComment.ts`](scripts/createComment.ts)             | `createComment`       | `notion`           | Add a comment to a page or reply to an existing thread.                                           |
 | [`scripts/copyPage.ts`](scripts/copyPage.ts)                       | `copyPage`            | `source`, `target` | Copy a page (title + top-level blocks) from one workspace to another. Two Notion connections.     |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+**Disambiguation before a write.** Before writing to a page or row you looked up by name (e.g. update a page found via `search`, or a row found via `queryDataSource`), count the **exact case-insensitive title matches**:
+
+- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
+- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (`parent`, `url`, or `last_edited_time`) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
+
+**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
+
+- **Permanently delete** anything. Everything is trash / restore — pages via `updatePage` `in_trash`, blocks via `deleteBlock` (reversible). There is no hard delete.
+- **Delete a whole database or data source.** There is no tool for it. Don't substitute trashing every row to simulate it.
+- **Manage workspace members or permissions** (inviting users, changing roles, sharing). `listUsers` / `getUser` are read-only.
+- **Create or manage database views.** Views aren't exposed by the API.
+
+If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -96,21 +135,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-**Disambiguation before a write.** Before writing to a page or row you looked up by name (e.g. update a page found via `search`, or a row found via `queryDataSource`), count the **exact case-insensitive title matches**:
-
-- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
-- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (`parent`, `url`, or `last_edited_time`) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
-
-**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
-
-- **Permanently delete** anything. Everything is trash / restore — pages via `updatePage` `in_trash`, blocks via `deleteBlock` (reversible). There is no hard delete.
-- **Delete a whole database or data source.** There is no tool for it. Don't substitute trashing every row to simulate it.
-- **Manage workspace members or permissions** (inviting users, changing roles, sharing). `listUsers` / `getUser` are read-only.
-- **Create or manage database views.** Views aren't exposed by the API.
-
-If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -122,3 +147,5 @@ Load the matching reference file before working in that area:
 | [`references/notion-blocks.md`](references/notion-blocks.md)           | The typed block object, common block types, the `rich_text` shape, appending children (limits + nesting), why `updateBlock` can't change a block's type.                                                                 | Building or editing page content — `appendBlockChildren`, `createPage` (`children`), `updateBlock`.                      |
 | [`references/notion-properties.md`](references/notion-properties.md)   | The property-schema object + type list, and the per-type page property **value** shapes.                                                                                                                                 | Defining a schema (`createDatabase`, `createDataSource`) or writing property values (`createPage`, `updatePage`).        |
 | [`references/notion-query.md`](references/notion-query.md)             | The `filter` object (single + compound `and`/`or`), per-type conditions, the `sorts` array, the 10,000-result ceiling.                                                                                                   | Calling `queryDataSource` with a filter or sort.                                                                         |
+
+<!-- END:skill-references-table -->
