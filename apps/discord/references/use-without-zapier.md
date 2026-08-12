@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Discord's credential yourself, r
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Discord authenticates every request with a **bot token**, sent as
 `Authorization: Bot <token>` (the scheme word is `Bot`, not `Bearer`). Bot users
 "have full access to most API routes without using bearer tokens," and the token
@@ -29,13 +31,18 @@ is static — no OAuth refresh cycle. ([API Reference](https://docs.discord.com/
    server to add it). `permissions` is "an integer corresponding to the permission
    calculations for the bot." ([OAuth2](https://docs.discord.com/developers/topics/oauth2))
 
+<!-- END:use-without-zapier-getting-credentials -->
+
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's direct resolver reads the bot token from an environment
 variable and emits the `Authorization: Bot <token>` header for you — pass
 `env:<VAR_NAME>`, e.g. `--connection env:DISCORD_BOT_TOKEN`.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 

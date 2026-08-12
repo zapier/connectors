@@ -1,19 +1,33 @@
 # @zapier/discord-connector
 
-_Independent, unofficial connector for Discord. Not affiliated with, endorsed by, or sponsored by Discord. "Discord" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Discord tools wrapping the [Discord API](https://docs.discord.com/developers/reference) (`https://discord.com/api/v10`). The connector authenticates as a **bot** added to one or more servers and covers the jobs an agent does day-to-day: send and manage messages, start threads and forum posts, create and edit channels, manage members and roles, post through channel webhooks, and read the servers, channels, members, roles, and emojis needed to resolve the ids those actions take. 29 scripts. Because one bot can belong to many servers, every server-scoped tool takes an explicit `guild_id` resolved via `listGuilds`. Auth is a single static bot token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Discord. Not affiliated with, endorsed by, or sponsored by Discord. "Discord" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - The agent needs **authenticated** access to a real Discord server — send, edit, delete, and react to messages, start threads and forum posts, manage channels, administer members and roles, and DM users.
 - The agent needs to **read and resolve** Discord resources — list the bot's servers, channels, active threads, members, roles, and custom emojis, and post through channel webhooks under a custom identity.
 - You want one artifact that works as an MCP tool, a CLI, or an imported function — without re-implementing each surface.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Moderating members** — bans, kicks, and timeouts are not supported; there is no destructive-moderation tool here.
 - **Uploading files or attachments, voice, or real-time events / triggers** — no attachment upload, no voice, and no event subscriptions (new-message, new-member, live reactions). This connector is request/response only.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -21,17 +35,17 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export DISCORD_BOT_TOKEN=xxx
-npx @zapier/discord-connector@latest run <script> '<input-json>' --connection env:DISCORD_BOT_TOKEN
+export <ENV_VAR>=xxx
+npx @zapier/discord-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/discord-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill discord
+npx skills add zapier/connectors --skill discord
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:DISCORD_ZAPIER_CONNECTION_ID` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:DISCORD_BOT_TOKEN` reads a direct bot token from `$DISCORD_BOT_TOKEN` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection` — a _selector_, not the secret. The `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver. See [Auth](#auth) below for the with/without-Zapier tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -50,11 +64,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:DISCORD_BOT_TOKEN"` with `"env": { "DISCORD_BOT_TOKEN": "xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
 
-All 29 scripts use the single `discord` connection (a bot token). Server-scoped tools take an explicit `guild_id`, resolved via `listGuilds`.
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                | Description                                                                                 |
 | --------------------- | ------------------------------------------------------------------------------------------- |
@@ -88,11 +102,15 @@ All 29 scripts use the single `discord` connection (a bot token). Server-scoped 
 | `createWebhook`       | Create a webhook on a channel. Returns its id and token. Requires Manage Webhooks.          |
 | `executeWebhook`      | Post through a channel webhook, optionally as a custom username/avatar.                     |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/discord-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { sendChannelMessage } from "@zapier/discord-connector";
@@ -107,6 +125,7 @@ const { data, meta } = await sendChannelMessage(
 ```
 
 Every script resolves to a `{ data, meta }` envelope: `data` is the script's result and `meta.outputDataValidation` reports what output validation did. Pass `{ skipOutputDataValidation: true }` as a run option to receive the raw, unvalidated output. See [`SKILL.md`](SKILL.md#output-format) for the full contract.
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -121,7 +140,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/discord)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Discord API reference](https://docs.discord.com/developers/reference)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -136,3 +163,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
