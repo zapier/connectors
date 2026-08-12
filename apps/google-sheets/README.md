@@ -1,19 +1,33 @@
 # @zapier/google-sheets-connector
 
-_Independent, unofficial connector for Google Sheets. Not affiliated with, endorsed by, or sponsored by Google Sheets. "Google Sheets" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Google Sheets tools that operate on the data _inside_ a spreadsheet. It wraps the [Google Sheets API v4](https://developers.google.com/workspace/sheets/api/reference/rest) (with spreadsheet discovery via the [Google Drive API](https://developers.google.com/drive/api/reference/rest/v3/files/list)) and exposes two surfaces: a **record surface** — rows as objects keyed by their column headers, for "log this row", "update the status", "look up the customer" jobs — and a **cell surface** — raw A1-addressed values for formulas, precise numeric/text control, and arbitrary ranges. It also manages spreadsheet/worksheet structure and presentation (formatting, sorting, validation). Auth is Google OAuth 2.0 — recommended via a Zapier-managed connection (which also handles token refresh).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Sheets. Not affiliated with, endorsed by, or sponsored by Google Sheets. "Google Sheets" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - An agent needs to **read, search, or write data inside a Google spreadsheet** — append/update rows, look up a record by a column value, read or write specific cells or ranges, or pull a window of rows.
 - An agent needs to **manage spreadsheet structure** — create a spreadsheet, add/copy/rename/delete worksheets, add columns — or apply **formatting, sorting, and validation**.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **File-level Drive operations** (move, share, set permissions, trash a whole spreadsheet) — use a Google Drive tool; this connector operates on spreadsheet _contents_, not the file.
 - **Charts, pivot tables, named/protected ranges, or filters** — not exposed by this connector.
 - **Event triggers** ("when a new row is added…") — connectors are non-trigger; use a Zapier trigger for change detection.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -31,7 +45,7 @@ npm install @zapier/google-sheets-connector
 npx skills add zapier/connectors --skill google-sheets
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection` — a _selector_, not the secret. The `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver. See [Auth](#auth) below for the with/without-Zapier tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -54,7 +68,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-**Rows — records (header-keyed)**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script       | Description                                                             |
 | ------------ | ----------------------------------------------------------------------- |
@@ -100,11 +114,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `setDataValidation`        | Set a dropdown / number / date validation rule on a range.        |
 | `addConditionalFormatRule` | Add a conditional-formatting rule to a range.                     |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/google-sheets-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { lookupRow } from "@zapier/google-sheets-connector";
@@ -123,6 +141,7 @@ const { data } = await lookupRow(
 ```
 
 Every script returns a `{ data, meta }` envelope; `meta.outputDataValidation` reports what output validation did. Pass `{ skipOutputDataValidation: true }` in the run options for the raw, unvalidated result. See [`SKILL.md`](SKILL.md#output-format).
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -136,8 +155,16 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Google Sheets API reference](https://developers.google.com/workspace/sheets/api/reference/rest) — the upstream API this connector wraps
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-sheets)
+
+<!-- BEGIN:readme-links-extra -->
+
+- [Google Sheets API reference](https://developers.google.com/workspace/sheets/api/reference/rest) — the upstream API this connector wraps
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -152,3 +179,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

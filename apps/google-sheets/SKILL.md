@@ -12,17 +12,27 @@ metadata:
 
 # Google Sheets
 
-_Independent, unofficial connector for Google Sheets. Not affiliated with, endorsed by, or sponsored by Google Sheets. "Google Sheets" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for working with Google Sheets against the [Google Sheets API v4](https://developers.google.com/workspace/sheets/api/reference/rest) (`https://sheets.googleapis.com/v4/`), with spreadsheet discovery via the [Google Drive API](https://developers.google.com/drive/api/reference/rest/v3/files/list). 26 tools across two complementary surfaces: a **record surface** — rows as objects keyed by their column headers (the "log this expense", "update the status to Done", "look up last quarter's total" jobs) — and a **cell surface** — raw A1-addressed values for formulas, precise numeric/text control, and arbitrary ranges. Plus spreadsheet/worksheet structure and presentation (formatting, sorting, validation).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Sheets. Not affiliated with, endorsed by, or sponsored by Google Sheets. "Google Sheets" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Read or find data inside a spreadsheet** — look up a row by a column value (`lookupRow`), find all matching rows (`findRows`), list a window of rows (`listRows`), or read a raw range (`getValues`).
 - **Write data** — append a row or many rows (`createRow` / `createRows`), update specific columns of a row without disturbing the others (`updateRow` / `updateRows`), or write a raw range / formula (`updateValues`).
 - **Clear or delete** — clear a row's contents but keep the row (`clearRows` / `clearValues`) or remove rows entirely (`deleteRows`).
 - **Manage structure** — create a spreadsheet (`createSpreadsheet`), add / list / copy / rename / hide / delete worksheets, add columns.
 - **Format & validate** — number/date/currency formats, text styling, sort a range, copy a range, dropdowns and number/date validation, conditional formatting.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -41,7 +51,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single `google-sheets` connection.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                         | Script name                 | Connections     | Description                                                                       |
 | ------------------------------------------------------------------------------ | --------------------------- | --------------- | --------------------------------------------------------------------------------- |
@@ -72,11 +87,38 @@ All scripts use the single `google-sheets` connection.
 | [`scripts/setDataValidation.ts`](scripts/setDataValidation.ts)                 | `setDataValidation`         | `google-sheets` | Set a dropdown / number / date validation rule on a range.                        |
 | [`scripts/addConditionalFormatRule.ts`](scripts/addConditionalFormatRule.ts)   | `addConditionalFormatRule`  | `google-sheets` | Add a conditional-formatting rule to a range.                                     |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+**Disambiguation before a write.** Before writing to a row you found by a column value (e.g. update a row located via `lookupRow`, or act on a spreadsheet found via `listSpreadsheets`), count the **exact case-insensitive matches**:
+
+- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
+- **Two or more that tie** — stop. List the tied rows (or spreadsheets) with a distinguishing field (another column value, the spreadsheet's modified time / URL) and ask which one. Don't pick arbitrarily, and don't write to all of them.
+
+Row numbers are **not stable** — they shift on insert/delete/sort. To target the same logical record across runs, match on a unique key column with `lookupRow`, not a remembered row number.
+
+**Confirm before destructive or bulk-overwrite operations.** `deleteWorksheet`, `deleteRows`, `clearRows`, and `clearValues` remove data; `updateValues` can overwrite it. Confirm the exact target with the user first, and never delete / clear / overwrite more than asked.
+
+**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
+
+- **Create or manage charts, pivot tables, named ranges, protected ranges, or filters.** There is no tool for these; don't approximate them with formatting.
+- **Find-or-create in one step.** Compose it: `lookupRow` → if not found, `createRow`.
+- **Permanently delete a whole spreadsheet.** Worksheet deletion (`deleteWorksheet`) is the only structural delete.
+
+If asked for any of these, tell the user it's unsupported and stop.
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -99,24 +141,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-**Disambiguation before a write.** Before writing to a row you found by a column value (e.g. update a row located via `lookupRow`, or act on a spreadsheet found via `listSpreadsheets`), count the **exact case-insensitive matches**:
-
-- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
-- **Two or more that tie** — stop. List the tied rows (or spreadsheets) with a distinguishing field (another column value, the spreadsheet's modified time / URL) and ask which one. Don't pick arbitrarily, and don't write to all of them.
-
-Row numbers are **not stable** — they shift on insert/delete/sort. To target the same logical record across runs, match on a unique key column with `lookupRow`, not a remembered row number.
-
-**Confirm before destructive or bulk-overwrite operations.** `deleteWorksheet`, `deleteRows`, `clearRows`, and `clearValues` remove data; `updateValues` can overwrite it. Confirm the exact target with the user first, and never delete / clear / overwrite more than asked.
-
-**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
-
-- **Create or manage charts, pivot tables, named ranges, protected ranges, or filters.** There is no tool for these; don't approximate them with formatting.
-- **Find-or-create in one step.** Compose it: `lookupRow` → if not found, `createRow`.
-- **Permanently delete a whole spreadsheet.** Worksheet deletion (`deleteWorksheet`) is the only structural delete.
-
-If asked for any of these, tell the user it's unsupported and stop.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -126,3 +151,5 @@ Load the matching reference file before working in that area:
 | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/google-sheets-api-gotchas.md`](references/google-sheets-api-gotchas.md)     | Error recovery, rate-limit retry, batchUpdate atomicity, row deletion and append logic, 400/403/404/429 errors | Before any call that might fail — error recovery, rate-limit retry, batchUpdate atomicity, row deletion or append logic, or when encountering 400/403/404/429 errors                            |
 | [`references/google-sheets-a1-and-values.md`](references/google-sheets-a1-and-values.md) | RAW vs USER_ENTERED, serial-number dates, ragged rows, A1 ranges with sheet-name quoting                       | Before reading or writing cell values — especially when choosing RAW vs USER_ENTERED, interpreting serial-number dates, handling ragged rows, or constructing A1 ranges with sheet-name quoting |
+
+<!-- END:skill-references-table -->
