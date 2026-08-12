@@ -1,5 +1,19 @@
 # @zapier/resend-connector
 
+## 0.1.2
+
+### Patch Changes
+
+- 58e2e06: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
+
+  - `README.md`
+  - `SKILL.md`
+  - `references/use-without-zapier.md`
+
+- 58e2e06: Automated dependency update from Renovate.
+
+  - File changes as a result of (external) dependency updates.
+
 ## 0.1.1
 
 ### Patch Changes
