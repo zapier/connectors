@@ -1,18 +1,31 @@
 # @zapier/algolia-connector
 
-_Independent, unofficial connector for Algolia. Not affiliated with, endorsed by, or sponsored by Algolia. "Algolia" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for the [Algolia](https://www.algolia.com) Search and Recommend REST APIs ([API docs](https://www.algolia.com/doc/rest-api/search)). Index records into a search index, search and browse them, retrieve records by object ID, and manage the configuration that shapes relevance — index settings, synonyms, and query rules — plus read AI recommendations. Covers the full record lifecycle (write / read / search / delete, single and batch), index and config management, and the Recommend read surface. Authenticates with a direct Algolia API key (Application ID + API key).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Algolia. Not affiliated with, endorsed by, or sponsored by Algolia. "Algolia" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Use it to drive an Algolia application programmatically: index and update records (single or batch), run searches with filters and facets, browse an index for export, and manage relevance config — settings, synonyms, and query rules. It's a good fit when an agent needs to read from or write to Algolia indices, or read AI recommendations, against the public REST API.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Account/key administration** — it does not create or manage API keys, or configure multi-cluster (MCM) setups. Use the Algolia dashboard.
 - **Other Algolia products** — Insights, Analytics, Personalization, Query Suggestions, Crawler, and Ingestion are separate APIs not covered here.
 - **Writing Recommend rules or editing dictionaries** — Recommend rules are read-only in this connector, and language dictionaries are out of scope for v1.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -53,7 +66,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-**Search & retrieve (read)**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                | Description                                                             |
 | --------------------- | ----------------------------------------------------------------------- |
@@ -102,11 +115,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | getRecommendRule / searchRecommendRules | Read Recommend rules for an index + model.                    |
 | getTask                                 | Check an async indexing task's status (poll until published). |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/algolia-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { searchIndex } from "@zapier/algolia-connector";
@@ -119,22 +136,30 @@ const { data, meta } = await searchIndex(
 console.log(data.hits, meta.outputDataValidation);
 ```
 
+<!-- END:readme-usage-example -->
+
 ## Auth
 
-Two connection styles. **Direct key** works today; **Zapier-managed** (`zapier:<connection-id>`) is wired but requires the Algolia app's hosted HTTP access to be enabled on Zapier's side (until then a `zapier:<id>` call returns a `does not support direct HTTP requests` error) — use the direct key for now.
+Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
 
-For the direct key, set two env vars and pass the connection as `algolia:ALGOLIA` (the prefix the resolver reads them under):
-
-- `ALGOLIA_APPLICATION_ID` — your Algolia Application ID.
-- `ALGOLIA_API_KEY` — an API key whose ACLs cover the actions you call (a search-only key drives the reads; writes need a write/admin key).
-
-Both are in the Algolia dashboard under **API Keys**. See [`references/use-without-zapier.md`](references/use-without-zapier.md) for the per-shape flow.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/algolia)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Algolia Search REST API](https://www.algolia.com/doc/rest-api/search) · [Recommend REST API](https://www.algolia.com/doc/rest-api/recommend)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -149,3 +174,5 @@ Both are in the Algolia dashboard under **API Keys**. See [`references/use-witho
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

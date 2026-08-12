@@ -12,11 +12,19 @@ metadata:
 
 # Algolia
 
-_Independent, unofficial connector for Algolia. Not affiliated with, endorsed by, or sponsored by Algolia. "Algolia" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for the Algolia Search and Recommend REST APIs. Index records into a search index, search and browse them, retrieve records by object ID, and manage the configuration that shapes relevance — index settings, synonyms, and query rules — plus read AI recommendations. Covers the full record lifecycle (write / read / search / delete, single and batch), index and index-config management, and the Recommend read surface.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Algolia. Not affiliated with, endorsed by, or sponsored by Algolia. "Algolia" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Search and retrieve** — full-text search over an index (with filters and facets), federated multi-index search, cursor browse for export, get records by object ID, and facet-value search.
 - **Index records** — add, replace, partial-update, and delete records, individually or in batches, across one or many indices.
@@ -24,6 +32,7 @@ Agent-callable tools for the Algolia Search and Recommend REST APIs. Index recor
 - **Recommendations** — read AI recommendations (related products, frequently-bought-together, trending, looking-similar) and the Recommend rules that curate them.
 
 Writes are asynchronous — each returns a `taskID`; use `getTask` to confirm a write is applied before asserting it landed.
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -42,7 +51,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts share the single `algolia` connection. Almost every tool takes an `indexName` — get it from `listIndices`. Object/synonym/rule IDs come from the corresponding search/browse tool.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                             | Script name           | Connections | Description                                                             |
 | ---------------------------------- | --------------------- | ----------- | ----------------------------------------------------------------------- |
@@ -79,27 +93,33 @@ All scripts share the single `algolia` connection. Almost every tool takes an `i
 | `scripts/searchRecommendRules.ts`  | searchRecommendRules  | algolia     | Search or list Recommend rules for an index + model.                    |
 | `scripts/getTask.ts`               | getTask               | algolia     | Check an async indexing task's status (poll until published).           |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 - **Resolve names to IDs before writing.** Most write tools (`addOrUpdateObject`, `partialUpdateObject`, `deleteObject`, `saveSynonym`/`deleteSynonym`, `saveRule`/`deleteRule`) act on an `objectID` or an `indexName`, not a human name. Resolve first: use `listIndices` to pick the index, and `searchIndex` / `browseObjects` / `searchSynonyms` / `searchRules` to find the exact ID. If a search returns exactly one clear match, act on it; if two or more plausibly match, stop and ask which — list the candidates with a distinguishing field (e.g. a title attribute or the rule/synonym body). Never guess an ID or silently pick among ties.
 - **Don't fabricate unsupported operations.** This connector does not manage API keys, edit language dictionaries, write Recommend rules (`getRecommendRule`/`searchRecommendRules` are read-only), or run Insights/Analytics/Personalization. If asked for one of these, say it's unsupported — don't substitute another tool and report success for something you didn't do.
 - **Destructive tools are irreversible.** `deleteBy` (requires a filter — an empty filter is refused; use `clearObjects` to intentionally empty an index), `clearObjects`, `deleteIndex`, and `copyOrMoveIndex` (overwrites the destination) cannot be undone. Confirm the target index/filter before calling.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
-Algolia uses two request headers (`x-algolia-application-id` and `x-algolia-api-key`) and carries the Application ID in the request host; the connector's resolver handles both. Two connection styles:
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-- **Direct key (`algolia:<PREFIX>`)** — recommended, works today. You supply the credentials via env vars (below).
-- **Zapier-managed (`zapier:<connection-id>`)** — routes through Zapier so you don't hold the key. This requires the Algolia app to have hosted HTTP access enabled on Zapier's side; until that's provisioned, a `zapier:<id>` call returns a Zapier error (`does not support direct HTTP requests`). Use the direct key in the meantime.
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-Pass the connection as `--connection algolia:ALGOLIA`, where `ALGOLIA` is the prefix for two env vars the resolver reads:
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
-- `ALGOLIA_APPLICATION_ID` — your Algolia Application ID.
-- `ALGOLIA_API_KEY` — an API key whose ACLs cover the actions you call. A **search-only** key drives every read tool; the write tools need a key with write/admin ACLs (a search-only key returns a clear 403 on writes).
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-Find both in the Algolia dashboard under **API Keys**. Keys are long-lived; a rotated or revoked key surfaces as a 403 — replace it in your connection.
-
-Auth is passed as a connection **selector**, not the secret — the `algolia:ALGOLIA` string names the env-var prefix, and the resolver reads the two `ALGOLIA_*` values at call time (the exact syntax per shape — CLI / MCP / SDK — is in the reference you loaded above). Checking what's already configured? Don't dump env values (`env`/`env | grep <name>` leak a live credential into the transcript); check names only (`env | cut -d= -f1 | grep -i algolia`) or test a name directly (`[ -n "$ALGOLIA_API_KEY" ]`).
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
@@ -115,6 +135,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -122,3 +144,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                | Covers                                                                                                                                                                                                                                              | Load it when                                                                                                                       |
 | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/algolia-api-gotchas.md`](references/algolia-api-gotchas.md) | Auth/ACLs, async indexing (taskID → getTask), objectID-as-string, the record write model + partial-update nested-replace, filtering/faceting DSL, the 1,000-hit pagination cap, rate/size limits, destructive ops, replicas, Recommend, error shape | Before writing records, building filters/facets, configuring an index, or interpreting an error — i.e. almost any non-trivial call |
+
+<!-- END:skill-references-table -->
