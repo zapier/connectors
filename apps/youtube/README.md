@@ -1,20 +1,34 @@
 # @zapier/youtube-connector
 
-_Independent, unofficial connector for YouTube. Not affiliated with, endorsed by, or sponsored by YouTube. "YouTube" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable scripts for the [YouTube Data API v3](https://developers.google.com/youtube/v3) (`https://www.googleapis.com/youtube/v3/`): search and read videos, update or delete videos, manage playlists and playlist items, read and post comments, rate videos, manage subscriptions, and read channel and caption metadata — 22 scripts spanning video discovery and detail, playlist management, community engagement, and the read surfaces an agent needs to resolve ids. Auth is Google OAuth 2.0 — a single access token whose capabilities are gated by OAuth scope and by resource ownership.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for YouTube. Not affiliated with, endorsed by, or sponsored by YouTube. "YouTube" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - An agent needs to read YouTube data — find videos, pull a video's full statistics and details, enumerate a playlist or a channel's uploads, or read comment threads.
 - An agent needs to manage a creator's own content — update videos, organize playlists, post or reply to comments, or manage subscriptions.
 - You want a single, scope-gated OAuth surface over the YouTube Data API that resolves ids (channels → uploads playlist, categories, caption tracks) the way an agent reasons about them.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Analytics / reporting** (views-over-time, watch-time, revenue, demographics) — not covered; that's the YouTube Analytics API.
 - **Video upload, custom thumbnails, live streaming, comment moderation, caption upload, or channel administration** — out of scope for v1 (video upload and thumbnails require binary media uploads the connection transport doesn't support; captions are read-only here).
 - **Bulk discovery via search** — `search.list` costs 100 quota units and is eventually consistent; to enumerate a known channel's videos, prefer `getChannel` → `listPlaylistItems` on the uploads playlist.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -55,6 +69,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script                    | Description                                                                                      |
 | ------------------------- | ------------------------------------------------------------------------------------------------ |
 | `searchVideos`            | Search videos by keyword, channel, date, or duration (id + snippet only; separate quota bucket). |
@@ -80,11 +96,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `listCaptions`            | List the caption tracks available for a video (needs the comment/caption scope).                 |
 | `downloadCaption`         | Download a caption track's text in a chosen format (srt/vtt/sbv/scc/ttml).                       |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/youtube-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { getVideo } from "@zapier/youtube-connector";
@@ -95,6 +115,8 @@ const { data } = await getVideo(
 );
 // data.items[0].statistics.viewCount → counts are returned as strings, not numbers; meta.outputDataValidation reports any stripped fields.
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -109,7 +131,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/youtube)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [YouTube Data API v3 reference](https://developers.google.com/youtube/v3)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -124,3 +154,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
