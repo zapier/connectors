@@ -12,16 +12,26 @@ metadata:
 
 # Microsoft Outlook
 
-_Independent, unofficial connector for Microsoft Outlook. Not affiliated with, endorsed by, or sponsored by Microsoft Outlook. "Microsoft Outlook" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for a single user's Outlook mailbox against the [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/api/overview) v1.0 (`https://graph.microsoft.com/v1.0/`): read and search mail, compose/send/reply/forward, organize messages (read state, flag, importance, categories, move, copy, delete), browse mail folders and attachments, manage calendar events, and manage personal contacts. 30 scripts across profile, mail, folders, categories, calendar, and contacts. All calls authorize with one OAuth bearer token.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Microsoft Outlook. Not affiliated with, endorsed by, or sponsored by Microsoft Outlook. "Microsoft Outlook" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to **read or search mail** — list/search messages (by folder, KQL, or OData filter), read a full message, list and download attachments.
 - An agent needs to **send or reply** — compose-and-send, create a draft and send it later, reply / reply-all, or forward.
 - An agent needs to **organize mail** — mark read/unread, flag, set importance, categorize, move, copy, or delete a message; browse and create mail folders.
 - An agent needs to **work with the calendar or contacts** — list calendars, list events or a date-range view, create / update / delete events, and create / read / update / delete personal contacts.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -31,16 +41,21 @@ If the connector has not been installed as a skill yet, install it first with `n
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-| You have...                                                                                                                                                          | Load                                                         |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| An MCP-aware client — tools may already be loaded (e.g. `mcp__microsoft-outlook__<tool>`), or you can register a local server yourself (or guide the user to)        | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
-| Terminal / subprocess access (you can run `node`)                                                                                                                    | [`references/use-as-cli.md`](references/use-as-cli.md)       |
-| Only your own code, importing this package as a dependency                                                                                                           | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
-| No tool access, no terminal, no ability to import this package — you write your own code that calls the Microsoft Graph API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
+| You have...                                                                                                                                                            | Load                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__microsoft-outlook__<tool>`), or you can register a local server yourself (or guide the user to)          | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                                      | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                             | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Microsoft Outlook API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `microsoft-outlook`. Mail and calendar scripts accept an optional `mailbox` input to act on a shared mailbox; the six event scripts accept an optional `calendarId` (resolve it via `listCalendars`).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                       | Script name        | Connections         | Description                                                                   |
 | ------------------------------------------------------------ | ------------------ | ------------------- | ----------------------------------------------------------------------------- |
@@ -75,11 +90,35 @@ All scripts use the single connection `microsoft-outlook`. Mail and calendar scr
 | [`scripts/updateContact.ts`](scripts/updateContact.ts)       | `updateContact`    | `microsoft-outlook` | Update fields on a personal contact (array fields replace).                   |
 | [`scripts/deleteContact.ts`](scripts/deleteContact.ts)       | `deleteContact`    | `microsoft-outlook` | Delete a personal contact by id.                                              |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+**Disambiguation before a write.** Before acting on a contact, event, or message you looked up by name/subject (e.g. update a contact found via `listContacts`, or reply to an event found via `listEvents`), count the **exact case-insensitive matches** on the name/subject:
+
+- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
+- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (a contact's `emailAddresses`/`companyName`, an event's `start`/`organizer`, a message's `from`/`receivedDateTime`) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
+
+**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
+
+- **Watch for new mail or events (triggers).** There is no "notify me when an email arrives" or polling tool; the connector is request/response only. Don't simulate it with repeated `listMessages` calls and claim it's a subscription.
+- **Send attachments larger than 3 MB.** Only inline attachments under 3 MB are supported; large-file upload sessions are not. Don't claim a large file was sent.
+- **Access group / shared _calendars_ or distribution lists.** Group calendars and directory groups aren't exposed. (Shared _mailboxes_ are, via the `mailbox` input.)
+- **Permanently delete** mail (`deleteMessage` is a reversible move to Deleted Items) or manage mailbox rules, auto-replies, or focused-inbox settings.
+
+If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -102,21 +141,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-**Disambiguation before a write.** Before acting on a contact, event, or message you looked up by name/subject (e.g. update a contact found via `listContacts`, or reply to an event found via `listEvents`), count the **exact case-insensitive matches** on the name/subject:
-
-- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
-- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (a contact's `emailAddresses`/`companyName`, an event's `start`/`organizer`, a message's `from`/`receivedDateTime`) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
-
-**Unsupported operations — say so and stop; don't fake it with another tool.** This catalog deliberately does not:
-
-- **Watch for new mail or events (triggers).** There is no "notify me when an email arrives" or polling tool; the connector is request/response only. Don't simulate it with repeated `listMessages` calls and claim it's a subscription.
-- **Send attachments larger than 3 MB.** Only inline attachments under 3 MB are supported; large-file upload sessions are not. Don't claim a large file was sent.
-- **Access group / shared _calendars_ or distribution lists.** Group calendars and directory groups aren't exposed. (Shared _mailboxes_ are, via the `mailbox` input.)
-- **Permanently delete** mail (`deleteMessage` is a reversible move to Deleted Items) or manage mailbox rules, auto-replies, or focused-inbox settings.
-
-If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -125,3 +150,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                                    | Covers                                                                                                                                                                                                      | Load it when                                                                                                                                                                                                                                    |
 | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/microsoft-outlook-api-gotchas.md`](references/microsoft-outlook-api-gotchas.md) | API error recovery (401/403/404/413/429), id stability after moves, paging, `search` vs `filter`, attachments (3 MB limit), all-day/online events, date-time + time zones, 3-email contact cap, categories. | A call errors and you need recovery guidance, an id stops resolving after a move, or you're unsure how paging, `search` vs `filter`, attachments, all-day/online events, date-time + time zones, the 3-email contact cap, or categories behave. |
+
+<!-- END:skill-references-table -->
