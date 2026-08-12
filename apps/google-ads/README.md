@@ -1,20 +1,34 @@
 # @zapier/google-ads-connector
 
-_Independent, unofficial connector for Google Ads. Not affiliated with, endorsed by, or sponsored by Google Ads. "Google Ads" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Google Ads tools — search campaigns, ad groups, and ads via GAQL, build performance reports, manage campaign status and budgets, and set up conversion tracking. It wraps the [Google Ads REST API](https://developers.google.com/google-ads/api/rest/overview) (v23): reads run as GAQL (Google Ads Query Language) queries; writes go through the per-resource mutate endpoints. Capabilities span account-hierarchy navigation, reading campaigns / ad groups / ads, performance reporting, and managing campaign status, budgets, and conversion actions. Auth is Google OAuth 2.0 (the `adwords` scope) plus an app-level developer token — both supplied by Zapier-managed auth, or directly via two env vars.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Ads. Not affiliated with, endorsed by, or sponsored by Google Ads. "Google Ads" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - Reading and reporting on a Google Ads account: list campaigns / ad groups / ads, run arbitrary GAQL queries, or build metric reports over a date range.
 - Lightweight campaign management: pause / enable / remove a campaign, create or adjust a daily budget.
 - Setting up conversion tracking: list or create conversion actions.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Uploading offline conversions or Customer Match audience members** — Google routes new API integrations to the separate Data Manager API for those; this connector does not cover them.
 - **Building full campaigns, keywords, targeting criteria, or ad creatives** — out of scope; this connector manages campaign status and budgets, not campaign construction.
 - **Bulk data export / warehousing** — for large historical pulls, use the Google Ads API client libraries directly with `searchStream`.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -22,8 +36,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export <ENV_VAR_PREFIX>_ACCESS_TOKEN=xxx <ENV_VAR_PREFIX>_DEVELOPER_TOKEN=yyy
-npx @zapier/google-ads-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR_PREFIX>
+export <ENV_VAR>=xxx
+npx @zapier/google-ads-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/google-ads-connector
@@ -51,9 +65,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR_PREFIX>"` with `"env": { "<ENV_VAR_PREFIX>_ACCESS_TOKEN": "xxx", "<ENV_VAR_PREFIX>_DEVELOPER_TOKEN": "yyy" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
+
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                    | Description                                                                                |
 | ------------------------- | ------------------------------------------------------------------------------------------ |
@@ -71,11 +87,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `updateCampaignBudget`    | Update an existing budget's amount, name, or delivery method.                              |
 | `createConversionAction`  | Create a conversion action (e.g. `UPLOAD_CLICKS` for offline tracking).                    |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/google-ads-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR_PREFIX>" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { listCampaigns } from "@zapier/google-ads-connector";
@@ -88,6 +108,8 @@ const { data } = await listCampaigns(
 );
 // data.results -> [{ id, name, status, campaign_budget, ... }], data.next_page_token
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -102,7 +124,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-ads)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Google Ads API docs](https://developers.google.com/google-ads/api/rest/overview) — the vendor REST API this connector wraps
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -117,3 +147,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
