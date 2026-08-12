@@ -1,20 +1,34 @@
 # @zapier/google-tasks-connector
 
-_Independent, unofficial connector for Google Tasks. Not affiliated with, endorsed by, or sponsored by Google Tasks. "Google Tasks" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) — manage task lists and tasks end to end: create, list, find by title, get, update (complete/reopen), reorder, reparent, move between lists, and delete tasks; create, rename, and delete task lists; and clear completed tasks. Wraps the Google Tasks API v1 over Google OAuth 2.0 — authenticate once with a Zapier-managed connection (recommended, auto-refreshing) or a direct OAuth token. 13 single-purpose scripts with stable, predictable I/O; no triggers.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Tasks. Not affiliated with, endorsed by, or sponsored by Google Tasks. "Google Tasks" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - Managing a user's Google Tasks: capturing to-dos, organizing them into lists and subtasks, marking them done, and cleaning up.
 - Resolving a task or list by name to an id before acting on it (`findTask` / `listTaskLists`), then updating, moving, or deleting it.
 - Read-then-act task workflows where you want predictable, validated JSON rather than a polling trigger.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Recurring tasks** — the Google Tasks API has no recurrence fields; create/edit recurrence in the Google Tasks app, not here.
 - **Task times / reminders** — `due` is date-only (the time is discarded); there's no time-of-day or reminder field in the API.
 - **Change notifications** — this is a non-trigger connector; it does not watch for new/changed tasks.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -55,6 +69,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script                | Description                                                                           |
 | --------------------- | ------------------------------------------------------------------------------------- |
 | `listTaskLists`       | List the user's task lists (id + title).                                              |
@@ -71,11 +87,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `deleteTask`          | Permanently delete a task.                                                            |
 | `clearCompletedTasks` | Hide all completed tasks in a list (recoverable).                                     |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/google-tasks-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { createTask } from "@zapier/google-tasks-connector";
@@ -87,6 +107,8 @@ const { data } = await createTask(
 );
 // data → the created task: { id, title, status, due, ... }
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -101,7 +123,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-tasks)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Google Tasks API reference](https://developers.google.com/workspace/tasks/reference/rest)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -116,3 +146,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

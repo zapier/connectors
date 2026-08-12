@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Google Tasks's credential yourse
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Register the credential in the [Google Cloud Console](https://console.cloud.google.com/), then run an OAuth 2.0 authorization flow yourself to mint an access token — this connector's direct resolver takes the token itself, not a client id/secret.
 
 1. Create or select a project, then enable the **Google Tasks API** (APIs & Services → Library).
@@ -11,11 +13,16 @@ Register the credential in the [Google Cloud Console](https://console.cloud.goog
 3. Run the OAuth 2.0 flow requesting the `https://www.googleapis.com/auth/tasks` scope — full read/write access across task lists and tasks; the connector doesn't request a narrower one. The read-only `https://www.googleapis.com/auth/tasks.readonly` scope also works if you only need the list/get scripts (`listTaskLists`, `getTaskList`, `listTasks`, `findTask`, `getTask`). For quick testing without writing OAuth client code, Google's [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) can mint a token against either scope.
 4. A `403` with reason `insufficientPermissions` means the token's scope is too narrow for the call you made (e.g. a write with only `tasks.readonly`) — mint a new one with the full `tasks` scope. A `401` means the token is invalid or expired — mint a fresh one. See [`references/google-tasks-api-gotchas.md`](google-tasks-api-gotchas.md#auth-scopes) for the full scope/error table.
 
+<!-- END:use-without-zapier-getting-credentials -->
+
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 Google Tasks's direct-token resolver is `env:<ENV_VAR>` — the value is the name of an environment variable holding the access token from above, sent as `Authorization: Bearer <token>`. It's a fallback: prefer routing through a Zapier connection ([`references/use-with-zapier.md`](use-with-zapier.md)) when you can, since **this resolver does not refresh the token** — Google access tokens expire ~1 hour after issue. Direct mode suits short-lived or testing use; once the token expires, mint a fresh one (see Getting credentials above) or switch to the Zapier-managed connection. (A refresh-token/client-id/client-secret based direct mode is not implemented in this version — only the bare access-token resolver above works.)
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
