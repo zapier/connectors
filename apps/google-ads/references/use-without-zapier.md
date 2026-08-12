@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Google Ads's credential yourself
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Google Ads requires **two** credentials together: a Google OAuth 2.0 access token authorized for the `adwords` scope, and a separate Google Ads API **developer token**. Both are needed on every request; neither alone is enough.
 
 **OAuth access token** (scope `https://www.googleapis.com/auth/adwords`):
@@ -31,10 +33,13 @@ Google Ads requires **two** credentials together: a Google OAuth 2.0 access toke
 **Developer token**: sign in to a Google Ads **manager (MCC)** account — not a regular client account — and open **Tools & Settings → Setup → API Center** ([ads.google.com/aw/apicenter](https://ads.google.com/aw/apicenter)). Submit the API access form to get a token. A newly issued token starts at **test-account** access (only works against Google Ads test accounts) or, if auto-approved, **Basic/Explorer** access; using it against your real production accounts needs Basic or Standard access, which requires applying and passing Google's review — start that process well before you need it, since review can take a while.
 
 See Google's own walkthroughs for details: [set up OAuth](https://developers.google.com/google-ads/api/docs/oauth/cloud-project), [generate a refresh token](https://developers.google.com/google-ads/api/docs/oauth/client-library), and [obtain a developer token](https://developers.google.com/google-ads/api/docs/get-started/dev-token).
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
+
+<!-- BEGIN:use-without-zapier-passing-credential -->
 
 This connector's direct resolver is a **prefix**, not a single token, because both credentials above must be supplied together: `env:<ENV_VAR_PREFIX>` reads `<ENV_VAR_PREFIX>_ACCESS_TOKEN` (the OAuth access token) and `<ENV_VAR_PREFIX>_DEVELOPER_TOKEN` (the developer token). For example, with the prefix `GOOGLE_ADS`:
 
@@ -46,6 +51,7 @@ export GOOGLE_ADS_ACCESS_TOKEN=xxx GOOGLE_ADS_DEVELOPER_TOKEN=yyy
 The access token is used as-is and is **not** refreshed — supply a fresh one (see "Getting credentials" above) before it expires.
 
 The per-request `loginCustomerId` input (the manager account, when operating through a manager) is not part of either credential — it's request context passed on the tool call, not the connection string.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 

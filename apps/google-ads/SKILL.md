@@ -12,17 +12,27 @@ metadata:
 
 # Google Ads
 
-_Independent, unofficial connector for Google Ads. Not affiliated with, endorsed by, or sponsored by Google Ads. "Google Ads" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for working with a Google Ads account against the [Google Ads API](https://developers.google.com/google-ads/api/rest/overview) (`https://googleads.googleapis.com/v23/`). Reads are expressed in **GAQL** (Google Ads Query Language) against the search endpoint; writes go through the per-resource mutate endpoints. 13 tools across account navigation, reads and reporting, and campaign / budget / conversion-tracking management. Google Ads organizes accounts as a hierarchy: a **manager (MCC)** account can operate **client** accounts beneath it. Most tools take the operating account's `customerId`, plus an optional `loginCustomerId` (the manager account) when the operating account is reached through a manager.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Ads. Not affiliated with, endorsed by, or sponsored by Google Ads. "Google Ads" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Resolve which account to act on** — list the accounts the connection can access, then (when access is through a manager) the client accounts beneath it.
 - **Read campaigns, ad groups, and ads** — list them with status and budget, or run an arbitrary GAQL query for anything the structured reads don't cover.
 - **Build performance reports** — pick a resource, the metrics to measure, and a date range.
 - **Manage campaigns and budgets** — pause, enable, or remove a campaign; create or adjust a daily budget.
 - **Set up conversion tracking** — list or create conversion actions (including the offline-conversion `UPLOAD_CLICKS` action).
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -32,16 +42,21 @@ If the connector has not been installed as a skill yet, install it first with `n
 
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-| You have...                                                                                                                                                                 | Load                                                         |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| An MCP-aware client — tools may already be loaded (e.g. `mcp__google-ads__<tool>`), or you can register a local server yourself (or guide the user to)                      | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
-| Terminal / subprocess access (you can run `node`)                                                                                                                           | [`references/use-as-cli.md`](references/use-as-cli.md)       |
-| Only your own code, importing this package as a dependency                                                                                                                  | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
-| You have... no tool access, no terminal, no ability to import this package — you write your own code that calls the Google Ads API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
+| You have...                                                                                                                                                     | Load                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__google-ads__<tool>`), or you can register a local server yourself (or guide the user to)          | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                               | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                      | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Google Ads API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `google-ads`. Customer-scoped scripts take the operating account's `customerId` (digits only) and an optional `loginCustomerId` (the manager account, when access is through a manager).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                     | Script name               | Connections  | Description                                                                                   |
 | -------------------------------------------------------------------------- | ------------------------- | ------------ | --------------------------------------------------------------------------------------------- |
@@ -60,6 +75,9 @@ All scripts use the single connection `google-ads`. Customer-scoped scripts take
 | [`scripts/createConversionAction.ts`](scripts/createConversionAction.ts)   | `createConversionAction`  | `google-ads` | Create a conversion action (e.g. `UPLOAD_CLICKS` for offline tracking).                       |
 
 **Learn a script's input contract before calling it — never guess field names, casing, or types.** Run `--help` on a script (`./scripts/<name>.ts --help` or `node cli.js run <name> --help`); it renders the `inputSchema` as JSON Schema and lists the connection flag and resolvers. Guessing the payload just produces a `ZodError` and wastes a round-trip.
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
 
 ## Disambiguation & refusals
 
@@ -67,11 +85,16 @@ All scripts use the single connection `google-ads`. Customer-scoped scripts take
 - **Act on ids, not names.** Writes (`setCampaignStatus`, `updateCampaignBudget`) take ids. Resolve a name to an id first with `listCampaigns` / `search`; if two campaigns share a name, list them with a distinguishing field (id, status, channel type) and confirm which one before acting — never silently pick.
 - **Unsupported — decline, don't substitute.** This connector does **not** upload offline conversions or add members to a Customer Match audience (Google routes new API integrations to the separate Data Manager API for those), and does **not** create full campaigns or manage keywords / targeting / ad creatives. If asked, say it's unsupported rather than substituting another tool and reporting success. `createConversionAction` sets up the conversion _action_; it does not upload conversions.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -94,6 +117,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -101,3 +126,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                    | Covers                                                                                                                 | Load it when                                                                                                                        |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | [references/google-ads-api-gotchas.md](references/google-ads-api-gotchas.md) | Auth headers, account hierarchy, GAQL, micros, mutate semantics, errors, rate limits, conversion tracking, versioning. | Before composing a GAQL query, working with money fields (micros), setting campaign status, or interpreting a Google Ads API error. |
+
+<!-- END:skill-references-table -->
