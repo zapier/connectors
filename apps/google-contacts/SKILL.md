@@ -12,16 +12,26 @@ metadata:
 
 # Google Contacts
 
-_Independent, unofficial connector for Google Contacts. Not affiliated with, endorsed by, or sponsored by Google Contacts. "Google Contacts" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for Google Contacts, wrapping the [Google People API](https://developers.google.com/people/api/rest). Create, read, update, and delete a person's contacts; search contacts by name, email, or phone; set or remove contact photos; create and manage contact groups (labels) and their membership; and browse the auto-saved "other contacts" surface. Every tool uses a single OAuth connection; capability is gated by the granted scope.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Contacts. Not affiliated with, endorsed by, or sponsored by Google Contacts. "Google Contacts" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - Saving, finding, updating, or deleting a person's Google Contacts ("add Jane to my contacts", "what's Bob's email", "remove this contact").
 - Organizing contacts into groups/labels and adding or removing members.
 - Setting or removing a contact's photo.
 - Finding someone the user has interacted with (e.g. emailed) but never explicitly saved — the "other contacts" surface — and promoting them into saved contacts.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single `google-contacts` connection.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                         | Script name                 | Connections       | Description                                                                                |
 | ------------------------------------------------------------------------------ | --------------------------- | ----------------- | ------------------------------------------------------------------------------------------ |
@@ -62,11 +77,27 @@ All scripts use the single `google-contacts` connection.
 | [`scripts/searchOtherContacts.ts`](scripts/searchOtherContacts.ts)             | `searchOtherContacts`       | `google-contacts` | Search "other contacts" by name, email, or phone (prefix match).                           |
 | [`scripts/copyOtherContact.ts`](scripts/copyOtherContact.ts)                   | `copyOtherContact`          | `google-contacts` | Promote an "other contact" into saved contacts, returning an editable contact.             |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+- **Resolve names before writing.** Before `updateContact` / `deleteContact` / `modifyContactGroupMembers` on a contact identified by name, call `searchContacts` (or `listContacts`) and count _exact_, case-insensitive name matches. One match → act on it; don't over-ask. Two or more that tie → **stop, list the candidates with a distinguishing field (email or phone), and ask which one** — never silently pick. The same rule applies to groups via `listContactGroups`.
+- **Editing a list field replaces it.** `updateContact` replaces each array you send (e.g. `emailAddresses`) wholesale. To _add_ a value without dropping the others, `getContact` first, append, then send the full array. For group membership, prefer `modifyContactGroupMembers` (element-level) over `updateContact`.
+- **Out of scope — decline, don't substitute.** This connector does **not** do bulk/batch contact create-update-delete, Google Workspace **directory** lookups, or contact **merge/dedupe**. If asked for one of these, say it isn't supported and stop — do not call another tool and report it as done.
+- **No bulk operations — never loop to fake one.** There is no batch endpoint. If asked to change, add, or delete a field across **many or all** contacts at once (e.g. "set everyone's company to Acme"), **decline and explain it isn't supported** — do **not** loop `updateContact` / `deleteContact` / `modifyContactGroupMembers` over multiple contacts to simulate a bulk operation. Acting on a single, explicitly-identified contact is fine; fanning out across the address book is not.
+
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -89,12 +120,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-- **Resolve names before writing.** Before `updateContact` / `deleteContact` / `modifyContactGroupMembers` on a contact identified by name, call `searchContacts` (or `listContacts`) and count _exact_, case-insensitive name matches. One match → act on it; don't over-ask. Two or more that tie → **stop, list the candidates with a distinguishing field (email or phone), and ask which one** — never silently pick. The same rule applies to groups via `listContactGroups`.
-- **Editing a list field replaces it.** `updateContact` replaces each array you send (e.g. `emailAddresses`) wholesale. To _add_ a value without dropping the others, `getContact` first, append, then send the full array. For group membership, prefer `modifyContactGroupMembers` (element-level) over `updateContact`.
-- **Out of scope — decline, don't substitute.** This connector does **not** do bulk/batch contact create-update-delete, Google Workspace **directory** lookups, or contact **merge/dedupe**. If asked for one of these, say it isn't supported and stop — do not call another tool and report it as done.
-- **No bulk operations — never loop to fake one.** There is no batch endpoint. If asked to change, add, or delete a field across **many or all** contacts at once (e.g. "set everyone's company to Acme"), **decline and explain it isn't supported** — do **not** loop `updateContact` / `deleteContact` / `modifyContactGroupMembers` over multiple contacts to simulate a bulk operation. Acting on a single, explicitly-identified contact is fine; fanning out across the address book is not.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -103,3 +129,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                                | Covers                                                                                                                                                                                                                                   | Load it when          |
 | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | [`references/google-contacts-api-gotchas.md`](references/google-contacts-api-gotchas.md) | Error codes, update replacement semantics, etag concurrency, search prefix matching + warmup, write propagation delay, resource name formats, contact group types, membership limits, other-contacts field restrictions, and pagination. | Before any tool call. |
+
+<!-- END:skill-references-table -->

@@ -1,18 +1,31 @@
 # @zapier/google-contacts-connector
 
-_Independent, unofficial connector for Google Contacts. Not affiliated with, endorsed by, or sponsored by Google Contacts. "Google Contacts" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for Google Contacts, wrapping the [Google People API](https://developers.google.com/people/api/rest). It lets an agent create, read, update, and delete a person's contacts; search contacts by name, email, or phone; set or remove contact photos; create and manage contact groups (labels) and their membership; and browse the auto-saved "other contacts" surface. Authentication is OAuth 2.0 — either a Zapier-managed connection (recommended) or a direct Google access token.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Contacts. Not affiliated with, endorsed by, or sponsored by Google Contacts. "Google Contacts" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Use this connector to manage a person's own Google Contacts — saving and finding people, editing their details, organizing them into groups/labels, and turning auto-saved "other contacts" into real contacts. It's the right pick for contact-CRUD, contact search, and label management against a single Google account over the People API.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Google Workspace directory lookups** (org-wide people search) — not covered; this connector manages the user's personal contacts, not the domain directory.
 - **Bulk/batch contact imports or mass edits** — there are no batch tools; act on one contact at a time.
 - **Contact merge/dedupe** — not supported by these tools.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -53,6 +66,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script                      | Description                                                                                |
 | --------------------------- | ------------------------------------------------------------------------------------------ |
 | `createContact`             | Create a contact from structured name, email, phone, address, and organization fields.     |
@@ -73,11 +88,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `searchOtherContacts`       | Search "other contacts" by name, email, or phone (prefix match).                           |
 | `copyOtherContact`          | Promote an "other contact" into saved contacts, returning an editable contact.             |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/google-contacts-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { searchContacts } from "@zapier/google-contacts-connector";
@@ -89,6 +108,8 @@ const { data } = await searchContacts(
 );
 // data.results[].person is the canonical People API Person resource.
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -103,7 +124,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-contacts)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Google People API reference](https://developers.google.com/people/api/rest) — the upstream API this connector wraps
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -118,3 +147,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
