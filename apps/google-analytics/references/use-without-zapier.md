@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Google Analytics's credential yo
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 The credential is a **Google OAuth 2.0 access token** — the same bearer token the Zapier-managed connection carries, minted yourself. To produce one:
 
 1. In the [Google Cloud console](https://console.cloud.google.com/), create (or reuse) a project and enable the **Google Analytics Admin API** and **Google Analytics Data API**.
@@ -17,13 +19,17 @@ Required scopes:
 
 `sendEvent` is the exception — it authenticates with a per-stream Measurement Protocol `apiSecret` (passed as a tool input), not this OAuth token.
 
-**Google access tokens are short-lived (~1 hour) and this direct path does not refresh them** — it suits short-lived/testing use. For anything long-running, route through the Zapier-managed connection (see [`references/use-with-zapier.md`](use-with-zapier.md)), which refreshes automatically.
+**Google access tokens are short-lived (~1 hour) and this direct path does not refresh them** — it suits short-lived/testing use. For anything long-running, route through the Zapier-managed connection (see [`references/use-with-zapier.md`](use-with-zapier.md)), which refreshes automatically; find its connection id with `npx zapier-sdk list-connections GoogleAnalytics4CLIAPI`.
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's direct-token resolver is `env:GOOGLE_ANALYTICS_ACCESS_TOKEN` — the value is the environment-variable NAME, not the token itself. Export the access token in `GOOGLE_ANALYTICS_ACCESS_TOKEN` and pass `--connection env:GOOGLE_ANALYTICS_ACCESS_TOKEN` (or `{ connection: "env:GOOGLE_ANALYTICS_ACCESS_TOKEN" }` for imported functions). The connector sends it as `Authorization: Bearer <token>`.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
