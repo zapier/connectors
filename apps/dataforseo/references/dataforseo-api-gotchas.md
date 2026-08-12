@@ -206,3 +206,8 @@ Bulk endpoints cap how many items you can pass in one call:
   no web-search toggle; _"Perplexity uses web_search in all sonar-family models by
   default, but it's not guaranteed to work with every request"_
   ([perplexity](https://docs.dataforseo.com/v3/ai_optimization/perplexity/llm_responses/live/)).
+- **Backlink rank** is 0–1000, **higher = stronger** — the opposite convention
+  from a 0–100 difficulty-style score. Don't assume "lower is better" by
+  analogy with keyword difficulty or search-position rank. Returned as `rank`
+  by `getBacklinksSummary`, `getBacklinksBulkPagesSummary`, and
+  `getReferringDomains`, and as `domain_from_rank` by `getBacklinks`.

@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass DataForSEO's credential yourself
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 DataForSEO auth is HTTP Basic, not OAuth or a single API key. You need two values, both from your DataForSEO dashboard's **API access** page:
 
 - **Login** — your account email.
@@ -11,11 +13,17 @@ DataForSEO auth is HTTP Basic, not OAuth or a single API key. You need two value
 
 There are no scopes or bot-vs-user token distinctions; a credential carries your account's full API access, metered by credit balance (check with `getAccountBalance`).
 
+A bad or revoked credential returns an authentication error — regenerate the API password in the dashboard and reconnect.
+<!-- END:use-without-zapier-getting-credentials -->
+
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's direct resolver is `env:<PREFIX>`: set `<PREFIX>_LOGIN` (your login email) and `<PREFIX>_PASSWORD` (your API password) — e.g. `DATAFORSEO_LOGIN` + `DATAFORSEO_PASSWORD` with `--connection env:DATAFORSEO` — and it sends `Authorization: Basic base64(login:password)`.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
