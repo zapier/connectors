@@ -1,19 +1,33 @@
 # @zapier/microsoft-outlook-connector
 
-_Independent, unofficial connector for Microsoft Outlook. Not affiliated with, endorsed by, or sponsored by Microsoft Outlook. "Microsoft Outlook" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Microsoft Outlook tools that wrap the [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/api/overview) v1.0 for a single user's mailbox: read and search mail, compose/send/reply/forward, organize messages (read state, flag, importance, categories, move, copy, delete), browse mail folders and attachments, manage calendar events, and manage personal contacts — 30 scripts across mail, folders, categories, calendar, and contacts. Use when the user mentions Outlook, Microsoft 365 mail/calendar/contacts, or wants to send, read, search, or organize email, schedule events, or look up contacts — even if they don't name Outlook explicitly. Every call authorizes with a single OAuth 2.0 bearer token, supplied either through Zapier-managed auth or as a direct Graph access token.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Microsoft Outlook. Not affiliated with, endorsed by, or sponsored by Microsoft Outlook. "Microsoft Outlook" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - An agent needs to act on one user's Outlook mailbox: read or search mail, send/reply/forward, organize messages and folders, work with attachments, manage calendar events, or manage personal contacts.
 - You want request/response tools (call → result), addressable by id, optionally targeting a shared mailbox or a specific calendar.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Triggers / change notifications** — there is no "watch for new mail/events" or webhook subscription here; the connector is request/response only.
 - **Large attachments (≥3 MB)** — only inline attachments under 3 MB are supported; large-file upload sessions are not.
 - **Group/shared _calendars_, distribution lists, mailbox rules, or auto-replies** — out of scope. (Shared _mailboxes_ are supported via the `mailbox` input.)
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -54,9 +68,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-All scripts use the single connection `microsoft-outlook`. Mail and calendar scripts accept an optional `mailbox` input (shared mailbox); the six event scripts accept an optional `calendarId`.
-
-**Profile**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script  | Description                                                                     |
 | ------- | ------------------------------------------------------------------------------- |
@@ -111,11 +123,15 @@ All scripts use the single connection `microsoft-outlook`. Mail and calendar scr
 | `updateContact` | Update fields on a personal contact. |
 | `deleteContact` | Delete a personal contact by id.     |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/microsoft-outlook-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { listMessages } from "@zapier/microsoft-outlook-connector";
@@ -128,6 +144,8 @@ const { data } = await listMessages(
 );
 // data => { items: [{ id, subject, from, receivedDateTime, ... }], next_cursor? }
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -142,7 +160,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/microsoft-outlook)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Microsoft Graph API reference](https://learn.microsoft.com/en-us/graph/api/overview) — the underlying vendor API
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -157,3 +183,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
