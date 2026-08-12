@@ -12,17 +12,27 @@ metadata:
 
 # Gitlab
 
-_Independent, unofficial connector for Gitlab. Not affiliated with, endorsed by, or sponsored by Gitlab. "Gitlab" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for GitLab, the DevOps platform for source code, merge requests, and CI/CD. The connector wraps the [GitLab REST API v4](https://docs.gitlab.com/api/rest/) (with one GraphQL island — the Work Items surface — reached through `POST /api/graphql`), giving an agent the ability to read and drive projects, issues, merge requests, repository contents, and pipelines. It is centered on the merge-request review loop and repository authoring: read an MR and its diffs and discussions, comment or approve, commit file changes atomically, and run or inspect CI. It targets GitLab SaaS (`gitlab.com`) by default; the host is configurable for self-managed and GitLab Dedicated instances.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Gitlab. Not affiliated with, endorsed by, or sponsored by Gitlab. "Gitlab" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to drive the merge-request review loop: list and read MRs, fetch their diffs, commits, notes, and threaded discussions, comment inline on a diff line, approve or unapprove, and merge.
 - An agent needs to author repository changes: create a branch, commit many files in one atomic commit, read files and the repository tree, list commits, and compare two refs.
 - An agent needs to manage issues (REST): create, update, comment on, and close/reopen them — or manage work items like epics, tasks, and objectives (GraphQL): create, update, and close/reopen.
 - An agent needs to run and inspect CI/CD: trigger, list, get, retry, or cancel pipelines; list jobs, read a job log, and play a manual job.
 - An agent needs to search — globally, within a project, or within a group — across issues, merge requests, code, commits, users, and more, and resolve project, user, label, and milestone ids before writing.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -41,9 +51,14 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All 47 scripts use the single connection `gitlab`. Project-scoped tools take a `projectId` (numeric id or URL-encoded `group/project` path); issues and MRs are addressed by their project-scoped `iid`, not the global id. The script's `inputSchema` / `outputSchema` (Zod) inside the file is the source of truth for its contract.
 
 **Projects & search**
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                 | Script name     | Connections | Description                                                                                |
 | ------------------------------------------------------ | --------------- | ----------- | ------------------------------------------------------------------------------------------ |
@@ -125,6 +140,10 @@ All 47 scripts use the single connection `gitlab`. Project-scoped tools take a `
 | [`scripts/getCurrentUser.ts`](scripts/getCurrentUser.ts) | `getCurrentUser` | `gitlab`    | Get the identity of the authenticated token (also the connection test). |
 | [`scripts/findUsers.ts`](scripts/findUsers.ts)           | `findUsers`      | `gitlab`    | Find users by username or search term (resolves assignee/reviewer ids). |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 This connector resolves names to ids, then writes. Two situations trip up an action-biased agent — handle both before you write.
@@ -140,16 +159,16 @@ This connector resolves names to ids, then writes. Two situations trip up an act
 - A script does it → use it.
 - No script does it → say plainly it's unsupported and stop. There are no tools for project, group, or instance administration (creating or deleting a project, managing members, protected branches, runners, webhooks, or pipeline triggers) — these are out of scope. Work items (epics/tasks/objectives) require a Premium/Ultimate project — if a work-item call returns a tier/availability error, say so plainly and stop; don't fake success. Don't substitute a different script and call it done, and never report success for an action you didn't perform.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
-Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. This connector accepts two resolvers on its single `gitlab` connection:
-
-- **`env:GITLAB_TOKEN`** — a long-lived GitLab access token (personal, project, or group), read from the named environment variable and sent as the `PRIVATE-TOKEN` header. Mint the token with the `api` scope for full read+write access, or `read_api` for a read-only agent (the list/get/search/diff/log tools). Set `GITLAB_HOST` (default `gitlab.com`) to point the connector at a self-managed or GitLab Dedicated instance; the token is only ever sent to that host.
-- **`zapier:<connection-id>`** — Zapier-managed auth, which routes through Zapier's auth, retries, and governance layer and also supports OAuth. A UUID-shaped bare value always claims `zapier:`.
-
-The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -172,6 +191,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -180,3 +201,5 @@ Load the matching reference file before working in that area:
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/gitlab-api-gotchas.md`](references/gitlab-api-gotchas.md) | Vendor behaviors that break a naive caller: `PRIVATE-TOKEN` vs OAuth Bearer auth and `api`/`read_api` scopes, numeric-id-vs-encoded-path and `iid`-vs-global-id, the JSON error shape and status codes, offset vs keyset pagination, gitlab.com rate limits, the singular `POST .../pipeline`, merge 405-when-not-mergeable and the `sha` guard, GraphQL-only work items. | Before any write, or when a call returns a non-2xx status, a 405 on merge, an empty/errored pipeline or work-item call, or an unexpected pagination result. |
 | [`references/gitlab-formatting.md`](references/gitlab-formatting.md)   | GitLab Flavored Markdown: blank-line paragraph breaks, `#`/`!`/`@` references, task lists, tables, fenced code highlighting.                                                                                                                                                                                                                                              | When composing a GitLab issue or merge-request description, a work-item body, or a note/diff comment.                                                       |
+
+<!-- END:skill-references-table -->

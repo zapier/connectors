@@ -1,20 +1,34 @@
 # @zapier/gitlab-connector
 
-_Independent, unofficial connector for Gitlab. Not affiliated with, endorsed by, or sponsored by Gitlab. "Gitlab" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for GitLab, the DevOps platform for source code, merge requests, and CI/CD. The connector wraps the [GitLab REST API v4](https://docs.gitlab.com/api/rest/) (plus GitLab's GraphQL Work Items surface for epics and other work items), giving an agent one toolset for the merge-request review loop (read MRs, diffs, commits, and discussions; comment inline; approve; merge), repository authoring (branch, atomic multi-file commit, read files and tree, compare refs), issue and work-item management, CI/CD (trigger, retry, cancel pipelines; read job logs; play manual jobs), and search across projects, code, and records. It targets `gitlab.com` by default and works against self-managed or GitLab Dedicated hosts. Auth is one connection string: a long-lived GitLab access token or a Zapier-managed connection (which also supports OAuth).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Gitlab. Not affiliated with, endorsed by, or sponsored by Gitlab. "Gitlab" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - You want an agent to run the merge-request review loop end to end: read an MR and its diffs, commits, notes, and threaded discussions, leave inline or top-level comments, approve, and merge.
 - You want an agent to author repository changes — create branches, commit many files in a single atomic commit, read files and the tree, and compare refs — and to manage issues, epics/work items, and CI/CD pipelines.
 - You want an agent to search GitLab (globally, per project, or per group) and resolve project, user, label, and milestone ids before writing.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - Project, group, or instance administration — creating or deleting projects, managing members, protected branches, runners, or settings. This connector does not cover admin surfaces.
 - Triggers or event subscriptions (webhooks, polling). This connector is request/response only; use a workflow platform for event-driven flows.
 - Deprecated REST epics endpoints. Manage epics through the Work Items tools (GraphQL) instead.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -22,9 +36,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export GITLAB_TOKEN=xxx          # a GitLab access token (personal, project, or group)
-export GITLAB_HOST=gitlab.com    # optional; set for self-managed / Dedicated instances
-npx @zapier/gitlab-connector@latest run getProject '{"projectId":"my-group/my-project"}' --connection env:GITLAB_TOKEN
+export <ENV_VAR>=xxx
+npx @zapier/gitlab-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/gitlab-connector
@@ -52,13 +65,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:GITLAB_TOKEN"` with `"env": { "GITLAB_TOKEN": "xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
 
-All 47 scripts use the single connection `gitlab`.
-
-**Projects & search**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script          | Description                                                                                |
 | --------------- | ------------------------------------------------------------------------------------------ |
@@ -140,11 +151,15 @@ All 47 scripts use the single connection `gitlab`.
 | `getCurrentUser` | Get the identity of the authenticated token (also the connection test). |
 | `findUsers`      | Find users by username or search term (resolves assignee/reviewer ids). |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/gitlab-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:GITLAB_TOKEN" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { getMergeRequest } from "@zapier/gitlab-connector";
@@ -155,6 +170,8 @@ const { data, meta } = await getMergeRequest(
 );
 // data is the MR detail; meta.outputDataValidation reports any dropped fields.
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -169,7 +186,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/gitlab)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [GitLab REST API docs](https://docs.gitlab.com/api/rest/)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -184,3 +209,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Gitlab's credential yourself, ra
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 This connector authenticates with a GitLab **access token** sent as the `PRIVATE-TOKEN` header. A personal access token is the simplest to mint; project and group access tokens (bot identities scoped to one project or group) work identically and are preferable for automation you don't want tied to a person.
 
 To create a **personal access token** (from GitLab's own docs):
@@ -26,12 +28,16 @@ The token is shown once — after you leave or refresh the page you cannot view 
 - **`read_api`** — read-only access. Enough for a read-only agent (the list/get/search/diff/log tools); a write with a `read_api`-only token fails `403`.
 
 On a self-managed or GitLab Dedicated instance, mint the token on that instance and point the connector at it with `GITLAB_HOST`. See [`references/gitlab-api-gotchas.md`](gitlab-api-gotchas.md#scopes-api-vs-read_api) for scope behavior.
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's direct resolver is **`env:<VAR_NAME>`** — it reads the token from a named environment variable and sends it as the `PRIVATE-TOKEN` header. Set `GITLAB_TOKEN` and pass `env:GITLAB_TOKEN` (or a bare `env:<YOUR_VAR>` naming whichever variable holds the token). To target a self-managed or GitLab Dedicated instance instead of `gitlab.com`, also set `GITLAB_HOST` (the token is only ever sent to that host).
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
