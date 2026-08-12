@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Google Sheets's credential yours
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 The connector needs a single Google **OAuth 2.0 access token** — there's no API key or bot token for this app.
 
 1. In the [Google Cloud Console](https://console.cloud.google.com/), create or select a project, then enable the **Google Sheets API** (and the **Google Drive API** too, if you need `listSpreadsheets`' by-name search — otherwise pass a spreadsheet URL or id directly to the other scripts instead).
@@ -17,12 +19,16 @@ Request only the scopes you need:
 - **`https://www.googleapis.com/auth/drive.readonly`** (or the broader `https://www.googleapis.com/auth/drive`) — needed only for `listSpreadsheets`, which searches Drive by name; skip it if you always address spreadsheets by URL/id.
 
 **Google access tokens expire ~1 hour after issue, and this connector's direct/`env` mode does not auto-refresh them** — fine for short testing sessions, but for anything long-running use [`references/use-with-zapier.md`](use-with-zapier.md)'s Zapier-managed connection instead, which keeps the token refreshed for you.
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's only direct resolver is `env:<ENV_VAR>` — set `<ENV_VAR>` to any environment variable name you like holding the raw access token (e.g. `export GOOGLE_SHEETS_ACCESS_TOKEN=xxx`), then pass `--connection env:GOOGLE_SHEETS_ACCESS_TOKEN` (or `{ connection: "env:GOOGLE_SHEETS_ACCESS_TOKEN" }` for the SDK), naming the same variable. The token is sent as `Authorization: Bearer <token>`.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
