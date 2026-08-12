@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Microsoft Todo's credential your
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 You need a Microsoft Graph **OAuth 2.0 delegated access token** for the signed-in user — there's no API key or app-only token; Microsoft Graph does not support application permissions for creating To Do tasks, so a user-delegated token is the only path:
 
 1. **Register an app** in the [Microsoft Entra admin center](https://entra.microsoft.com) — **Identity** > **Applications** > **App registrations** > **New registration**. Any supported-account-type is fine as long as it covers the account whose task lists you want to manage (work/school tenant, or "any organizational directory and personal Microsoft accounts" for a personal outlook.com/live.com account).
@@ -13,11 +15,17 @@ You need a Microsoft Graph **OAuth 2.0 delegated access token** for the signed-i
 
 Access tokens are short-lived (about an hour) and this connector's direct-token resolver does **not** refresh them for you — see "Passing the credential" below. Adding a scope later requires the user to go through consent again; the granted scope set is fixed at the time they authorize, so request every scope you'll need up front.
 
+Routing through the Zapier-managed connection instead avoids all of the above — it injects and refreshes the token for you, but requires a Zapier account (free signup at <https://zapier.com>). Find its connection id with `npx zapier-sdk list-connections MSTodoCLIAPI` (run `login` first if unauthenticated).
+<!-- END:use-without-zapier-getting-credentials -->
+
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's direct-token resolver is **`env:<ENV_VAR>`** — an env var (conventionally `MICROSOFT_TODO_ACCESS_TOKEN`) holding the Graph access token from above, sent as `Authorization: Bearer <token>`. There is **no token refresh in this mode** — the runner must supply a valid, unexpired token, so if you obtained a refresh token (via the `offline_access` scope) you're responsible for redeeming it and updating the env var yourself when the access token expires.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 

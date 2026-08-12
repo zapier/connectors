@@ -12,32 +12,50 @@ metadata:
 
 # Microsoft Todo
 
-_Independent, unofficial connector for Microsoft Todo. Not affiliated with, endorsed by, or sponsored by Microsoft Todo. "Microsoft Todo" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for Microsoft To Do against the [Microsoft Graph v1.0 To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview) (`https://graph.microsoft.com/v1.0/me/todo/...`): list/get/create/update/delete task lists, list/get/create/update/delete tasks, find a task by title, mark a task complete, and manage a task's checklist items (steps). 16 scripts, all against a single user's task lists over one OAuth connection.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Microsoft Todo. Not affiliated with, endorsed by, or sponsored by Microsoft Todo. "Microsoft Todo" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to **capture or find a task** — create a task (optionally in the default list), find one by title, or list/filter tasks in a list.
 - An agent needs to **organize tasks or lists** — create/rename/delete task lists, update a task's due date, importance, or status, or delete a task.
 - An agent needs to **complete or reopen work** — mark a task done with `completeTask`, or reopen it via `updateTask(status: "notStarted")`.
 - An agent needs to **break a task into steps** — list, add, update, or delete a task's checklist items (subtasks).
 
+<!-- END:skill-use-cases -->
+
 ## Setup
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-**If this connector is already exposed to you as callable tools** (e.g. `mcp__microsoft-todo__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill microsoft-todo` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
-If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill microsoft-todo` (or your harness's own skill-install mechanism), then continue here.
+The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`. On older Node, run `node cli.js --help` anyway: it detects your runtime and prints how to run without upgrading (the prebuilt npm package, or another runtime) — don't skip the connector just because Node is old.
-
-`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+| You have...                                                                                                                                                         | Load                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__microsoft-todo__<tool>`), or you can register a local server yourself (or guide the user to)          | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                                   | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                          | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Microsoft Todo API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `microsoft-todo`. `listId` is optional on `createTask`/`listTasks`/`findTask` (omit to target your default list); every other task/checklist script requires an explicit `listId` from `listLists`.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                             | Script name           | Connections      | Description                                                             |
 | ------------------------------------------------------------------ | --------------------- | ---------------- | ----------------------------------------------------------------------- |
@@ -58,43 +76,9 @@ All scripts use the single connection `microsoft-todo`. `listId` is optional on 
 | [`scripts/updateChecklistItem.ts`](scripts/updateChecklistItem.ts) | `updateChecklistItem` | `microsoft-todo` | Rename or check/uncheck a step.                                         |
 | [`scripts/deleteChecklistItem.ts`](scripts/deleteChecklistItem.ts) | `deleteChecklistItem` | `microsoft-todo` | Delete a step. Irreversible.                                            |
 
-## Auth
+<!-- END:skill-scripts-table -->
 
-Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
-
-The connector needs a single Microsoft Graph **OAuth 2.0 bearer token**, resolved into the one `microsoft-todo` connection slot. Two resolvers:
-
-- **`zapier:<connection-id>`** — Zapier-managed auth (recommended). Route through a Zapier Microsoft To Do connection; the Zapier auth/retries/governance layer injects and refreshes the token for you. **Prerequisite: a Zapier account** (free signup at <https://zapier.com>). Find the ID with the Zapier SDK CLI: `npx zapier-sdk list-connections MSTodoCLIAPI` (run `login` first if unauthenticated; add `--json` for machine output).
-- **`env:<ENV_VAR>`** — direct mode. A Graph access token (conventionally `MICROSOFT_TODO_ACCESS_TOKEN`) already carrying the delegated scopes the tools need (`Tasks.ReadWrite`, `User.Read`, `offline_access`). Microsoft access tokens expire 60–90 minutes after issue ([Microsoft's default access-token lifetime](https://learn.microsoft.com/en-us/entra/identity-platform/configurable-token-lifetimes)) and this mode does **not** refresh them, so it suits short-lived/testing use — prefer the Zapier-managed connection otherwise.
-
-Task creation is delegated-only — Microsoft does not support application (daemon) permissions for `POST .../tasks` — so the connected account must be a signed-in user, not a service principal.
-
-## Running scripts
-
-After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
-
-```bash
-# default — via the entry point; self-checks readiness and prints friendly diagnostics
-node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
-# shorthand — runs the script file directly (same args, same Node 22.18+ need, no readiness check)
-./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
-```
-
-When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
-
-## Output format
-
-Every script returns a `{ data, meta }` envelope:
-
-- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
-- **`meta.outputDataValidation`** — what validating `data` did:
-  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
-  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
-  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
-
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
-
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
+<!-- BEGIN:disambiguation-and-refusals? -->
 
 ## Disambiguation & refusals
 
@@ -110,6 +94,39 @@ Every script returns a `{ data, meta }` envelope:
 - **Show a task's linked source item** (e.g. the email it was created from). `linkedResources` aren't exposed by any tool — only `checklistItems` (steps) are.
 
 If asked for any of these, tell the user it's unsupported (or, for a move, explain the recreate-and-delete workaround) and stop — don't reach for an unrelated tool to approximate it.
+<!-- END:disambiguation-and-refusals -->
+
+## Auth
+
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
+
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
+
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
+
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
+
+## Output format
+
+Every script returns a `{ data, meta }` envelope:
+
+- **`data`** — the script's result (the shape its `outputSchema` declares; see the reference you loaded above for how to inspect a script's exact schema in your shape).
+- **`meta.outputDataValidation`** — what validating `data` did:
+  - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
+  - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
+  - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
+
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, opt out of output validation (the exact syntax differs by shape — see the reference you loaded above). Input validation is never skipped.
+
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
+
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -119,3 +136,5 @@ Load the matching reference file before working in that area:
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/microsoft-todo-api-gotchas.md`](references/microsoft-todo-api-gotchas.md) | Auth/permissions (delegated-only writes), id stability after list moves, `todoTaskList` shape (`wellknownListName`, built-in lists), task status + `dateTimeTimeZone` handling, task body update quirk, categories, checklist items vs. linked resources, pagination, error codes, rate limiting. | A call errors, a `taskId` stops resolving after a list move, a date/time value doesn't round-trip as expected, or you're unsure how paging, built-in lists, or categories behave. |
 | [`references/use-as-recipe.md`](references/use-as-recipe.md)                           | A reference implementation of the request/response shapes and error-handling pattern for calling Microsoft Graph To Do directly, for a harness that can't load these tools, run the CLI, or import this package.                                                                                  | You're writing your own code against the vendor API (e.g. a code-execution sandbox) instead of calling this connector's tools/CLI/package directly.                               |
+
+<!-- END:skill-references-table -->

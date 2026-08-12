@@ -1,20 +1,34 @@
 # @zapier/microsoft-todo-connector
 
-_Independent, unofficial connector for Microsoft Todo. Not affiliated with, endorsed by, or sponsored by Microsoft Todo. "Microsoft Todo" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for Microsoft To Do — manage task lists, tasks, and checklist steps against the [Microsoft Graph v1.0 To Do API](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview). 16 scripts covering full task-list and task CRUD, finding and completing tasks, and checklist (step) management, all authenticated with one Microsoft Graph OAuth 2.0 bearer token.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Microsoft Todo. Not affiliated with, endorsed by, or sponsored by Microsoft Todo. "Microsoft Todo" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - An agent needs to capture, find, organize, or complete personal to-do items and their lists.
 - An agent needs to break a task down into steps (checklist items).
 - The user mentions Microsoft To Do, or a Microsoft 365 task/to-do list, even without naming the connector explicitly.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Outlook mail, calendar, or contacts** — use the `microsoft-outlook` connector instead.
 - **Recurring tasks** — recurrence authoring is not supported in this version; create individual tasks instead.
 - **Linked resources** (back-links to an external item on a task) — read-only in task output; no CRUD tools ship in this version.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -55,7 +69,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-**Task lists**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script       | Description                                           |
 | ------------ | ----------------------------------------------------- |
@@ -86,11 +100,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `updateChecklistItem` | Rename or check/uncheck a step. |
 | `deleteChecklistItem` | Delete a step. Irreversible.    |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/microsoft-todo-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { createTask } from "@zapier/microsoft-todo-connector";
@@ -101,6 +119,8 @@ const { data } = await createTask(
 );
 console.log(data.id, data.status);
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -114,8 +134,16 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Microsoft Graph To Do API docs](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview)
 - [Source](https://github.com/zapier/connectors/tree/main/apps/microsoft-todo)
+
+<!-- BEGIN:readme-links-extra -->
+
+- [Microsoft Graph To Do API docs](https://learn.microsoft.com/en-us/graph/api/resources/todo-overview)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -130,3 +158,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
