@@ -1,21 +1,35 @@
 # @zapier/heygen-connector
 
-_Independent, unofficial connector for Heygen. Not affiliated with, endorsed by, or sponsored by Heygen. "Heygen" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for **HeyGen**'s AI video platform, over the public [HeyGen v3 API](https://developers.heygen.com) (`https://api.heygen.com`). Generate AI avatar videos from a script or audio, produce short cinematic clips or fully agent-authored videos from a prompt, translate and lip-sync existing videos, synthesize speech, and browse the avatars and voices those jobs need. Video generation is **asynchronous** — a create tool returns an id you poll with the matching `get*` tool until the job completes. Authenticates with a long-lived HeyGen API key sent as the `X-Api-Key` header (via Zapier-managed or direct connection).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Heygen. Not affiliated with, endorsed by, or sponsored by Heygen. "Heygen" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - **Create AI videos** — an avatar or animated image speaking a script or audio (`createVideo`), a short cinematic clip from a prompt (`createCinematicVideo`), or a fully agent-authored video (`createVideoAgentVideo`).
 - **Transform existing videos** — translate into other languages (`translateVideo`) or replace the audio and re-sync the lips (`createLipsync`).
 - **Synthesize speech and manage voices/avatars** — text-to-speech (`generateSpeech`), design or clone voices, and browse the avatar looks and voices the create tools need.
 - **Track async jobs and credits** — poll a video / translation / lipsync / session by id, list past jobs, and check the remaining credit balance (`getCurrentUser`) before generating.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Multi-scene "Studio" videos** (a different avatar/background per scene) and **template-based generation** aren't supported — build those in the HeyGen web app.
 - **Uploading local files** isn't supported — pass a public HTTPS URL to the `*_url` inputs instead.
 - It drives HeyGen's generation / translation / lip-sync APIs — it is **not** a general-purpose video editor.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -23,17 +37,17 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export HEYGEN_API_KEY=xxx
-npx @zapier/heygen-connector@latest run createVideo '<input-json>' --connection env:HEYGEN_API_KEY
+export <ENV_VAR>=xxx
+npx @zapier/heygen-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/heygen-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill heygen
+npx skills add zapier/connectors --skill heygen
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection` — a _selector_, not the secret. The `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver. See [Auth](#auth) below for the with/without-Zapier tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -55,6 +69,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 `--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
+
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                     | Description                                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------------------------- |
@@ -87,11 +103,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `listVideoAgentSessions`   | List Video Agent sessions.                                                                              |
 | `getCurrentUser`           | Get the account's profile and remaining credit balance.                                                 |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/heygen-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:HEYGEN_API_KEY" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { createVideo, getVideo } from "@zapier/heygen-connector";
@@ -114,6 +134,8 @@ const { data: video } = await getVideo(
 console.log(video.status); // e.g. "waiting" → poll until "completed"
 ```
 
+<!-- END:readme-usage-example -->
+
 ## Auth
 
 Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
@@ -125,9 +147,17 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 ## Links
 
-- [HeyGen API docs](https://developers.heygen.com)
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/heygen)
+
+<!-- BEGIN:readme-links-extra -->
+
+- [HeyGen API docs](https://developers.heygen.com)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -142,3 +172,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

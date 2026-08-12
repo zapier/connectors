@@ -4,13 +4,19 @@ This is the direct-auth path: you hold and pass Heygen's credential yourself, ra
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 HeyGen authenticates with a **long-lived API key**, sent as the `X-Api-Key` header — one key authorizes the whole catalog (no per-tool token, OAuth flow, or scope split). Go to the HeyGen API dashboard (<https://app.heygen.com/home?nav=API>), generate your key, and rotate it periodically from the same dashboard. Note the billing difference between this path and the Zapier-managed one — see [`SKILL.md`](../SKILL.md#auth).
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's direct resolver is `env:HEYGEN_API_KEY`: it reads the key from the `HEYGEN_API_KEY` environment variable and sends it as the `X-Api-Key` header. So the connection string is `env:HEYGEN_API_KEY` (a bare value routes to it too). Run any script's `--help` to confirm.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
