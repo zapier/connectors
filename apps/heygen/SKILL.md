@@ -12,32 +12,50 @@ metadata:
 
 # Heygen
 
-_Independent, unofficial connector for Heygen. Not affiliated with, endorsed by, or sponsored by Heygen. "Heygen" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for HeyGen's AI video platform, over the public [HeyGen v3 API](https://developers.heygen.com) (`https://api.heygen.com`). Generate AI avatar videos from a script or audio, generate short cinematic clips from a prompt, translate and lip-sync existing videos, drive the prompt-to-video Video Agent, synthesize speech, and browse the avatars and voices those jobs need. Video generation is **asynchronous**: a create tool returns an id, and you poll the matching `get*` tool until the job is `completed` and its result URLs appear.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Heygen. Not affiliated with, endorsed by, or sponsored by Heygen. "Heygen" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Create AI videos** — an avatar (or animated image) speaking a script (`createVideo`), a short prompt-driven cinematic clip (`createCinematicVideo`), or a fully agent-authored video from a text prompt (`createVideoAgentVideo`).
 - **Transform existing videos** — translate into other languages (`translateVideo`) or replace the audio and re-sync the lips (`createLipsync`).
 - **Synthesize speech and pick voices/avatars** — text-to-speech (`generateSpeech`), and browse/clone/design voices and browse avatar looks to resolve the ids the create tools need.
 - **Track async jobs and account state** — poll a video/translation/lipsync/session by id, list past jobs, and check remaining credits (`getCurrentUser`) before generating.
 
+<!-- END:skill-use-cases -->
+
 ## Setup
 
 This is an [agentskills.io](https://agentskills.io) skill.
 
-**If this connector is already exposed to you as callable tools** (e.g. `mcp__heygen__<tool>`), that's a valid path — call them directly. Everything below is only for standalone terminal use when no such tools are loaded.
+If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill heygen` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
-If the connector has not been installed as a skill yet, install it first with `npx skills zapier/connectors --skill heygen` (or your harness's own skill-install mechanism), then continue here.
+The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
-The connector runs on **Node.js 22.18+** and needs a one-time `npm install` in this directory. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`. On older Node, run `node cli.js --help` anyway: it detects your runtime and prints how to run without upgrading (the prebuilt npm package, or another runtime) — don't skip the connector just because Node is old.
-
-`cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
+| You have...                                                                                                                                                 | Load                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An MCP-aware client — tools may already be loaded (e.g. `mcp__heygen__<tool>`), or you can register a local server yourself (or guide the user to)          | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
+| Terminal / subprocess access (you can run `node`)                                                                                                           | [`references/use-as-cli.md`](references/use-as-cli.md)       |
+| Only your own code, importing this package as a dependency                                                                                                  | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Heygen API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single `heygen` connection. Generate tools are asynchronous — pair each with its poll tool (e.g. `createVideo` → `getVideo`).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                | Script name                | Connections | Description                                                                                             |
 | ------------------------------------- | -------------------------- | ----------- | ------------------------------------------------------------------------------------------------------- |
@@ -70,49 +88,51 @@ All scripts use the single `heygen` connection. Generate tools are asynchronous 
 | `scripts/listVideoAgentSessions.ts`   | `listVideoAgentSessions`   | heygen      | List Video Agent sessions.                                                                              |
 | `scripts/getCurrentUser.ts`           | `getCurrentUser`           | heygen      | Get the account's profile and remaining credit balance.                                                 |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 - **Resolve ids before generating; act on a single match.** The create tools take ids, not names — get an `avatar_id` from `listAvatarLooks`, a `voice_id` from `listVoices`, a `video_id` from `listVideos`. If a described avatar/voice/video has exactly one match, use it; if two or more tie on the described name/title, list the candidates with a distinguishing field (avatar type, language, created time) and ask which — don't silently pick.
 - **Don't fake unsupported jobs.** This connector does **not** support: multi-scene "Studio" videos (per-scene avatars/backgrounds in one video), template-based video generation, uploading local asset files (pass a public HTTPS URL to `*_url` inputs instead), or photo-avatar/digital-twin _training_ pipelines beyond `createAvatar`'s entry point. If asked for one of these, say it isn't supported — don't substitute a different tool and report success for something you didn't do.
 - **Generation is async and consumes credits.** A create call returning an id is _not_ a finished video — poll the `get*` tool until `completed`. Failed or in-progress jobs can still consume credits; `getCurrentUser` reports the remaining balance.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
-Pass auth as one connection string with `--connection [<resolver>:]<value>`. The value is a selector, not the secret; the `<resolver>:` prefix is optional (a bare value goes to the first resolver that claims it). Each script declares the connections it needs and the resolvers each accepts — always run `node cli.js run <script> --help` to see them rather than relying on this file.
+Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-HeyGen offers two auth paths, and they use **different credentials** — pick by how you're running the connector:
+Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
-- **Direct** — `--connection env:HEYGEN_API_KEY`. A **long-lived API key** generated from the HeyGen API dashboard (rotated manually there; no browser consent), sent as the `X-Api-Key` header. Authorizes the whole catalog (no per-tool token split). Recommended for standalone use.
-- **Zapier-managed** — `--connection zapier:<connection-id>` (a bare connection id also works). Routes through the connected HeyGen account's Zapier (OAuth) credential, injected per request. Both paths are verified.
+<!-- BEGIN:skill-auth-notes -->
 
-**Billing depends on which auth path you use — and it changes which balance `getCurrentUser` reports.** Per HeyGen's pricing docs, an **API key bills the API tier**, so `getCurrentUser` returns the **`wallet`** balance; an **OAuth bearer token** (the Zapier-managed path) **bills the account's web subscription plan**, so `getCurrentUser` returns the **`subscription`** balance instead. Read the balance field that matches your auth path before a generate call to avoid `insufficient_credit`.
+Two connection resolvers use **different credentials and bill differently**: `env:HEYGEN_API_KEY` (direct — a long-lived API key from the HeyGen dashboard, sent as `X-Api-Key`, bills the API tier) vs `zapier:<connection-id>` (Zapier-managed — routes through the connected account's OAuth credential, bills the account's web subscription plan). Both paths are verified. Read the balance field matching your auth path (`wallet` vs `subscription` — see [`references/heygen-api-gotchas.md`](references/heygen-api-gotchas.md#credits--billing-getcurrentuser)) before a generate call, to avoid an `insufficient_credit` failure mid-flow.
+<!-- END:skill-auth-notes -->
 
-## Running scripts
+No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
-After `npm install`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
-
-```bash
-# default — via the entry point; self-checks readiness and prints friendly diagnostics
-node cli.js run <script> '<input-json>' --connection [<resolver>:]<value>
-# shorthand — runs the script file directly (same args, same Node 22.18+ need, no readiness check)
-./scripts/<script>.ts '<input-json>' --connection [<resolver>:]<value>
-```
-
-When a harness can't execute scripts directly, fall back to MCP — `node cli.js mcp` serves every script as a tool over stdio. Register it as a local MCP server in your client: the stanza is harness-specific (an `mcpServers` entry in Claude Desktop, Cursor, Claude Code, …) with `command: "node"`, `args: ["cli.js", "mcp"]`, run from this directory. Run `node cli.js mcp --help` for auth options. Add the stanza yourself if you can edit the client's MCP config; otherwise guide the user. If a local server isn't possible, guide the user to use Zapier's remote MCP servers at <https://mcp.zapier.com> instead.
+|                                      | Load                                                                   |
+| ------------------------------------ | ---------------------------------------------------------------------- |
+| Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
+| Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
 
 ## Output format
 
 Every script returns a `{ data, meta }` envelope:
 
-- **`data`** — the script's result (the shape its `outputSchema` declares; run the script's `--help` to see that exact schema).
+- **`data`** — the script's result (the shape its `outputSchema` declares; see the reference you loaded above for how to inspect a script's exact schema in your shape).
 - **`meta.outputDataValidation`** — what validating `data` did:
   - `{ skipped: false, droppedPaths: null }` — validated, nothing removed.
   - `{ skipped: false, droppedPaths: [...], instruction }` — validated, but those paths were stripped from `data`: fields the script returned from the API that the `outputSchema` doesn't declare. If you need them, re-run with output validation skipped.
   - `{ skipped: true }` — validation was bypassed; `data` is the raw, unchecked script output.
 
-**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, append `--skipOutputDataValidation` to the script invocation. Input validation is never skipped.
+**Reading dropped fields / `skipOutputDataValidation`.** To receive the raw, unvalidated result, opt out of output validation (the exact syntax differs by shape — see the reference you loaded above). Input validation is never skipped.
 
-**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, append `--filterOutputData '<jq>'` — a jq expression that post-processes `data`. The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
+**Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
+
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -120,3 +140,5 @@ Every script returns a `{ data, meta }` envelope:
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [heygen-api-gotchas.md](references/heygen-api-gotchas.md) | Before building a HeyGen flow — async create→poll model, status enums, presigned-URL expiry, error codes, rate limits/concurrency, credits/billing, pagination, and per-domain rules (voices/TTS, avatars, cinematic, translation, lipsync, video agent). |
 | [use-as-recipe.md](references/use-as-recipe.md)           | Loaded by a harness writing its own code against the vendor API (can't load the tools / run the CLI / import the package) — request patterns, response shapes, and pointers into the gotchas.                                                             |
+
+<!-- END:skill-references-table -->
