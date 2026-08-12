@@ -1,5 +1,13 @@
 # @zapier/google-sheets-connector
 
+## 0.2.17
+
+### Patch Changes
+
+- 1e274f3: Automated dependency update from Renovate.
+
+  - `@zapier/connectors-sdk`: ^0.4.5 → ^0.4.6
+
 ## 0.2.16
 
 ### Patch Changes
