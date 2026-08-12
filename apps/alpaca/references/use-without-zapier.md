@@ -4,17 +4,23 @@ This is the direct-auth path: you hold and pass Alpaca's credential yourself, ra
 
 ## Getting credentials
 
-Alpaca authenticates with a two-part credential — an **API Key ID** and a **Secret Key** — sent as the `APCA-API-KEY-ID` and `APCA-API-SECRET-KEY` headers ([Authentication](https://docs.alpaca.markets/docs/authentication)). Generate and manage the pair from your Alpaca account; see Alpaca's [Credentials Management](https://docs.alpaca.markets/docs/credential-management) guide for the exact steps.
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
+Alpaca authenticates with a two-part credential — an **API Key ID** and a **Secret Key** — sent as the `APCA-API-KEY-ID` and `APCA-API-SECRET-KEY` headers ([Authentication](https://docs.alpaca.markets/docs/authentication)). Generate and manage the pair from your Alpaca account; see Alpaca's [Credentials Management](https://docs.alpaca.markets/docs/credential-management) guide for the exact steps — copy the secret when it's displayed, since it isn't shown again afterward.
 
 **Paper and live accounts have separate keys** — "Your paper trading account will have a different API key from your live account" ([Paper Trading](https://docs.alpaca.markets/us/docs/paper-trading)). This connector defaults to Alpaca's paper (simulated) environment; enabling live trading is an explicit opt-in (see [Passing the credential](#passing-the-credential) below and [`SKILL.md`](../SKILL.md#auth)).
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector reads the direct credential from an **env-prefix resolver named `alpaca`**: set `ALPACA_API_KEY_ID` and `ALPACA_API_SECRET_KEY` in the environment — the key/secret pair is read from those two variables rather than an inline `<resolver>:<value>` string. The resolver injects the `APCA-API-KEY-ID` / `APCA-API-SECRET-KEY` headers and routes the request host for you.
 
 Trading runs against the **paper** host by default. To enable live, real-money order tools, set `ALPACA_TRADING_ENV=live` **and** `ALPACA_ALLOW_LIVE_TRADING=true`; reads and paper mode never require this opt-in.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 

@@ -1,29 +1,40 @@
 # @zapier/alpaca-connector
 
-_Independent, unofficial connector for Alpaca. Not affiliated with, endorsed by, or sponsored by Alpaca. "Alpaca" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for [Alpaca](https://alpaca.markets), wrapping the [Trading API](https://docs.alpaca.markets/reference). 25 scripts let an agent place and manage stock, crypto, and options orders; read account balances, positions, portfolio history, and activities; look up assets, market hours, and option contracts; and read watchlists. Authentication is a long-lived Alpaca **API key id + secret** (two headers), passed directly or via a Zapier-managed connection. Trading defaults to Alpaca's **paper (simulated) environment**; live real-money trading requires an explicit opt-in.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Alpaca. Not affiliated with, endorsed by, or sponsored by Alpaca. "Alpaca" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Reach for this connector when an agent needs to trade on a self-directed Alpaca brokerage account: inspecting balances and open positions, placing or canceling orders, looking up assets or option contracts, or reading watchlists. It covers the inform → decide → act → track loop over Alpaca's Trading API.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Funding, transfers, or account administration** (deposits/withdrawals, bank links, account opening) — those live on Alpaca's Broker API, not covered here.
 - **Market data** — quotes, bars, snapshots, news, corporate actions, and option chains are out of scope; this connector wraps the Trading API only, not the Market Data API (`data.alpaca.markets`). For price/history or live tick streams, use Alpaca's Market Data REST or WebSocket API directly.
 - **Broker/partner (white-label) workflows** — the Broker API (`broker-api.alpaca.markets`) is a separate product and is out of scope.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
 This connector is the same artifact across four shapes: MCP server, CLI bin, importable Node module, and an [Agent Skill](https://agentskills.io/) anchored by [`SKILL.md`](SKILL.md). Pick the shape that matches how your agent runs.
 
 ```bash
-# Run a script with zero install — npx fetches the package on first use.
-# Direct mode reads <PREFIX>_API_KEY_ID + <PREFIX>_API_SECRET_KEY (prefix "ALPACA" below).
-export ALPACA_API_KEY_ID=xxx
-export ALPACA_API_SECRET_KEY=xxx
-npx @zapier/alpaca-connector@latest run getClock '{}' --connection alpaca:ALPACA
+# Run a script with zero install — npx fetches the package on first use
+export <ENV_VAR>=xxx
+npx @zapier/alpaca-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/alpaca-connector
@@ -51,11 +62,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"alpaca:ALPACA"` with `"env": { "ALPACA_API_KEY_ID": "xxx", "ALPACA_API_SECRET_KEY": "xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
 
-**Account & portfolio**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                     | Description                                                                     |
 | -------------------------- | ------------------------------------------------------------------------------- |
@@ -110,11 +121,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `getWatchlist`       | Get one watchlist by id, including its asset symbols.   |
 | `getWatchlistByName` | Get one watchlist by name, including its asset symbols. |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/alpaca-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "alpaca:ALPACA" }` (reading `ALPACA_API_KEY_ID` + `ALPACA_API_SECRET_KEY`).
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { getAsset } from "@zapier/alpaca-connector";
@@ -125,6 +140,8 @@ const { data } = await getAsset(
 );
 // data => { id, class, exchange, symbol, name, tradable, fractionable, … }
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -139,7 +156,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/alpaca)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Alpaca API reference](https://docs.alpaca.markets/reference) — the vendor API this connector wraps
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -154,3 +179,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
