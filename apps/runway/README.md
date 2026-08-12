@@ -1,19 +1,33 @@
 # @zapier/runway-connector
 
-_Independent, unofficial connector for Runway. Not affiliated with, endorsed by, or sponsored by Runway. "Runway" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for [Runway](https://docs.dev.runwayml.com/)'s generative-media API (`https://api.dev.runwayml.com/v1`). Generate images and video from text or an image, edit/restyle and upscale existing media, animate a character from a driving performance, generate speech, sound effects, voice conversions and dubs, and run Runway's one-shot marketing "recipes" (product ads, campaign images, UGC, product swap, ad localization) — plus track the resulting generation jobs. Every generation is asynchronous: a tool returns a task id you poll with `getTask` (or pass `wait: true` to block), and finished asset URLs expire in 24-48 hours. Auth is a single Runway API secret (a bearer token), supplied directly or via a Zapier-managed connection.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Runway. Not affiliated with, endorsed by, or sponsored by Runway. "Runway" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - You want an agent to **create or transform media with Runway** — text/image → image or video, video restyle, upscale, character animation, speech/SFX/voice audio, or a packaged marketing recipe.
 - You want to **track and manage** those generation jobs (poll status, cancel) and read credit/limit info, against a single API key.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Runway's non-generation products** — Avatars, custom Voice management, Documents/knowledge, Realtime sessions, and saved Workflows are not covered.
 - **Uploading local files** — there is no ephemeral-upload tool; asset inputs must be HTTPS URLs or data URIs. Host the asset first.
 - **Real-time / synchronous media** — generation is asynchronous and can take minutes; this is not a low-latency streaming API.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -21,17 +35,17 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export RUNWAY_API_KEY=xxx
-npx @zapier/runway-connector@latest run getOrganization '{}' --connection env:RUNWAY_API_KEY
+export <ENV_VAR>=xxx
+npx @zapier/runway-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/runway-connector
 
 # Or install as an Agent Skill (https://agentskills.io)
-npx skills zapier/connectors --skill runway
+npx skills add zapier/connectors --skill runway
 ```
 
-Auth is one `[<resolver>:]<value>` connection string passed with `--connection`. The value is a _selector_, not the secret: `--connection zapier:<connection-id>` routes through Zapier-managed auth (recommended; no third-party secret enters the agent's environment, and the connection id isn't itself a secret so you can pass it as-is), and `--connection env:<ENV_VAR>` reads a direct token from `$<ENV_VAR>` (the token stays in `env`, never on argv). The `<resolver>:` prefix is optional — a bare value is claimed by the first matching resolver. See [`SKILL.md`](SKILL.md#auth) for tradeoffs and how to find a connection ID.
+Auth is one `[<resolver>:]<value>` connection string passed with `--connection` — a _selector_, not the secret. The `<resolver>:` prefix is optional; a bare value is claimed by the first matching resolver. See [Auth](#auth) below for the with/without-Zapier tradeoffs and how to find a connection ID.
 
 ### MCP server
 
@@ -54,7 +68,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-### Generate visual media
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                   | Description                                                                       |
 | ------------------------ | --------------------------------------------------------------------------------- |
@@ -97,11 +111,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `getOrganization` | Read the organization's tier limits and current credit balance.          |
 | `getCreditUsage`  | Retrieve per-day, per-model credit usage over a date range.              |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/runway-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:RUNWAY_API_KEY" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { generateImage, getTask } from "@zapier/runway-connector";
@@ -123,6 +141,8 @@ const { data: result } = await getTask(
 );
 ```
 
+<!-- END:readme-usage-example -->
+
 ## Auth
 
 Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
@@ -135,8 +155,16 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 ## Links
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
-- [Runway API docs](https://docs.dev.runwayml.com/)
 - [Source](https://github.com/zapier/connectors/tree/main/apps/runway)
+
+<!-- BEGIN:readme-links-extra -->
+
+- [Runway API docs](https://docs.dev.runwayml.com/)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -151,3 +179,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Runway's credential yourself, ra
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Runway uses a single **API secret** — a bearer token scoped to your Runway organization; there is no per-tool token, OAuth flow, or scope split. Get one from the Runway Developer Portal (<https://dev.runwayml.com>):
 
 1. Sign up or log in, then create an organization — Runway's docs describe an organization as "your integration," holding your API keys and configuration.
@@ -12,12 +14,16 @@ Runway uses a single **API secret** — a bearer token scoped to your Runway org
 4. Add credits under the **Billing** tab before your first call — Runway requires a minimum $10 payment (at $0.01/credit) to fund generations; an otherwise-valid key with a zero balance still fails.
 
 The same key authorizes every endpoint this connector calls.
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's only direct-token resolver is `env:<ENV_VAR>` (an `env` token resolver, default name and placeholder) — read the credential from an environment variable you choose, e.g. `--connection env:RUNWAY_API_KEY` with the key exported in `RUNWAY_API_KEY`. The connector sends it as `Authorization: Bearer <key>`.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 

@@ -12,16 +12,26 @@ metadata:
 
 # Runway
 
-_Independent, unofficial connector for Runway. Not affiliated with, endorsed by, or sponsored by Runway. "Runway" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for [Runway](https://docs.dev.runwayml.com/) generative media (`https://api.dev.runwayml.com/v1`): generate images and video from text or an image, edit/restyle and upscale existing media, animate a character from a driving performance, generate speech, sound effects, voice conversions and dubs, and run Runway's one-shot marketing "recipes" (product ads, campaign images, UGC, product swap, ad localization). Every generation is **asynchronous** — the generate/audio/recipe tools return a task id and you poll `getTask` for the finished asset URLs (or pass `wait: true` to block until the job finishes). Generated asset URLs **expire in 24-48 hours**, so download and rehost them promptly.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Runway. Not affiliated with, endorsed by, or sponsored by Runway. "Runway" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Generate visual media** — make an image (`generateImage`), a video from an image (`generateVideoFromImage`) or from text (`generateVideoFromText`), restyle a video (`editVideo`), upscale an image or video (`upscaleImage` / `upscaleVideo`), or animate a character (`animateCharacter`).
 - **Generate audio** — text-to-speech (`generateSpeech`), sound effects (`generateSoundEffect`), voice conversion (`convertVoice`), dubbing (`dubAudio`), or voice isolation (`isolateVoice`).
 - **Run marketing recipes** — one-shot higher-level jobs: `generateProductAd`, `generateCampaignImages`, `generateMarketingImage`, `swapProduct`, `generateProductUgc`, `generateMultiShotVideo`, `localizeAd`.
 - **Track jobs and account** — check a job with `getTask`, stop one with `cancelTask`, and read credits / concurrency limits with `getOrganization` / `getCreditUsage`.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `runway`. The generate, audio, and recipe tools are asynchronous — they return a task id (poll `getTask`), or accept `wait: true` to block until the job reaches a terminal state.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                   | Script name              | Connections | Description                                                                        |
 | ------------------------------------------------------------------------ | ------------------------ | ----------- | ---------------------------------------------------------------------------------- |
@@ -68,11 +83,30 @@ All scripts use the single connection `runway`. The generate, audio, and recipe 
 | [`scripts/swapProduct.ts`](scripts/swapProduct.ts)                       | `swapProduct`            | `runway`    | Replace the product in a reference video with a new product.                       |
 | [`scripts/generateProductUgc.ts`](scripts/generateProductUgc.ts)         | `generateProductUgc`     | `runway`    | Generate a vertical UGC-style ad from a character image, product image, and brief. |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+Task ids passed to `getTask` / `cancelTask` come from the generate/audio/recipe tools' own output — there is no name-based lookup to disambiguate. Watch instead for jobs this connector deliberately does **not** cover; say so and stop rather than substituting another tool and reporting success:
+
+- **Uploading local files / raw bytes.** There is no upload tool. Every asset input takes an **HTTPS URL** or a **data URI** — host the file and pass its URL. Don't claim a local path was uploaded.
+- **Avatars, custom voice management, documents/knowledge, realtime sessions, saved workflows.** These separate Runway products are out of scope; this connector covers the generation core plus marketing recipes only.
+- **Permanent deletion beyond a task.** `cancelTask` cancels/deletes a single generation task; there is no bulk or account-level delete.
+- **Per-model pricing.** The API exposes no price catalog. `getCreditUsage` reports actual spend after the fact and `getOrganization` reports limits — neither quotes a per-generation price up front.
+
+If asked for any of these, tell the user it's unsupported and stop.
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -95,16 +129,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-Task ids passed to `getTask` / `cancelTask` come from the generate/audio/recipe tools' own output — there is no name-based lookup to disambiguate. Watch instead for jobs this connector deliberately does **not** cover; say so and stop rather than substituting another tool and reporting success:
-
-- **Uploading local files / raw bytes.** There is no upload tool. Every asset input takes an **HTTPS URL** or a **data URI** — host the file and pass its URL. Don't claim a local path was uploaded.
-- **Avatars, custom voice management, documents/knowledge, realtime sessions, saved workflows.** These separate Runway products are out of scope; this connector covers the generation core plus marketing recipes only.
-- **Permanent deletion beyond a task.** `cancelTask` cancels/deletes a single generation task; there is no bulk or account-level delete.
-- **Per-model pricing.** The API exposes no price catalog. `getCreditUsage` reports actual spend after the fact and `getOrganization` reports limits — neither quotes a per-generation price up front.
-
-If asked for any of these, tell the user it's unsupported and stop.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -113,3 +138,5 @@ Load the matching reference file before working in that area:
 | Reference                                                              | Covers                                                                                                                                                                                                                                             | Load it when                                                                                                                             |
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/runway-api-gotchas.md`](references/runway-api-gotchas.md) | Async task lifecycle + statuses (incl. `THROTTLED`), output-URL expiry, `failureCode` retry rules, HTTP errors, per-tier concurrency/daily/spend limits, input-asset size limits, content moderation, credit-usage windows, and the version header | A task never finishes or returns `THROTTLED`/`FAILED`, an output URL stops working, a call 4xx/429s, or you need model/tier/asset limits |
+
+<!-- END:skill-references-table -->
