@@ -3,7 +3,7 @@
   "name": "resend",
   "displayName": "Resend",
   "description": "Agent-callable Resend tools — send transactional email, manage contacts and segments, send broadcasts, read delivery status, and diagnose sending domains. Use when the user mentions Resend or wants to send email, manage a contact list, or check email delivery, even if they don't name Resend explicitly.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
