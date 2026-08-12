@@ -1,18 +1,31 @@
 # @zapier/trello-connector
 
-_Independent, unofficial connector for Trello. Not affiliated with, endorsed by, or sponsored by Trello. "Trello" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable scripts for the [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/): create and move cards, manage boards and lists, labels and checklists, comments and attachments, and search — 44 scripts total. Auth is OAuth 1.0a via a Zapier-managed connection (recommended) or direct `TRELLO_API_KEY` + `TRELLO_TOKEN` env vars.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Trello. Not affiliated with, endorsed by, or sponsored by Trello. "Trello" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Use this connector when an agent needs to create or update Trello cards, organize boards and lists, manage labels and checklists, or search and read Trello data. It covers the common CRUD and lookup flows agents need for task boards and project tracking.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Webhooks, automations, or Power-Ups** — not supported; use Trello's native Butler or Zapier Zaps instead.
 - **Local file uploads** — only URL-based attachments; use Trello's UI or a file-hosting step first.
 - **Enterprise admin or billing** — workspace policy and billing are outside this API surface.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -20,8 +33,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export <ENV_VAR_PREFIX>_API_KEY=xxx <ENV_VAR_PREFIX>_TOKEN=yyy
-npx @zapier/trello-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR_PREFIX>
+export <ENV_VAR>=xxx
+npx @zapier/trello-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/trello-connector
@@ -49,9 +62,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR_PREFIX>"` with `"env": { "<ENV_VAR_PREFIX>_API_KEY": "xxx", "<ENV_VAR_PREFIX>_TOKEN": "yyy" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
+
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                   | Description                                                            |
 | ------------------------ | ---------------------------------------------------------------------- |
@@ -100,11 +115,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `addCardMember`          | Add a member to a card                                                 |
 | `listCustomFields`       | List custom field definitions on a board                               |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/trello-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR_PREFIX>" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { listBoards } from "@zapier/trello-connector";
@@ -112,6 +131,8 @@ import { listBoards } from "@zapier/trello-connector";
 const { data } = await listBoards({}, { connection: "env:TRELLO" });
 // data.items → array of boards; meta.outputDataValidation reports any stripped fields.
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -126,7 +147,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/trello)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Trello REST API docs](https://developer.atlassian.com/cloud/trello/rest/)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -141,3 +170,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

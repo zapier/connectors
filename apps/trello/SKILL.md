@@ -12,16 +12,26 @@ metadata:
 
 # Trello
 
-_Independent, unofficial connector for Trello. Not affiliated with, endorsed by, or sponsored by Trello. "Trello" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Scripts for working with Trello against the [Trello REST API](https://developer.atlassian.com/cloud/trello/rest/) (`https://api.trello.com/1`): create and move cards, manage boards and lists, labels and checklists, comments and attachments, member lookups, and search. 44 scripts across boards, lists, cards, labels, checklists, members, and search.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Trello. Not affiliated with, endorsed by, or sponsored by Trello. "Trello" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to **create or update cards** — add tasks, set due dates, assign members, add labels, or archive/reopen cards.
 - An agent needs to **organize boards** — create boards and lists, move cards between lists, copy boards, or close (archive) boards.
 - An agent needs to **look up Trello resources by name** — find boards, lists, labels, or checklists before writing.
 - An agent needs to **search cards** or read board/list/card detail for planning or reporting.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `trello`. Shared helpers live in [`lib/trello.ts`](lib/trello.ts).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                   | Script name              | Connections       | Description                                                            |
 | ------------------------------------------------------------------------ | ------------------------ | ----------------- | ---------------------------------------------------------------------- |
@@ -90,12 +105,35 @@ All scripts use the single connection `trello`. Shared helpers live in [`lib/tre
 | [`scripts/listCustomFields.ts`](scripts/listCustomFields.ts)             | `listCustomFields`       | Single (`trello`) | List custom field definitions on a board                               |
 
 **Resolve ids before writes.** Trello ids are 24-character hex strings. When the user names a board, list, or label, call the matching `find*` or `list*` script first and pass the returned id into create/update/move scripts — never guess ids.
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+**Disambiguation before a write.** Before writing to a board, list, card, label, or checklist you looked up by name (e.g. create a card on a list found via `findList`, or add a label found via `findLabel`), count the **exact case-insensitive name matches**:
+
+- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
+- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (id + name + board/list context) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
+
+**Unsupported operations — say so and stop; don't fake it with another script.** This catalog deliberately does not:
+
+- **Manage webhooks, automations, or Power-Ups.** There are no trigger or Butler-rule scripts.
+- **Upload local binary files.** `addCardAttachment` accepts a URL or remote file URL only — not a local path or base64 payload.
+- **Permanently delete boards or cards.** `closeBoard` and `archiveCard` archive (soft-close) resources; there is no hard-delete script.
+- **Manage workspace billing, admin settings, or enterprise policies.**
+
+If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated script to approximate it.
+<!-- END:disambiguation-and-refusals -->
 
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -118,21 +156,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-**Disambiguation before a write.** Before writing to a board, list, card, label, or checklist you looked up by name (e.g. create a card on a list found via `findList`, or add a label found via `findLabel`), count the **exact case-insensitive name matches**:
-
-- **Exactly one match** — act on it. Don't over-ask; a single unambiguous match is the answer.
-- **Two or more that tie** — stop. List the tied candidates with a distinguishing field (id + name + board/list context) and ask the user which one they mean. Don't pick arbitrarily and don't write to all of them.
-
-**Unsupported operations — say so and stop; don't fake it with another script.** This catalog deliberately does not:
-
-- **Manage webhooks, automations, or Power-Ups.** There are no trigger or Butler-rule scripts.
-- **Upload local binary files.** `addCardAttachment` accepts a URL or remote file URL only — not a local path or base64 payload.
-- **Permanently delete boards or cards.** `closeBoard` and `archiveCard` archive (soft-close) resources; there is no hard-delete script.
-- **Manage workspace billing, admin settings, or enterprise policies.**
-
-If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated script to approximate it.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -141,3 +165,5 @@ Load the matching reference file before working in that area:
 | Reference                                                            | Covers                                                                          | Load it when                                                                                                         |
 | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | [references/trello-api-gotchas.md](references/trello-api-gotchas.md) | Trello API behavior, id resolution patterns, rate limits, and search DSL quirks | Before search-heavy flows, rate-limit-sensitive loops, or any write that needs id resolution (lists, boards, labels) |
+
+<!-- END:skill-references-table -->
