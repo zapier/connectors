@@ -56,7 +56,7 @@
     "url": "https://github.com/zapier/connectors.git",
     "directory": "apps/google-sheets"
   },
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publishConfig": {
     "access": "public"
   },
