@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass YouTube's credential yourself, r
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Register the credential in the [Google Cloud Console](https://console.cloud.google.com/), then run an OAuth 2.0 authorization flow yourself to mint an access token — this connector's direct resolver takes the token itself, not a client id/secret.
 
 1. Create or select a project, then enable the **YouTube Data API v3** (APIs & Services → Library).
@@ -17,11 +19,16 @@ Register the credential in the [Google Cloud Console](https://console.cloud.goog
 
 4. A 403 `insufficientPermissions` response means the token's scope is too narrow — mint a new one with the scope the operation needs. A 403 because you don't **own** the resource you're writing to is a different problem — a new token won't fix it (see [`references/youtube-api-gotchas.md`](youtube-api-gotchas.md) for the full error/reason table).
 
+<!-- END:use-without-zapier-getting-credentials -->
+
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 YouTube's direct-token resolver is `env:<ENV_VAR>` — the value is the name of an environment variable holding the Google OAuth access token from above, sent as `Authorization: Bearer <token>`. It's a fallback: prefer routing through a Zapier connection ([`references/use-with-zapier.md`](use-with-zapier.md)) when you can, since **this resolver does not refresh the token** — Google access tokens expire ~1 hour after issue. Direct mode suits short-lived or testing use; once the token expires, mint a fresh one (see Getting credentials above) or switch to the Zapier-managed connection.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
