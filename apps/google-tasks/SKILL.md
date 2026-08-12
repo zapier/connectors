@@ -12,17 +12,27 @@ metadata:
 
 # Google Tasks
 
-_Independent, unofficial connector for Google Tasks. Not affiliated with, endorsed by, or sponsored by Google Tasks. "Google Tasks" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Agent-callable tools for Google Tasks (the [Google Tasks API v1](https://developers.google.com/workspace/tasks/reference/rest)). Manage **task lists** (list, get, create, rename, delete) and **tasks** (list, find by title, get, create, update, complete/reopen, reorder/reparent/move, delete, and clear completed). Authenticate once with a Zapier-managed Google connection (recommended) or a direct OAuth token. The connector exposes the full task surface as 13 single-purpose scripts with stable, predictable I/O — no triggers (it is non-polling).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Tasks. Not affiliated with, endorsed by, or sponsored by Google Tasks. "Google Tasks" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Capture and organize to-dos** — create tasks (optionally as subtasks or at a position), create and rename task lists.
 - **Review what's on a list** — list active (or completed) tasks, find a task by title, get a task's details.
 - **Move work forward** — mark tasks complete or reopen them, reorder or reparent tasks, move a task to another list.
 - **Prune** — delete a task or list, or clear (hide) all completed tasks in a list.
 - Use whenever the user wants to manage Google Tasks or their to-do list, even if they don't name Google Tasks explicitly.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -41,7 +51,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use a single `google-tasks` connection.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                           | Script name           | Connections    | Description                                                                               |
 | -------------------------------- | --------------------- | -------------- | ----------------------------------------------------------------------------------------- |
@@ -59,11 +74,25 @@ All scripts use a single `google-tasks` connection.
 | `scripts/deleteTask.ts`          | `deleteTask`          | `google-tasks` | Permanently delete a task.                                                                |
 | `scripts/clearCompletedTasks.ts` | `clearCompletedTasks` | `google-tasks` | Hide all completed tasks in a list (recoverable; non-destructive).                        |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
+## Disambiguation & refusals
+
+- **Resolving a task or list by name.** Before updating, completing, moving, or deleting a task referenced by title, resolve it first — `findTask` returns the best title match, or `listTasks` to see candidates. If two or more tasks in the list have the **same title** (exact, case-insensitive), don't silently pick one: list the tied candidates with a distinguishing field (due date, status, notes) and ask which one. If exactly one matches, act on it — don't over-ask. Same rule for `listTaskLists` when a list is named.
+- **Unsupported operations — say so, don't fake it.** This connector cannot: create or edit **recurring** tasks (the API has no recurrence fields — recurrence is managed only in the Google Tasks app), set a task's **time of day or reminder** (`due` is date-only — the time is discarded), or reorder by writing `position` (use `moveTask`). If asked for one of these, say it's unsupported and stop — do not substitute another tool and report success for something you didn't do.
+
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -86,10 +115,7 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
-## Disambiguation & refusals
-
-- **Resolving a task or list by name.** Before updating, completing, moving, or deleting a task referenced by title, resolve it first — `findTask` returns the best title match, or `listTasks` to see candidates. If two or more tasks in the list have the **same title** (exact, case-insensitive), don't silently pick one: list the tied candidates with a distinguishing field (due date, status, notes) and ask which one. If exactly one matches, act on it — don't over-ask. Same rule for `listTaskLists` when a list is named.
-- **Unsupported operations — say so, don't fake it.** This connector cannot: create or edit **recurring** tasks (the API has no recurrence fields — recurrence is managed only in the Google Tasks app), set a task's **time of day or reminder** (`due` is date-only — the time is discarded), or reorder by writing `position` (use `moveTask`). If asked for one of these, say it's unsupported and stop — do not substitute another tool and report success for something you didn't do.
+<!-- BEGIN:skill-references-table -->
 
 ## References
 
@@ -98,3 +124,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                        | Covers                    | Load it when                                                                                                                                                                                                                                                                                                                                                                |
 | -------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [references/google-tasks-api-gotchas.md](references/google-tasks-api-gotchas.md) | API quirks and edge cases | A task or task-list call behaves unexpectedly — due dates losing their time, `position`/ordering, `status`/completion being server-managed, hidden vs. deleted tasks, subtask nesting limits, assigned tasks (from Docs/Chat), pagination/page-size or per-user limits, quota/rate-limit (`429`/quota reasons), or auth-scope (`401`/`403 insufficientPermissions`) errors. |
+
+<!-- END:skill-references-table -->
