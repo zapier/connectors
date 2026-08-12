@@ -12,15 +12,25 @@ metadata:
 
 # Alpaca
 
-_Independent, unofficial connector for Alpaca. Not affiliated with, endorsed by, or sponsored by Alpaca. "Alpaca" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for trading on [Alpaca](https://alpaca.markets) against the [Trading API](https://docs.alpaca.markets/reference): place and manage stock, crypto, and options orders; read account balances, positions, portfolio history, and activities; look up assets, market hours, and option contracts; and read watchlists. 25 scripts across account, orders, positions, assets, options, and watchlists. **Trades run against Alpaca's paper (simulated) environment by default**; live real-money trading requires an explicit opt-in (see Auth). Money and quantity values are returned as **strings** to preserve decimal precision — never coerce them to numbers. Order placement is **async-confirmed**: `placeOrder` acknowledges receipt with a status that can change server-side, so re-query `getOrder` before asserting a fill.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Alpaca. Not affiliated with, endorsed by, or sponsored by Alpaca. "Alpaca" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - **Inspect the account** — read balances and buying power, list open positions and unrealized P&L, review portfolio history and account activities (fills, dividends, fees), or check whether the market is open.
 - **Place and manage orders** — buy or sell stocks, crypto, or options (market/limit/stop/bracket/OCO/OTO/multi-leg); replace or cancel open orders; close or liquidate positions; exercise an options position.
 - **Look things up** — resolve a symbol's tradability/shortability/fractionability, list assets or option contracts, and read watchlists.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -39,7 +49,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts use the single connection `alpaca`. Trading tools hit the paper host by default (live requires an opt-in — see Auth).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                       | Script name                | Connections | Description                                                                     |
 | ---------------------------------------------------------------------------- | -------------------------- | ----------- | ------------------------------------------------------------------------------- |
@@ -69,6 +84,10 @@ All scripts use the single connection `alpaca`. Trading tools hit the paper host
 | [`scripts/getWatchlist.ts`](scripts/getWatchlist.ts)                         | `getWatchlist`             | `alpaca`    | Get one watchlist by id, including its asset symbols.                           |
 | [`scripts/getWatchlistByName.ts`](scripts/getWatchlistByName.ts)             | `getWatchlistByName`       | `alpaca`    | Get one watchlist by name, including its asset symbols.                         |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 **Disambiguation before a write.** Trade and position tools key on an **exact symbol or id**, not a company name. Before acting on something the user named loosely:
@@ -86,19 +105,18 @@ All scripts use the single connection `alpaca`. Trading tools hit the paper host
 - **Manage the stock screener, OAuth apps, or account documents** — not exposed.
 
 If asked for any of these, tell the user it's unsupported and stop — don't substitute an unrelated tool and report success for an action you didn't perform.
+<!-- END:disambiguation-and-refusals -->
 
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
-Alpaca authenticates with an **API key id + secret** (two headers), resolved into the one `alpaca` connection slot. Two resolvers:
-
-- **`alpaca:<PREFIX>`** — direct mode. `<PREFIX>` names a pair of environment variables `<PREFIX>_API_KEY_ID` and `<PREFIX>_API_SECRET_KEY` (conventionally `ALPACA` → `ALPACA_API_KEY_ID` + `ALPACA_API_SECRET_KEY`); mint the key/secret in the Alpaca dashboard and copy the secret when it's displayed. The connector injects both as the `APCA-API-KEY-ID` / `APCA-API-SECRET-KEY` headers.
-- **`zapier:<connection-id>`** — Zapier-managed auth. Routes through a Zapier Alpaca connection. (Experimental for Alpaca — the direct resolver is the verified path.)
-
-**Paper vs live is a safety boundary — the default is safe.** Trading requests go to the **paper** (simulated-money) host unless you set `ALPACA_TRADING_ENV=live`. Paper and live use **distinct keys** — a paper key against the live host (or vice versa) fails to authenticate (typically `401`); make sure the key matches the environment you're targeting. Live trading is gated twice: order-placing tools refuse the live host unless **both** `ALPACA_TRADING_ENV=live` **and** `ALPACA_ALLOW_LIVE_TRADING=true` are set.
-
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes -->
+
+Zapier-managed auth (`zapier:<connection-id>`) is experimental for Alpaca — the direct resolver (`alpaca:<PREFIX>`) is the verified path.
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -121,6 +139,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -128,3 +148,5 @@ Load the matching reference file before working in that area:
 | Reference                                                              | Covers                                                                                                                                                                                                                                                                                                                                                        | Load it when                                                                                                                                             |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/alpaca-api-gotchas.md`](references/alpaca-api-gotchas.md) | Alpaca API behavior the schemas don't capture: auth & paper/live hosts, the `{code, message}` error envelope + status codes, rate limits, pagination, order types/TIF/classes (bracket/oco/oto/mleg), fractional/notional & extended-hours rules, order lifecycle & cancel/replace, position close/liquidate/exercise, and account/watchlist/calendar details | Load before placing, replacing, or canceling orders; closing or exercising positions; or whenever a call returns an unexpected HTTP status or error code |
+
+<!-- END:skill-references-table -->
