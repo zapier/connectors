@@ -12,16 +12,26 @@ metadata:
 
 # Elevenlabs
 
-_Independent, unofficial connector for Elevenlabs. Not affiliated with, endorsed by, or sponsored by Elevenlabs. "Elevenlabs" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for the ElevenLabs AI-audio API: convert text to spoken audio in any of the account's voices, generate sound effects and multi-speaker dialogue, re-voice or denoise existing audio, transcribe audio and video by URL, design brand-new synthetic voices from a text description, and manage the account's voices, generation history, and credit quota. Audio-producing tools write the audio to a local file and return its path by default; pass `return_base64: true` to get the bytes inline instead (for consumers without filesystem access).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Elevenlabs. Not affiliated with, endorsed by, or sponsored by Elevenlabs. "Elevenlabs" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - Turn text into audio: narration, a spoken reply, a podcast-style dialogue, or a sound effect described in words.
 - Transform existing audio: transcribe it, isolate the speech from background noise, or re-voice it in a different voice.
 - Manage voices: find one in the account or the community library, add it, design a new one from a description, or free up voice slots.
 - Check the account before big generations: remaining character credits, tier gates, and voice-slot usage via `getUserSubscription`.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -36,11 +46,16 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 | An MCP-aware client — tools may already be loaded (e.g. `mcp__elevenlabs__<tool>`), or you can register a local server yourself (or guide the user to)          | [`references/use-as-mcp.md`](references/use-as-mcp.md)       |
 | Terminal / subprocess access (you can run `node`)                                                                                                               | [`references/use-as-cli.md`](references/use-as-cli.md)       |
 | Only your own code, importing this package as a dependency                                                                                                      | [`references/use-as-sdk.md`](references/use-as-sdk.md)       |
-| No tool access, no terminal, no ability to import this package — you write your own code that calls the ElevenLabs API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
+| No tool access, no terminal, no ability to import this package — you write your own code that calls the Elevenlabs API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All scripts share the single `elevenlabs` connection. Audio-producing scripts accept `return_base64` (default false: audio is written to a temp file and returned as `audio_path`).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                             | Script name             | Connections | Description                                                                                   |
 | ---------------------------------- | ----------------------- | ----------- | --------------------------------------------------------------------------------------------- |
@@ -64,11 +79,16 @@ All scripts share the single `elevenlabs` connection. Audio-producing scripts ac
 | `scripts/deleteHistoryItem.ts`     | `deleteHistoryItem`     | elevenlabs  | Permanently delete one generated item from history. Irreversible.                             |
 | `scripts/getUserSubscription.ts`   | `getUserSubscription`   | elevenlabs  | Check tier, character credits used/limit, reset time, and voice-slot usage.                   |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 **Name-matched voices.** Voices are looked up by human-friendly names (`listVoices` search, `searchVoiceLibrary`), and names collide — several account or library voices can share "George" or "Rachel". Before generating with, deleting, or adding a voice matched by name: count exact (case-insensitive) name matches. Exactly one → act on it without asking. Two or more → stop, list the candidates with a distinguishing field (category, description, or accent), and ask which one. Never silently pick. The same rule applies to history items matched by their source text via `listHistory` search before `deleteHistoryItem`.
 
 **Unsupported operations.** This connector does not clone voices from sample recordings (instant or professional voice cloning) and does not generate music. If asked, say the operation isn't supported here and stop — don't substitute `designVoice` (which invents a voice from a description, not from someone's recording) or `createSoundEffect` (which makes sound effects, not music) and report success for an action you didn't perform.
+<!-- END:disambiguation-and-refusals -->
 
 ## Auth
 
@@ -76,14 +96,15 @@ Every shape passes auth as one connection **selector**, not the secret — a `[<
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
 
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
+
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
 |                                      | Load                                                                   |
 | ------------------------------------ | ---------------------------------------------------------------------- |
 | Pass the credential directly         | [`references/use-without-zapier.md`](references/use-without-zapier.md) |
 | Route it through a Zapier connection | [`references/use-with-zapier.md`](references/use-with-zapier.md)       |
-
-Zapier-managed connections can't forward multipart request bodies yet, so the three audio-upload scripts — `speechToSpeech`, `speechToText`, and `isolateAudio` — require direct mode (the `env:<ENV_VAR>` resolver in [`references/use-without-zapier.md`](references/use-without-zapier.md)). All other scripts work over either resolver.
 
 ## Output format
 
@@ -99,6 +120,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -106,3 +129,5 @@ Load the matching reference file before working in that area:
 | Reference                                                      | Covers                                                                                                        | Load it when                                                                                      |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | [ElevenLabs API gotchas](references/elevenlabs-api-gotchas.md) | Authentication, errors, model and voice resolution, generation limits, transcription, pagination, and history | Choosing IDs or models, preparing audio inputs, paginating results, or recovering from API errors |
+
+<!-- END:skill-references-table -->

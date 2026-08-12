@@ -1,20 +1,34 @@
 # @zapier/elevenlabs-connector
 
-_Independent, unofficial connector for Elevenlabs. Not affiliated with, endorsed by, or sponsored by Elevenlabs. "Elevenlabs" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for [ElevenLabs](https://elevenlabs.io/docs/api-reference/introduction), the AI audio platform. Generate speech from text in any of your account's voices, create sound effects and multi-speaker dialogue, re-voice or clean up existing audio, transcribe audio and video, design brand-new synthetic voices from a text description, and manage your voices, generation history, and subscription quota. Generated audio is written to a local file and returned as a path by default (base64 inline on request). Auth is a single ElevenLabs API key, passed directly or through a Zapier-managed connection.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Elevenlabs. Not affiliated with, endorsed by, or sponsored by Elevenlabs. "Elevenlabs" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - Turning text into spoken audio — narration, voiceovers, spoken replies — in a chosen or purpose-designed voice.
 - Audio utility jobs: transcribe a recording or video, strip background noise, re-voice speech in another voice, or re-download something generated earlier without paying credits again.
 - Managing an ElevenLabs account's voices (search the community library, add/remove voices, design new ones) and keeping an eye on credit quota.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - Real-time/streaming audio, conversational agents, dubbing studio, and music generation — this connector covers single-call generation only; use ElevenLabs' own SDKs for those surfaces.
 - Cloning a voice from sample recordings (instant/professional voice cloning) — not included in this connector.
 - Editing or mixing audio files locally — this connector only transforms audio through the ElevenLabs API.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -55,6 +69,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script                  | Description                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------- |
 | `textToSpeech`          | Convert text to spoken audio in a chosen voice.                                   |
@@ -77,11 +93,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `deleteHistoryItem`     | Permanently delete one generated item from history.                               |
 | `getUserSubscription`   | Check tier, credit usage/limit, reset time, and voice-slot usage.                 |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/elevenlabs-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { textToSpeech } from "@zapier/elevenlabs-connector";
@@ -94,6 +114,7 @@ const { data } = await textToSpeech(
 ```
 
 The `{ data, meta }` envelope is uniform across SDK, CLI, and MCP; `meta.outputDataValidation` reports what output validation did, and `--skipOutputDataValidation` (CLI) / `{ skipOutputDataValidation: true }` (SDK) / `meta: { skipOutputDataValidation: true }` (MCP) returns the raw, unvalidated output.
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -108,7 +129,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/elevenlabs)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [ElevenLabs API documentation](https://elevenlabs.io/docs/api-reference/introduction)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -123,3 +152,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
