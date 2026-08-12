@@ -4,13 +4,13 @@ This is the standalone/terminal shape: you can run `node` and execute files dire
 
 ## Install
 
-See [`SKILL.md`](../SKILL.md#setup) for the one-time `npm install --omit=dev` needed here. After that, invoke `cli.js` by path from anywhere; no need to `cd` here first. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help`. On older Node, run `node cli.js --help` anyway: it detects your runtime and prints how to run without upgrading (build it locally, use the prebuilt npm package, or another runtime) — don't skip the connector just because Node is old.
+See [`SKILL.md`](../SKILL.md#setup) for the one-time `npm install --omit=dev` needed here. After that, invoke `cli.js` by path from anywhere; no need to `cd` here first. `cli.js` is the entry point — list every script with `node cli.js --help`, then learn a script's inputs and connections with `node cli.js run <script> --help` (the input as full JSON Schema so you can match it exactly, the output as a compact path summary; add `--fullSchema` for the full output schema too). On older Node, run `node cli.js --help` anyway: it detects your runtime and prints how to run without upgrading (build it locally, use the prebuilt npm package, or another runtime) — don't skip the connector just because Node is old.
 
 `cli.js` self-checks readiness before running: if dependencies aren't installed it exits non-zero with the exact install command (it disambiguates a read-only directory from a sandbox-blocked package cache). Run that, then re-run your command.
 
 ## Running a script
 
-After `npm install --omit=dev`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its exact input schema and connections, then invoke it:
+After `npm install --omit=dev`, run a script by name with `node cli.js run <script>`, or execute its file directly — both take the same arguments and both accept `--help`. Always run a script's `--help` first to learn its inputs, output shape, and connections — the input as full JSON Schema (so you can match it exactly) and the output as a compact path summary; add `--fullSchema` for the full output schema too. Then invoke it:
 
 ```bash
 # default — via the entry point; self-checks readiness and prints friendly diagnostics
