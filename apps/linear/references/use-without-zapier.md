@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Linear's credential yourself, ra
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Linear supports two credential types ([Getting started](https://linear.app/developers/graphql#authentication)):
 
 **Personal API key** (simplest, for your own scripts). Mint one in Linear under
@@ -30,10 +32,13 @@ Which credential a call needs, and how the two attach differently, is in
 [`linear-api-gotchas.md`](linear-api-gotchas.md#auth-personal-api-key-is-a-bare-authorization-header-no-bearer) —
 the personal key goes in a **bare** `Authorization` header, OAuth tokens use
 `Bearer`.
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
+
+<!-- BEGIN:use-without-zapier-passing-credential -->
 
 This connector exposes one direct-token resolver, `env`, which reads a Linear
 personal API key from the `LINEAR_API_KEY` environment variable and attaches it
@@ -43,6 +48,7 @@ verbatim as the `Authorization` header (no `Bearer` prefix). Pass it as
 The resolver only carries the personal-API-key identity. For Zapier-managed
 connections (including OAuth), use the Zapier-managed path in
 [`use-with-zapier.md`](use-with-zapier.md) instead.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
