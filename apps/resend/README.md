@@ -1,20 +1,34 @@
 # @zapier/resend-connector
 
-_Independent, unofficial connector for Resend. Not affiliated with, endorsed by, or sponsored by Resend. "Resend" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for [Resend](https://resend.com/docs/api-reference/introduction), the email API. Send transactional email, manage a contact list and its segments, send broadcasts to a whole segment, read the delivery status of sent email, discover custom contact properties, and check which sending domains are verified — 21 scripts covering Resend's email, contacts, segments, broadcasts, domains, and automation-event surfaces. Authenticates with a single Resend API key (a bearer token).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Resend. Not affiliated with, endorsed by, or sponsored by Resend. "Resend" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - Sending transactional email to specific recipients, or a marketing broadcast to an entire segment, from an agent or automation.
 - Managing a Resend contact list programmatically — creating, updating, segmenting, and looking up contacts (by id or email).
 - Checking whether a message delivered, or diagnosing why a send failed (e.g. an unverified sending domain).
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Provisioning or verifying sending domains** — domain setup is DNS work done once in the Resend dashboard; `listDomains` here is read-only (status diagnosis only).
 - **Authoring automation flows** — this connector can _trigger_ a configured automation (`sendEvent`) but not create or edit the automation graph; use the Resend dashboard.
 - **Managing API keys, webhooks, email templates, or suppression lists**, or sending batch / raw-bytes-attachment email — those surfaces are out of scope.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -22,8 +36,8 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 
 ```bash
 # Run a script with zero install — npx fetches the package on first use
-export RESEND_API_KEY=re_xxx
-npx @zapier/resend-connector@latest run sendEmail '{"from":"you@your-domain.com","to":["dest@example.com"],"subject":"Hi","text":"Hello"}' --connection env:RESEND_API_KEY
+export <ENV_VAR>=xxx
+npx @zapier/resend-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/resend-connector
@@ -51,9 +65,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:RESEND_API_KEY"` with `"env": { "RESEND_API_KEY": "re_xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
+
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                     | Description                                                   |
 | -------------------------- | ------------------------------------------------------------- |
@@ -79,11 +95,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `listDomains`              | List sending domains and their verification status.           |
 | `sendEvent`                | Trigger a configured automation by sending a named event.     |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/resend-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:RESEND_API_KEY" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { sendEmail } from "@zapier/resend-connector";
@@ -100,6 +120,8 @@ const { data } = await sendEmail(
 // data.id — the sent email's id; pass to getEmail to read delivery status.
 ```
 
+<!-- END:readme-usage-example -->
+
 ## Auth
 
 Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
@@ -113,7 +135,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/resend)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Resend API reference](https://resend.com/docs/api-reference/introduction) — the upstream API this connector wraps
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -128,3 +158,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
