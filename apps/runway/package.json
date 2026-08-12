@@ -58,7 +58,7 @@
     "typescript": "5.9.3",
     "vitest": "4.1.10"
   },
-  "version": "0.1.4",
+  "version": "0.1.5",
   "publishConfig": {
     "access": "public"
   },
