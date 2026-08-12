@@ -67,6 +67,18 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 `--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
+### Cloning the source
+
+You don't need to clone anything to use this connector — the options above already cover that. Want the actual repo source instead, to read the script code, browse `references/`, run this connector's tests, or hack on it? Clone with a path filter so you only fetch this one connector, not the whole catalog:
+
+```bash
+git clone --filter=blob:none --sparse https://github.com/zapier/connectors.git
+cd connectors && git sparse-checkout set apps/google-tasks
+cd apps/google-tasks && npm install
+```
+
+See the [main README](https://github.com/zapier/connectors#cloning-the-source) to clone several connectors at once.
+
 ## Scripts
 
 <!-- BEGIN:readme-scripts-table -->
