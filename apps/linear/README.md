@@ -1,18 +1,31 @@
 # @zapier/linear-connector
 
-_Independent, unofficial connector for Linear. Not affiliated with, endorsed by, or sponsored by Linear. "Linear" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for [Linear](https://linear.app), wrapping the [Linear GraphQL API](https://linear.app/developers/graphql). It covers the day-to-day issue-tracking job: create and update issues, comment on them and attach links, find issues by identifier or filter, manage projects and post status updates, and resolve the teams, workflow states, labels, users, milestones, and cycles an agent needs to fill those records out — 22 scripts in all. Authenticate with a single connection string: a Linear personal API key (`LINEAR_API_KEY`) passed directly, or a Zapier-managed connection.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Linear. Not affiliated with, endorsed by, or sponsored by Linear. "Linear" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Reach for this connector when an agent needs to read or write Linear issues and projects — open and triage issues, move them through workflow states, assign and label them, comment, and post project updates. It exposes Linear's workspace resolvers (teams, states, labels, users, cycles, milestones) as first-class tools, so an agent can turn a name into an id and act without a human clicking through a UI.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Triggers / event subscriptions.** This connector is non-trigger by design; it does not subscribe to new-issue, comment, or project-update events.
 - **Customer requests.** Creating or finding customers and their needs is not in this version.
 - **Hard deletes.** There is no permanent delete for an issue — `archiveIssue` archives it reversibly.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -53,7 +66,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-**Issues — write**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script             | Description                                                                                                     |
 | ------------------ | --------------------------------------------------------------------------------------------------------------- |
@@ -95,11 +108,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `listCycles`            | List a team's cycles (sprints); resolves a cycle to its id, or find the current cycle. |
 | `getViewer`             | Return the authenticated user (the "me" identity) — id, name, email.                   |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/linear-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { createIssue } from "@zapier/linear-connector";
@@ -118,6 +135,8 @@ console.log(data.identifier, data.url); // e.g. "ENG-118", "https://linear.app/�
 console.log(meta.outputDataValidation); // { skipped: false, droppedPaths: null }
 ```
 
+<!-- END:readme-usage-example -->
+
 ## Auth
 
 Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
@@ -131,7 +150,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/linear)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Linear GraphQL API docs](https://linear.app/developers/graphql)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -146,3 +173,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

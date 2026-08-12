@@ -12,16 +12,26 @@ metadata:
 
 # Linear
 
-_Independent, unofficial connector for Linear. Not affiliated with, endorsed by, or sponsored by Linear. "Linear" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for working with Linear over the [Linear GraphQL API](https://linear.app/developers/graphql) (`POST https://api.linear.app/graphql`): create and update issues, comment on them and attach links, find issues by identifier or filter, manage projects and post project updates, and resolve the teams, workflow states, labels, users, milestones, and cycles an agent needs to act. 22 scripts across issue writes, issue reads, projects, and workspace navigation. This version covers the day-to-day issue-tracking job over the public API; every tool builds one GraphQL query or mutation and posts it to the single endpoint.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Linear. Not affiliated with, endorsed by, or sponsored by Linear. "Linear" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to **create or update issues** — open an issue in a team; change its title, description, state, assignee, priority, project, cycle, or due date; add or remove a single label; comment on it; or attach a link (a related ticket, doc, or PR).
 - An agent needs to **find or read issues** — fetch one by UUID or human identifier (e.g. `ENG-118`), or search by title text, assignee, state, team, project, or label, then read its comment thread.
 - An agent needs to **manage projects** — create or update a project, read one, list projects, and post a status update with a health signal.
 - An agent needs to **resolve names to ids before writing** — list teams, workflow states, labels, users, project milestones, and cycles, or get the authenticated "me" identity for assign-to-self / "my issues" flows.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 Every script uses the single connection `linear`. Grouped below as issue writes, issue reads, projects, and workspace navigation; ids everywhere are UUIDs, except the issue tools (`getIssue`, `updateIssue`, `archiveIssue`, `addIssueLabel`, `removeIssueLabel`, `createComment`, `createAttachment`, `listIssueComments`) also accept an issue's human identifier (e.g. `ENG-118`).
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                 | Script name                                       | Connections | Description                                                                                                                                            |
 | ---------------------------------------------------------------------- | ------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -67,6 +82,10 @@ Every script uses the single connection `linear`. Grouped below as issue writes,
 | [`scripts/listCycles.ts`](scripts/listCycles.ts)                       | `listCycles` (List Cycles)                        | `linear`    | List a team's cycles (sprints). The current cycle is the one whose startsAt/endsAt spans now. Resolve a cycle to its id. Returns a page plus a cursor. |
 | [`scripts/getViewer.ts`](scripts/getViewer.ts)                         | `getViewer` (Get Viewer)                          | `linear`    | Return the authenticated user (the "me" identity) — id, name, email. Use the id to assign issues to yourself or filter your own issues.                |
 
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
+
 ## Disambiguation & refusals
 
 This connector resolves names to ids, then writes. Two situations trip up an action-biased agent — handle both before you write.
@@ -83,12 +102,16 @@ This connector resolves names to ids, then writes. Two situations trip up an act
 - **Set up triggers or event subscriptions.** This connector is non-trigger by design; Linear's webhook surface is not exposed.
 
 If asked for any of these, tell the user it's unsupported and stop — don't reach for an unrelated tool to approximate it and never report success for an action you didn't perform.
+<!-- END:disambiguation-and-refusals -->
 
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -111,6 +134,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -119,3 +144,5 @@ Load the matching reference file before working in that area:
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`references/linear-api-gotchas.md`](references/linear-api-gotchas.md) | Auth header form (bare key vs `Bearer`), the HTTP-200-with-`errors` envelope, the 400 `RATELIMITED` rate-limit case, Relay cursor pagination, UUID vs `ENG-118` identifiers, the priority `0`–`4` scale, workflow-state `type` categories, link-based attachments, reversible archiving | Any call that authenticates, handles an error, paginates, resolves an id, or sets priority/state/labels/attachments — i.e. before writing or debugging any Linear request |
 | [`references/linear-formatting.md`](references/linear-formatting.md)   | Linear's Markdown surface: standard Markdown (headings, lists, code blocks, checklists), and the two Linear-specific quirks — `@`-mentions composed from a resource's plain URL (not `@name`) over the API, and `+++ … +++` collapsible sections                                        | Before composing or editing an issue description, comment body, project update body, or project description — anything that fills a Markdown `body`/`description` field   |
+
+<!-- END:skill-references-table -->
