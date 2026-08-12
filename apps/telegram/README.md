@@ -1,19 +1,33 @@
 # @zapier/telegram-connector
 
-_Independent, unofficial connector for Telegram. Not affiliated with, endorsed by, or sponsored by Telegram. "Telegram" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable scripts for a **Telegram bot**, wrapping the [Telegram Bot API](https://core.telegram.org/bots/api). Send messages, media (photo/document/video/audio), locations, contacts, and polls; edit, delete, forward, copy, and pin messages; and resolve the chats, members, and files a bot interacts with — 21 scripts in all. Every script acts as the bot (the bot must be a member of any chat it messages), and auth is a single bot token from [@BotFather](https://core.telegram.org/bots/features#botfather), supplied via the environment (direct) or a Zapier-managed connection (recommended). Use when the user mentions Telegram or wants a bot to post, manage, or look up Telegram content.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Telegram. Not affiliated with, endorsed by, or sponsored by Telegram. "Telegram" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - A Telegram **bot** needs to send or manage messages in chats it belongs to — post updates/media/polls to a channel or group, edit/delete/pin its own messages, or forward/copy between chats.
 - An agent needs to **resolve** a Telegram chat or member — discover a reachable `chat_id` (`listRecentChats`), confirm a chat (`getChat`), or read a chat's members/admins.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Creating chats, or messaging a user who hasn't messaged the bot first** — Telegram bots can't create groups/channels or cold-DM users; a human must add the bot or start the chat. (Use the Telegram app for setup.)
 - **Group moderation** (ban/restrict members, manage invite links) — not in this connector's v1 surface.
 - **Uploading local-disk files** — media is sent by HTTPS URL or an existing Telegram `file_id`, not from a local path.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -54,6 +68,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script                  | Description                                                     |
 | ----------------------- | --------------------------------------------------------------- |
 | `sendMessage`           | Send a text message to a chat.                                  |
@@ -78,11 +94,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `getChatMemberCount`    | Get the number of members in a chat.                            |
 | `getFile`               | Get a file's metadata and download path.                        |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/telegram-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { sendMessage } from "@zapier/telegram-connector";
@@ -93,6 +113,8 @@ const { data } = await sendMessage(
 );
 // data.message_id → the id of the sent message; meta.outputDataValidation reports any stripped fields.
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -107,7 +129,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/telegram)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Telegram Bot API docs](https://core.telegram.org/bots/api)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -122,3 +152,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
