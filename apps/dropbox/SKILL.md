@@ -12,16 +12,26 @@ metadata:
 
 # Dropbox
 
-_Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by, or sponsored by Dropbox. "Dropbox" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for working with files and folders in Dropbox — upload and write files, organize (move/copy/delete/create folders), navigate and search, read file contents, create and modify shared links, manage shared-folder membership, and create file requests. Wraps the [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) (`https://api.dropboxapi.com/2/<namespace>/<method>`, with uploads/downloads on `https://content.dropboxapi.com`). Read-only tools are clearly marked; write tools return clean file/folder metadata rather than silently attaching links or contents.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by, or sponsored by Dropbox. "Dropbox" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to save, move, copy, rename, or delete files and folders in Dropbox.
 - An agent needs to find a file or folder (by name or content) or list a folder's contents before acting on it.
 - An agent needs to read a text file's contents inline, or hand off a file's bytes via a temporary or durable link.
 - An agent needs to share a file/folder, change link settings, or manage who can access a shared folder.
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -40,7 +50,12 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 
 ## Scripts
 
+<!-- BEGIN:skill-connections-note? -->
+
 All 21 scripts use the single `dropbox` connection. Each script's `inputSchema` / `outputSchema` (Zod) inside the script file is the source of truth for its contract.
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                                       | Script name                | Connections        | Description                                                                                    |
 | ---------------------------------------------------------------------------- | -------------------------- | ------------------ | ---------------------------------------------------------------------------------------------- |
@@ -67,6 +82,9 @@ All 21 scripts use the single `dropbox` connection. Each script's `inputSchema` 
 | [`scripts/getCurrentAccount.ts`](scripts/getCurrentAccount.ts)               | `getCurrentAccount`        | Single (`dropbox`) | Identify the account and its team/personal namespace ids.                                      |
 
 Several scripts take an id or url best resolved from another script — those resolution hints are in the field descriptions (e.g. `addFolderMember.shared_folder_id` ← `listSharedFolders`; `modifySharedLinkSettings.url` ← `listSharedLinks`).
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
 
 ## Disambiguation & refusals
 
@@ -83,11 +101,16 @@ The entity types most likely to collide here are **files/folders by name** (reso
 - **Reading binary documents (PDF/image/Office) as text, OCR, or document parsing.** `getFileContents` returns UTF-8 text only; for other files it returns `is_text:false` and you must hand off the bytes via `getTemporaryLink`. Don't claim to have read a PDF's contents.
 - **Fetching or editing an individual file request, or sharing a whole folder as a managed share.** Only `createFileRequest` + `listFileRequests` are available; there is no get/update file-request or `shareFolder` tool.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -110,6 +133,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -117,3 +142,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                | Covers                                                                                                                                                                                                                                                                                                        | Load it when                                                                  |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) | Stone `.tag` union shape, `error_summary` error model, read-vs-write not-found asymmetry, path rules (root is `""` not `"/"`), cursor pagination via sibling `/continue` endpoints, rate limits + namespace write-locking, upload-session flow, shared-link recovery, team-space targeting via `namespace_id` | Before making any direct Dropbox API calls or debugging unexpected API errors |
+
+<!-- END:skill-references-table -->
