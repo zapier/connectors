@@ -3,7 +3,7 @@
   "name": "algolia",
   "displayName": "Algolia",
   "description": "Agent-callable Algolia tools — index records, search and browse them, manage index settings, synonyms, and query rules, and read AI recommendations.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
