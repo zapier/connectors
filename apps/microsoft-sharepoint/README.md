@@ -1,19 +1,32 @@
 # @zapier/microsoft-sharepoint-connector
 
-_Independent, unofficial connector for Microsoft SharePoint. Not affiliated with, endorsed by, or sponsored by Microsoft SharePoint. "Microsoft SharePoint" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable tools for **Microsoft SharePoint Online**, wrapping the [Microsoft Graph API](https://learn.microsoft.com/en-us/graph/api/resources/sharepoint?view=graph-rest-1.0) v1.0. Find sites and document libraries; browse, search, upload, download, move, copy, and share files and folders; manage SharePoint lists and their items; and author and publish site pages — 32 scripts in all. Read-only navigation scripts resolve the ids the write scripts need (a site is an opaque composite id from `findSites`/`getSite`; drives, items, lists, and pages likewise come from their `list*`/`find*` scripts). Auth is a single Microsoft OAuth 2.0 bearer token, either Zapier-managed or a direct token.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Microsoft SharePoint. Not affiliated with, endorsed by, or sponsored by Microsoft SharePoint. "Microsoft SharePoint" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Reach for this connector when an agent needs to work with SharePoint Online content programmatically: find sites and files, upload or organize documents, share items with people or links, read and write list items, or author and publish site pages. It's the right pick whenever the task touches SharePoint document libraries, lists, or pages over the Microsoft Graph API.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Personal OneDrive files, or Outlook mail/calendar** — those are separate Graph surfaces; use a OneDrive or the `microsoft-outlook` connector instead.
 - **Change notifications / triggers** (new file, new list item) — this connector is request/response only; it doesn't subscribe to events.
 - **Tenant administration** — content types, site columns, term-store metadata, site provisioning, and retention are out of scope.
 - **Rich page authoring** — `createPage` writes a single text web part; images, embeds, multi-column layouts, and editing an existing page's body aren't supported.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -22,7 +35,7 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 ```bash
 # Run a script with zero install — npx fetches the package on first use
 export <ENV_VAR>=xxx
-npx @zapier/microsoft-sharepoint-connector@latest run findSites '{ "search": "marketing" }' --connection env:<ENV_VAR>
+npx @zapier/microsoft-sharepoint-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/microsoft-sharepoint-connector
@@ -54,7 +67,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-**Sites & drives**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script       | Description                                                  |
 | ------------ | ------------------------------------------------------------ |
@@ -111,11 +124,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `publishPage` | Publish a draft site page.                              |
 | `deletePage`  | Delete a site page (moves it to the recycle bin).       |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/microsoft-sharepoint-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { findFiles } from "@zapier/microsoft-sharepoint-connector";
@@ -126,6 +143,8 @@ const { data } = await findFiles(
 );
 // data → { items: [ { id, name, webUrl, ... } ], next_cursor?: string }
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -138,9 +157,17 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 ## Links
 
-- [Microsoft Graph SharePoint API docs](https://learn.microsoft.com/en-us/graph/api/resources/sharepoint?view=graph-rest-1.0)
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/microsoft-sharepoint)
+
+<!-- BEGIN:readme-links-extra -->
+
+- [Microsoft Graph SharePoint API docs](https://learn.microsoft.com/en-us/graph/api/resources/sharepoint?view=graph-rest-1.0)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -155,3 +182,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
