@@ -4,15 +4,21 @@ This is the direct-auth path: you hold and pass Clay's credential yourself, rath
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Clay has no OAuth app registration flow — a credential here is a plain API key, minted from a Clay account (there's no separate developer-app step first).
 
 Sign in at [clay.com](https://www.clay.com), then go to **Settings → Account → API keys** and create one. There are no scopes or bot-vs-user token distinctions; a key carries your account's full API access.
+<!-- END:use-without-zapier-getting-credentials -->
 
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 This connector's `clay` connection accepts one direct-token resolver: **`env:<ENV_VAR>`** — `<ENV_VAR>` names an environment variable holding the raw Clay API key; the connector sends it as the raw value of the `authorization` header (no `Bearer` prefix, no scheme). `CLAY_API_KEY` is the conventional name, but any env-var name works. Direct mode is the recommended, verified path for v1.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
