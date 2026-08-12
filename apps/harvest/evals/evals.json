@@ -1,0 +1,821 @@
+{
+  "skill_name": "harvest",
+  "version": "19af43e",
+  "description": "Intent-anchored eval scenarios for the harvest connector arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (cold-start coverage probes); discover-act scenarios operate on a pre-existing world via in-envelope read/find primitives (all arms compete); act-only scenarios target a named ambient resource. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "log-time-by-duration",
+      "kind": "arrange-act",
+      "description": "Coverage probe: self-provision a client + project + assigned task, then log a duration time entry against them and verify it was recorded.",
+      "steps": [
+        {
+          "intent": "Create a new client named 'Eval Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A client named 'Eval Client {{run_id}}' now exists and its identifier is reported back."
+            ],
+            "mechanism": [
+              "Creates exactly one client and reads the resulting client id from the create result rather than inventing or hard-coding one."
+            ]
+          }
+        },
+        {
+          "intent": "Create a billable project named 'Eval Project {{run_id}}' for the client 'Eval Client {{run_id}}' you just created.",
+          "assertions": {
+            "outcome": [
+              "A billable project named 'Eval Project {{run_id}}' now exists under the 'Eval Client {{run_id}}' client, and its identifier is reported back."
+            ],
+            "mechanism": [
+              "Resolves the client 'Eval Client {{run_id}}' to its numeric id and passes that as client_id rather than passing the client name as the id.",
+              "Supplies the fields Harvest requires to create a project (billable flag, a bill-by method, and a budget-by method) rather than omitting them."
+            ]
+          }
+        },
+        {
+          "intent": "Create a task named 'Design {{run_id}}' and make it available on the 'Eval Project {{run_id}}' project so time can be logged against it.",
+          "assertions": {
+            "outcome": [
+              "A task named 'Design {{run_id}}' exists and is assigned to the 'Eval Project {{run_id}}' project, so it is a valid task to log time against on that project."
+            ],
+            "mechanism": [
+              "Creates the account-level task and then assigns it to the project, rather than assuming an account-wide task is automatically loggable on the project."
+            ]
+          }
+        },
+        {
+          "intent": "Log 2.5 hours of time today against the 'Eval Project {{run_id}}' project on the 'Design {{run_id}}' task, with the note 'kickoff work'.",
+          "assertions": {
+            "outcome": [
+              "A time entry of approximately 2.5 hours for today with the note 'kickoff work' now exists against the 'Eval Project {{run_id}}' project and 'Design {{run_id}}' task, and its identifier is reported.",
+              "The reply does not claim an exact stored hours value that contradicts the possibility of the account rounding the submitted 2.5 hours."
+            ],
+            "mechanism": [
+              "Resolves both project and task to their numeric ids (the task from the project's assigned tasks) before logging, rather than guessing ids or passing names.",
+              "Logs a finalized entry by supplying the hours, rather than omitting hours (which would start a running timer)."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Eval Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "start-and-stop-timer",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: starting a timer by omitting hours leaves a running entry; stopping is only valid while it is running. Self-provisions the project/task, starts a timer, then stops it.",
+      "steps": [
+        {
+          "intent": "Create a billable project named 'Timer Project {{run_id}}' for a new client 'Timer Client {{run_id}}', add a task 'Focus {{run_id}}' to it, then start a running timer on that project and task for today.",
+          "assertions": {
+            "outcome": [
+              "A running timer (a time entry that is currently running, with no finalized hours yet) now exists against the 'Timer Project {{run_id}}' project on the 'Focus {{run_id}}' task, and its identifier is reported."
+            ],
+            "mechanism": [
+              "Starts the running timer by omitting the hours value rather than supplying an hours value (supplying hours would create a finalized, non-running entry).",
+              "Resolves the project and task to numeric ids before starting the timer rather than guessing ids."
+            ]
+          }
+        },
+        {
+          "intent": "Stop the timer you just started.",
+          "assertions": {
+            "outcome": [
+              "The timer started earlier in this session is now stopped (it is no longer running). Its hours reflect however much wall-clock time actually elapsed between start and stop — including zero, if that interval rounds down — so a low or zero hours value is not itself a failure; only a still-running entry (is_running true) is."
+            ],
+            "mechanism": [
+              "Stops the specific running time entry created earlier in this session, targeting its id rather than a substituted or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Timer Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Timer Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-running-timer-and-stop",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: to stop 'my current timer' the agent must first discover the running entry rather than guess an id. Self-seeds a running timer, then finds and stops it by description alone.",
+      "steps": [
+        {
+          "intent": "Start a running timer today against any project and task available on my account (create a client 'Standup Client {{run_id}}', a project 'Standup Project {{run_id}}', and a task 'Meetings {{run_id}}' first if needed).",
+          "assertions": {
+            "outcome": [
+              "A running timer now exists on my account against the 'Standup Project {{run_id}}' project and 'Meetings {{run_id}}' task."
+            ],
+            "mechanism": [
+              "Starts the timer by omitting hours so the entry is left running."
+            ]
+          }
+        },
+        {
+          "intent": "I forgot to stop my timer — please stop whatever timer I currently have running.",
+          "assertions": {
+            "outcome": [
+              "My currently-running timer is located and stopped, so I no longer have a running timer."
+            ],
+            "mechanism": [
+              "Discovers the running entry by listing time entries filtered to running timers for the current user, rather than guessing or hard-coding a time-entry id."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Standup Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Standup Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "update-time-entry-notes",
+      "kind": "arrange-act",
+      "description": "Coverage probe: create a duration time entry, then amend only its notes, leaving other fields intact.",
+      "steps": [
+        {
+          "intent": "Set up a client 'Notes Client {{run_id}}', a billable project 'Notes Project {{run_id}}', and a task 'Writing {{run_id}}' assigned to it, then log 1 hour today against that project and task with the note 'draft'.",
+          "assertions": {
+            "outcome": [
+              "A time entry of approximately 1 hour for today with the note 'draft' exists against the 'Notes Project {{run_id}}' project, and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves the project and task to numeric ids and supplies hours to finalize the entry."
+            ]
+          }
+        },
+        {
+          "intent": "Change the note on that time entry to 'final draft'.",
+          "assertions": {
+            "outcome": [
+              "The note on the time entry created earlier in this session now reads 'final draft', while its hours and day are unchanged."
+            ],
+            "mechanism": [
+              "Updates the specific entry created earlier in this session, passing only the changed note field rather than resending unrelated fields, and targets its id rather than a substitute."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Notes Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Notes Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-time-entry",
+      "kind": "arrange-act",
+      "description": "Destructive coverage probe: create a time entry then delete it. Kept single-step-of-deletion but wrapped in self-provisioning so the deletion has a real, safe target.",
+      "steps": [
+        {
+          "intent": "Create a client 'Delete Client {{run_id}}', a billable project 'Delete Project {{run_id}}' with a task 'Temp {{run_id}}' assigned, and log 0.5 hours today against that project and task.",
+          "assertions": {
+            "outcome": [
+              "A time entry of approximately 0.5 hours for today exists against the 'Delete Project {{run_id}}' project, and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves the project and task to numeric ids and supplies hours to finalize the entry."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the time entry you just logged.",
+          "assertions": {
+            "outcome": [
+              "The time entry created earlier in this session no longer exists."
+            ],
+            "mechanism": [
+              "Deletes the specific entry created earlier in this session, targeting its id rather than deleting an unrelated entry."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Delete Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Delete Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-time-for-project",
+      "kind": "arrange-act",
+      "description": "Find-then-report: self-seed two entries on a project, then answer 'how much did we log on this project' by listing and summarizing.",
+      "steps": [
+        {
+          "intent": "Create a client 'Report Client {{run_id}}', a billable project 'Report Project {{run_id}}' with a task 'Build {{run_id}}' assigned, then log two time entries today against that project and task: one of 2 hours and one of 3 hours.",
+          "assertions": {
+            "outcome": [
+              "Two time entries (2 hours and 3 hours) for today now exist against the 'Report Project {{run_id}}' project."
+            ],
+            "mechanism": [
+              "Resolves the project and task ids and supplies hours on each create so both entries are finalized."
+            ]
+          }
+        },
+        {
+          "intent": "How many hours have been logged in total against the 'Report Project {{run_id}}' project?",
+          "assertions": {
+            "outcome": [
+              "The reply reports that about 5 hours in total have been logged against the 'Report Project {{run_id}}' project."
+            ],
+            "mechanism": [
+              "Resolves the project name 'Report Project {{run_id}}' to its id and lists time entries filtered to that project, rather than fabricating totals."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Report Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Report Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "log-time-for-teammate",
+      "kind": "arrange-act",
+      "description": "Find-then-act: logging time on a teammate's behalf requires resolving the user first. Self-provisions the project/task, resolves a teammate by name, and logs against that user.",
+      "steps": [
+        {
+          "intent": "Create a client 'Team Client {{run_id}}', a billable project 'Team Project {{run_id}}' with a task 'Support {{run_id}}' assigned, then tell me which users are on my Harvest account.",
+          "assertions": {
+            "outcome": [
+              "The 'Team Project {{run_id}}' project with the 'Support {{run_id}}' task exists, and the reply lists the users on the account with enough detail to pick one."
+            ],
+            "mechanism": [
+              "Lists the account's users to enumerate who is available rather than assuming a user."
+            ]
+          }
+        },
+        {
+          "intent": "Log 1 hour of time today on the 'Team Project {{run_id}}' project and 'Support {{run_id}}' task on behalf of one of the other users on the account (pick any one and tell me who).",
+          "assertions": {
+            "outcome": [
+              "A 1-hour time entry for today exists against the 'Team Project {{run_id}}' project attributed to a specific named account user other than the default, and the reply states whose time it logged."
+            ],
+            "mechanism": [
+              "Passes the chosen teammate's resolved numeric user id on the create, rather than logging against the default authenticated user or inventing a user id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-account-time-tracking-mode",
+      "kind": "act-only",
+      "description": "Guidance-dependent: which time-entry create tool is valid depends on the account's tracking mode (wants_timestamp_timers). Reads that setting and reports it.",
+      "steps": [
+        {
+          "intent": "Does my Harvest account track time by duration or by start-and-end timestamps?",
+          "assertions": {
+            "outcome": [
+              "The reply states whether the account tracks time by duration or by start/end timestamps, grounded in the account's actual configuration rather than a guess."
+            ],
+            "mechanism": [
+              "Reads the company/account settings to determine the tracking mode from the wants_timestamp_timers flag rather than assuming a mode."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "log-time-matching-account-mode",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: an agent that logs time without knowing the account mode risks calling the wrong (duration vs timestamps) create. Correct behavior is to determine the mode, then use the matching create. Graded on whether the entry lands, blind to how.",
+      "steps": [
+        {
+          "intent": "Create a client 'Mode Client {{run_id}}', a billable project 'Mode Project {{run_id}}' with a task 'Task {{run_id}}' assigned, then log about 1 hour of work today against that project and task.",
+          "assertions": {
+            "outcome": [
+              "A time entry of roughly 1 hour for today is successfully recorded against the 'Mode Project {{run_id}}' project — the entry lands rather than being rejected for using the wrong time-entry format for this account."
+            ],
+            "mechanism": [
+              "Determines the account's time-tracking mode (reads wants_timestamp_timers) before logging, then uses the create tool that matches that mode rather than guessing between the duration and timestamps creates."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Mode Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Mode Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "log-time-with-project-task-resolution",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: only tasks assigned to a project are valid to log against it. The agent must resolve the task from the project's assignments, not pick an arbitrary account-wide task.",
+      "steps": [
+        {
+          "intent": "Create a client 'Resolve Client {{run_id}}' and a billable project 'Resolve Project {{run_id}}' for it, create two account tasks 'Alpha {{run_id}}' and 'Beta {{run_id}}', but assign only 'Alpha {{run_id}}' to the project.",
+          "assertions": {
+            "outcome": [
+              "The 'Resolve Project {{run_id}}' project exists with the task 'Alpha {{run_id}}' assigned to it, while 'Beta {{run_id}}' exists as an account task but is not assigned to that project."
+            ],
+            "mechanism": [
+              "Assigns only 'Alpha {{run_id}}' to the project, leaving 'Beta {{run_id}}' unassigned."
+            ]
+          }
+        },
+        {
+          "intent": "Log 1 hour today against the 'Resolve Project {{run_id}}' project on a task that is actually valid for that project.",
+          "assertions": {
+            "outcome": [
+              "A 1-hour time entry for today is recorded against the 'Resolve Project {{run_id}}' project using the 'Alpha {{run_id}}' task (the one valid for the project), not the unassigned 'Beta {{run_id}}' task."
+            ],
+            "mechanism": [
+              "Determines the valid task by listing the project's task assignments and picks an assigned task, rather than picking an arbitrary account-wide task id."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Resolve Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Resolve Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-client",
+      "kind": "arrange-act",
+      "description": "Single-action coverage probe: create a client with just a name.",
+      "steps": [
+        {
+          "intent": "Add a new client called 'Acme Co {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A client named 'Acme Co {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": [
+              "Creates exactly one client and reads the id from the create result rather than inventing one."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-project-for-client",
+      "kind": "arrange-act",
+      "description": "Find-then-act: create a project under an existing client, resolving the client by name and supplying the required project fields.",
+      "steps": [
+        {
+          "intent": "Create a client named 'Host Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A client named 'Host Client {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": ["Reads the created client id from the create result."]
+          }
+        },
+        {
+          "intent": "Set up a new billable project named 'Website Redesign {{run_id}}' for the 'Host Client {{run_id}}' client.",
+          "assertions": {
+            "outcome": [
+              "A billable project named 'Website Redesign {{run_id}}' now exists under the 'Host Client {{run_id}}' client and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves 'Host Client {{run_id}}' to its numeric client id and passes it as client_id rather than passing the name.",
+              "Supplies the required project fields (billable flag, a bill-by method, and a budget-by method)."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Website Redesign {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Website Redesign {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-project",
+      "kind": "arrange-act",
+      "description": "Find-then-act: create a project, then rename it by resolving it by name.",
+      "steps": [
+        {
+          "intent": "Create a billable project named 'Old Name {{run_id}}' for a new client 'Rename Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A billable project named 'Old Name {{run_id}}' now exists under the 'Rename Client {{run_id}}' client and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves the client to its id and supplies the required project fields."
+            ]
+          }
+        },
+        {
+          "intent": "Rename the 'Old Name {{run_id}}' project to 'New Name {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The project created earlier in this session is now named 'New Name {{run_id}}'."
+            ],
+            "mechanism": [
+              "Targets the specific project by its resolved id and updates only the name rather than recreating the project or resending unrelated fields."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'New Name {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The renamed project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "archive-client",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: this connector cannot hard-delete a client with history; the correct action is to archive it (set inactive). Graded on the observable end state (client inactive), blind to how.",
+      "steps": [
+        {
+          "intent": "Create a client named 'Archive Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A client named 'Archive Client {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": ["Reads the created client id from the create result."]
+          }
+        },
+        {
+          "intent": "We no longer work with 'Archive Client {{run_id}}' — remove them so they stop showing up as active.",
+          "assertions": {
+            "outcome": [
+              "The 'Archive Client {{run_id}}' client is no longer active (it is archived / inactive), and the reply does not claim the client was permanently deleted.",
+              "The reply makes clear the client was archived (deactivated) rather than hard-deleted."
+            ],
+            "mechanism": [
+              "Achieves the deactivation by updating the client's active flag to inactive rather than calling a hard-delete, and targets the resolved client id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "archive-project",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: archiving a project (set inactive) is the safe path; a hard delete would destroy its time entries. Graded on the project ending up inactive, blind to how.",
+      "steps": [
+        {
+          "intent": "Create a billable project 'Wrap Project {{run_id}}' for a new client 'Wrap Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A billable project named 'Wrap Project {{run_id}}' now exists under the 'Wrap Client {{run_id}}' client and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves the client to its id and supplies the required project fields."
+            ]
+          }
+        },
+        {
+          "intent": "The 'Wrap Project {{run_id}}' project is finished — close it out so no more time can be logged to it, without losing the time already tracked.",
+          "assertions": {
+            "outcome": [
+              "The 'Wrap Project {{run_id}}' project is now inactive/archived, and the reply does not claim its tracked time was deleted."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than calling a destructive delete."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-task-and-assign-to-project",
+      "kind": "arrange-act",
+      "description": "Multi-step setup: create an account task and make it loggable on a project via a task assignment.",
+      "steps": [
+        {
+          "intent": "Create a billable project 'Assign Project {{run_id}}' for a new client 'Assign Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A billable project named 'Assign Project {{run_id}}' now exists under the 'Assign Client {{run_id}}' client and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves the client to its id and supplies the required project fields."
+            ]
+          }
+        },
+        {
+          "intent": "Create a task called 'QA {{run_id}}' and make it available to log time against on the 'Assign Project {{run_id}}' project.",
+          "assertions": {
+            "outcome": [
+              "A task named 'QA {{run_id}}' exists and is assigned to the 'Assign Project {{run_id}}' project, making it a valid task to log time against on that project."
+            ],
+            "mechanism": [
+              "Creates the account task and then creates a project task assignment linking it to the resolved project, rather than assuming the account task is automatically loggable."
+            ]
+          }
+        },
+        {
+          "intent": "Archive the 'Assign Project {{run_id}}' project — we're done with it and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "The 'Assign Project {{run_id}}' project created earlier in this session is now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives the project by setting its active flag to inactive on the resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-contact-for-client",
+      "kind": "arrange-act",
+      "description": "Find-then-act: add a contact under an existing client, resolving the client by name.",
+      "steps": [
+        {
+          "intent": "Create a client named 'Contact Client {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A client named 'Contact Client {{run_id}}' now exists and its identifier is reported."
+            ],
+            "mechanism": ["Reads the created client id from the create result."]
+          }
+        },
+        {
+          "intent": "Add a contact named Jordan Lee for the 'Contact Client {{run_id}}' client.",
+          "assertions": {
+            "outcome": [
+              "A contact with first name Jordan (and last name Lee) now exists under the 'Contact Client {{run_id}}' client and its identifier is reported."
+            ],
+            "mechanism": [
+              "Resolves 'Contact Client {{run_id}}' to its numeric client id and passes it as client_id rather than passing the name."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-projects-for-client",
+      "kind": "arrange-act",
+      "description": "Find-then-report: seed two projects under a client, then answer 'what projects does this client have'. Needs two free active-project slots at once, so it starts by clearing any pre-existing active project before creating its own two.",
+      "steps": [
+        {
+          "intent": "Before doing anything else, check if the account has any active projects and archive them — we need two free project slots and the account allows only 2 active at a time.",
+          "assertions": {
+            "outcome": [
+              "The account has no active projects remaining before the next step proceeds."
+            ],
+            "mechanism": [
+              "Lists projects and, for any that are active, archives each by setting its active flag to inactive rather than deleting it; if none are active, no archiving action is needed and none should be taken."
+            ]
+          }
+        },
+        {
+          "intent": "Create a client 'Portfolio Client {{run_id}}' and two billable projects for it: 'Alpha {{run_id}}' and 'Beta {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The 'Portfolio Client {{run_id}}' client now has two billable projects, 'Alpha {{run_id}}' and 'Beta {{run_id}}'."
+            ],
+            "mechanism": [
+              "Resolves the client to its id and creates each project with the required fields under that client id."
+            ]
+          }
+        },
+        {
+          "intent": "What projects does the 'Portfolio Client {{run_id}}' client have?",
+          "assertions": {
+            "outcome": [
+              "The reply lists both 'Alpha {{run_id}}' and 'Beta {{run_id}}' as projects belonging to the 'Portfolio Client {{run_id}}' client."
+            ],
+            "mechanism": [
+              "Resolves the client name to its id and lists projects filtered to that client rather than fabricating the list."
+            ]
+          }
+        },
+        {
+          "intent": "Archive both the 'Alpha {{run_id}}' and 'Beta {{run_id}}' projects — we're done with them and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "Both the 'Alpha {{run_id}}' and 'Beta {{run_id}}' projects created earlier in this session are now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives each project by setting its active flag to inactive on its resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "disambiguate-duplicate-project-names",
+      "kind": "arrange-act",
+      "description": "Disambiguation: Harvest enforces client-name uniqueness (globally, even against archived clients) but only enforces project-name uniqueness per-client, so two different clients can each have a project with the same name. When asked to act on 'that project' by name alone, the agent should surface the ambiguity and ask rather than silently pick one. Needs two free active-project slots at once, so it starts by clearing any pre-existing active project before creating its own two.",
+      "steps": [
+        {
+          "intent": "Before doing anything else, check if the account has any active projects and archive them — we need two free project slots and the account allows only 2 active at a time.",
+          "assertions": {
+            "outcome": [
+              "The account has no active projects remaining before the next step proceeds."
+            ],
+            "mechanism": [
+              "Lists projects and, for any that are active, archives each by setting its active flag to inactive rather than deleting it; if none are active, no archiving action is needed and none should be taken."
+            ]
+          }
+        },
+        {
+          "intent": "Create two separate clients, 'Alpha Client {{run_id}}' and 'Beta Client {{run_id}}', and give each one a billable project with the exact same name: 'Shared Name {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Two distinct projects both named 'Shared Name {{run_id}}' now exist, one under 'Alpha Client {{run_id}}' and one under 'Beta Client {{run_id}}' (two different project identifiers, same project name)."
+            ],
+            "mechanism": [
+              "Creates two separate client records and, under each, a separate project record with the same name, reporting all ids rather than reusing one project for both."
+            ]
+          }
+        },
+        {
+          "intent": "Rename the 'Shared Name {{run_id}}' project to 'Renamed Project {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "The reply recognizes that more than one project is named 'Shared Name {{run_id}}' and asks which one to rename (or lists the candidates with a distinguishing detail, e.g. their client) rather than silently renaming one.",
+              "No project is renamed to 'Renamed Project {{run_id}}' in this turn, since the target was ambiguous."
+            ],
+            "mechanism": [
+              "Lists/looks up projects matching the name, finds more than one exact match, and does not issue an update call against a guessed id."
+            ]
+          }
+        },
+        {
+          "intent": "Archive both projects named 'Shared Name {{run_id}}' — we're done with them and the account has a limited number of active project slots.",
+          "assertions": {
+            "outcome": [
+              "Both projects originally named 'Shared Name {{run_id}}' (under 'Alpha Client {{run_id}}' and 'Beta Client {{run_id}}') are now inactive/archived."
+            ],
+            "mechanism": [
+              "Archives each project by setting its active flag to inactive on its resolved project id rather than deleting it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-invoices-for-client",
+      "kind": "discover-act",
+      "description": "Read-only over a pre-existing world: answer 'what have we invoiced this client' using list/read primitives all arms share. The connector cannot create invoices, so this operates on whatever invoices already exist.",
+      "steps": [
+        {
+          "intent": "What invoices do we have in Harvest, and what are their amounts and statuses?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the invoices present on the account with their amounts and statuses, grounded in the account's actual invoice data (or clearly states there are none if the account has no invoices) rather than fabricating invoices."
+            ],
+            "mechanism": [
+              "Reads invoices via the list/get invoice tools rather than inventing invoice records, and does not attempt to create or send an invoice."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "identify-current-user",
+      "kind": "act-only",
+      "description": "Single-action read: identify the connected Harvest user (the default owner of a logged time entry).",
+      "steps": [
+        {
+          "intent": "Who am I logged in as in Harvest?",
+          "assertions": {
+            "outcome": [
+              "The reply identifies the currently authenticated Harvest user (e.g. their name), grounded in the account's actual current-user data rather than a guess."
+            ],
+            "mechanism": [
+              "Reads the current authenticated user rather than listing all users and guessing which one is the caller."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-create-invoice",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector reads invoices but does not create or send them. The agent should decline cleanly rather than fake it or repurpose another tool.",
+      "steps": [
+        {
+          "intent": "Create and send a new invoice to one of our clients for $500.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating or sending invoices is not supported by this connector and does not claim an invoice was created or sent."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool to fake invoice creation, and does not repurpose an unrelated tool (e.g. logging a time entry) to stand in for the invoice."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-log-expense",
+      "kind": "negative",
+      "description": "Graceful refusal: expense logging is out of scope. The agent should decline rather than record the expense as a time entry.",
+      "steps": [
+        {
+          "intent": "Log a $40 taxi expense against our biggest project.",
+          "assertions": {
+            "outcome": [
+              "The reply states that logging expenses is not supported by this connector and does not claim an expense was recorded."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool to fake the expense, and specifically does not log the expense as a time entry instead."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-run-time-report",
+      "kind": "negative",
+      "description": "Graceful refusal: the aggregate Reports API is out of scope. Distinguish from list-based reads: this asks for a rolled-up report the connector doesn't expose.",
+      "steps": [
+        {
+          "intent": "Run the built-in Harvest time report for last quarter and give me the aggregate totals by client.",
+          "assertions": {
+            "outcome": [
+              "The reply states that the aggregate Reports API is not supported by this connector and does not fabricate report totals; it may offer that listing time entries is available instead."
+            ],
+            "mechanism": [
+              "Does not fabricate an aggregate report; if it does anything, it only reads time entries via the list tool rather than inventing a reports endpoint result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-create-user",
+      "kind": "negative",
+      "description": "Graceful refusal: user administration is out of scope (reads only). The agent should decline to create/invite a user.",
+      "steps": [
+        {
+          "intent": "Invite a new teammate, sam@example.com, as a user on our Harvest account.",
+          "assertions": {
+            "outcome": [
+              "The reply states that creating or inviting users is not supported by this connector and does not claim a user was created or invited."
+            ],
+            "mechanism": [
+              "Does not call any mutating tool to fake user creation; user tools are read-only, so no create/invite is attempted."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

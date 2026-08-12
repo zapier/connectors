@@ -1,0 +1,68 @@
+{
+  "name": "@zapier/harvest-connector",
+  "private": true,
+  "description": "Agent-callable Harvest tools — track time (log hours, start/stop timers), and manage the projects, clients, contacts, and tasks time is logged against, plus read invoices and account settings. Use when the user wants to log or edit time, manage Harvest projects/clients/tasks, or check what was billed — even if they don't name Harvest explicitly.",
+  "license": "Elastic-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./index.ts"
+    }
+  },
+  "bin": {
+    "@zapier/harvest-connector": "./cli.js"
+  },
+  "files": [
+    "dist/",
+    "cli.js",
+    "*.ts",
+    "scripts/",
+    "SKILL.md",
+    "README.md",
+    "NOTICE",
+    "LICENSE",
+    "references/"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepack": "tsup",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@zapier/connectors-sdk": "^0.4.3",
+    "zod": "^4.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@zapier/zapier-sdk-cli": ">=0.62.0 <1.0.0"
+  },
+  "keywords": [
+    "harvest",
+    "time tracking",
+    "timesheet",
+    "timer",
+    "projects",
+    "invoices",
+    "zapier",
+    "connector",
+    "tools",
+    "skills",
+    "mcp",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "bugs": "https://github.com/zapier/connectors/issues",
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/harvest",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zapier/connectors.git",
+    "directory": "apps/harvest"
+  },
+  "devDependencies": {
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "harvest": {
+      "command": "npx",
+      "args": ["-y", "@zapier/harvest-connector", "mcp"]
+    }
+  }
+}
