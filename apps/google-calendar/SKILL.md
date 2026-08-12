@@ -12,16 +12,26 @@ metadata:
 
 # Google Calendar
 
-_Independent, unofficial connector for Google Calendar. Not affiliated with, endorsed by, or sponsored by Google Calendar. "Google Calendar" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:skill-intro -->
 
 Tools for managing Google Calendar — create, read, update, move, and delete events; search a calendar; list and create calendars; check free/busy availability; resolve the event-color palette; and manage calendar sharing (ACL). Wraps the [Google Calendar API v3](https://developers.google.com/workspace/calendar/api/v3/reference) (`https://www.googleapis.com/calendar/v3/`). Authentication is OAuth 2.0 over a single connection — capability is gated by scope and by each calendar's access role, not by token type.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Calendar. Not affiliated with, endorsed by, or sponsored by Google Calendar. "Google Calendar" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:skill-intro -->
+
 ## When to use this
+
+<!-- BEGIN:skill-use-cases -->
 
 - An agent needs to schedule, find, reschedule, move, or cancel calendar events.
 - An agent needs to check when someone is busy/free across one or more calendars.
 - An agent needs to list or create calendars, or read a calendar's default timezone.
 - An agent needs to share a calendar with someone or revoke access (ACL management; requires the `owner` role).
+
+<!-- END:skill-use-cases -->
 
 ## Setup
 
@@ -39,6 +49,11 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 | No tool access, no terminal, no ability to import this package — you write your own code that calls the Google Calendar API directly (e.g. a code-execution sandbox) | [`references/use-as-recipe.md`](references/use-as-recipe.md) |
 
 ## Scripts
+
+<!-- BEGIN:skill-connections-note? -->
+<!-- END:skill-connections-note -->
+
+<!-- BEGIN:skill-scripts-table -->
 
 | Script                                                           | Script name          | Connections                  | Description                                                                                       |
 | ---------------------------------------------------------------- | -------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -61,17 +76,25 @@ The connector runs on **Node.js 22.18+**. Pick the reference that matches how yo
 | [`scripts/deleteAclRule.ts`](scripts/deleteAclRule.ts)           | `deleteAclRule`      | Single (`"google-calendar"`) | Remove a sharing rule (revoke access). Requires `owner`.                                          |
 
 Each script's `inputSchema` / `outputSchema` (Zod) in the script file is the source of truth for its contract.
+<!-- END:skill-scripts-table -->
+
+<!-- BEGIN:disambiguation-and-refusals? -->
 
 ## Disambiguation & refusals
 
 - **Resolve before you write.** Before creating, moving, or sharing against a calendar or event looked up by name, confirm the target. When resolving a calendar by name via `listCalendars`, count _exact_ (case-insensitive) `summary` matches: exactly one → act on it; two or more that tie → stop, list the candidates with their `id` + `accessRole`, and ask which one. The same applies to events resolved by `listEvents` (a person can have several events with the same title) and to ACL rules resolved by `listAclRules`. Never silently pick the first match.
 - **Don't fake unsupported operations.** This connector does **not** rename or delete calendars, clear all events from a calendar (`calendars.clear`), import externally-originated events (`events.import`), do "this-and-following" recurring edits in one call, or set up triggers/notifications (watch channels). If a user asks for one of these, say it's not supported and stop — don't substitute a different tool (e.g. deleting events one by one to simulate "clear the calendar", or patching the master to fake "this and following") and report success for an action you didn't perform. For a single recurring occurrence, use `listEventInstances` → `updateEvent` on the instance id.
 
+<!-- END:disambiguation-and-refusals -->
+
 ## Auth
 
 Every shape passes auth as one connection **selector**, not the secret — a `[<resolver>:]<value>` string. Every connector accepts `zapier:<connection-id>` (Zapier-managed auth — routes through Zapier's auth, retries, and governance layer); some also accept one or more direct-token resolvers (naming and count vary per connector) — check this connector's own resolvers rather than assuming. The `<resolver>:` prefix is optional; a bare value goes to the first resolver that claims it — a UUID-shaped bare value always claims `zapier:`. Each script declares the connections it needs and the resolvers each accepts. The exact syntax for passing a connection (and how to see this connector's resolver list) differs by shape — see the reference you loaded above.
 
 Checking what's already configured first? Don't dump environment values to do it — `env` or `env | grep <name>` prints the value along with the name, leaking a live credential into the transcript if one is set. Check names only (`env | cut -d= -f1 | grep -i <name>`) or test a known name directly (`[ -n "$VAR_NAME" ]`).
+
+<!-- BEGIN:skill-auth-notes? operational behavior that differs by WHICH resolver is used — a safety gate only one path enforces, scopes/permissions that differ between resolvers, a billing/plan difference tied to the auth path, or a feature only available (or unavailable) on one resolver. Not for describing how to obtain or pass a credential — that's references/use-without-zapier.md's job. Leave this region empty (unfilled) if every resolver behaves identically. -->
+<!-- END:skill-auth-notes -->
 
 No connection yet? Pick one — and follow the reference's own flow to obtain it; never just ask the user for a connection id or token as if they already have one memorized:
 
@@ -94,6 +117,8 @@ Every script returns a `{ data, meta }` envelope:
 
 **Trimming the result / `filterOutputData`.** To shrink a large result down to the fields you need, pass a jq expression that post-processes `data` (again, exact syntax per shape). The jq runs against `data` only, NOT the `{ data, meta }` envelope, so write it rooted at `data` (run the script's `--help` — or your shape's equivalent — to see its output schema). The transformed value replaces `data`, `meta` is preserved, and the result is NOT re-validated against the output schema.
 
+<!-- BEGIN:skill-references-table -->
+
 ## References
 
 Load the matching reference file before working in that area:
@@ -101,3 +126,5 @@ Load the matching reference file before working in that area:
 | Reference                                                                   | Covers                                                                                                                                                                                                                           | Load it when                                                                                                                                                                                               |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [google-calendar-api-gotchas.md](references/google-calendar-api-gotchas.md) | The error envelope + recovery, all-day exclusive `end.date`, `timeZone`-required-for-recurrence, event-type creation constraints, async Meet creation, pagination caps, free/busy per-calendar errors, and ACL owner-role rules. | Before building event dates/times, recurrence, colors, or Google Meet links; when handling 401/403/404/410 errors; when updating events (array fields replace wholesale); or when sharing calendars (ACL). |
+
+<!-- END:skill-references-table -->

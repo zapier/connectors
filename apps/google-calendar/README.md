@@ -1,20 +1,34 @@
 # @zapier/google-calendar-connector
 
-_Independent, unofficial connector for Google Calendar. Not affiliated with, endorsed by, or sponsored by Google Calendar. "Google Calendar" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable [Google Calendar](https://developers.google.com/workspace/calendar/api/v3/reference) tools. Create, read, update, move, and delete events; search a calendar; list and create calendars; check free/busy availability; resolve the event-color palette; and manage calendar sharing (ACL) — all over the Google Calendar API v3. Authentication is OAuth 2.0 over a single connection; capability is gated by scope and by each calendar's access role, not by token type. Use it when an agent needs to schedule, find, reschedule, or share calendar events and availability.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Calendar. Not affiliated with, endorsed by, or sponsored by Google Calendar. "Google Calendar" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - Scheduling, finding, rescheduling, moving, or cancelling Google Calendar events from an agent.
 - Checking when someone is busy or free across one or more calendars before proposing a time.
 - Listing or creating calendars, reading a calendar's timezone, or managing who a calendar is shared with.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - Real-time event triggers / push notifications (new-event, event-updated) — this connector is request/response only; use a Zapier trigger or the Calendar watch API.
 - Renaming or deleting calendars, clearing all events at once, or importing externally-originated events — these are intentionally out of scope.
 - Gmail, Google Drive, or other Google products — use their dedicated connectors.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -55,6 +69,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script               | Description                                                                                   |
 | -------------------- | --------------------------------------------------------------------------------------------- |
 | `createEvent`        | Create an event (timed/all-day, recurring, attendees, reminders, color, Google Meet).         |
@@ -75,11 +91,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `createAclRule`      | Share a calendar with a user/group/domain at a role (requires `owner`).                       |
 | `deleteAclRule`      | Remove a sharing rule / revoke access (requires `owner`).                                     |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/google-calendar-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { createEvent } from "@zapier/google-calendar-connector";
@@ -104,6 +124,8 @@ const { data, meta } = await createEvent(
 // what validation did. Pass { skipOutputDataValidation: true } to receive the raw API output.
 ```
 
+<!-- END:readme-usage-example -->
+
 ## Auth
 
 Already have a connection value? Pass it as shown above — `--connection` for the CLI/MCP shapes, `{ connection }` for imported functions. No connection yet? Pick one:
@@ -117,7 +139,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-calendar)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Google Calendar API v3 reference](https://developers.google.com/workspace/calendar/api/v3/reference) — vendor API docs
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -132,3 +162,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
