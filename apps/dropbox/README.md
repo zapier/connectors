@@ -1,18 +1,31 @@
 # @zapier/dropbox-connector
 
-_Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by, or sponsored by Dropbox. "Dropbox" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Dropbox tools — upload, organize, find, and share files and folders. Wraps the [Dropbox API v2](https://www.dropbox.com/developers/documentation/http/documentation) with 21 tools spanning file writes (upload, create/append text), organization (move, copy, delete, create folders), navigation and search, inline content reading, shared links, shared-folder membership, and file requests. Auth is a single Dropbox OAuth2 connection — capability is gated by the scopes granted at connect time, and the recommended Zapier-managed path rotates the short-lived access token for you.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Dropbox. Not affiliated with, endorsed by, or sponsored by Dropbox. "Dropbox" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Reach for this connector when an agent needs to manage Dropbox files and folders: saving generated content, organizing or cleaning up a folder, finding a file before acting on it, reading a text file inline, or sharing files/folders with people. It returns clean file metadata and resolves shared-link recovery, large-file uploads, and team-space targeting for you.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Triggers / polling for new or changed files.** This is a non-trigger connector; use a Zapier trigger or webhook for "when a file is added/updated."
 - **Reading binary documents as text (PDF/image/Office), OCR, or document parsing.** `getFileContents` is UTF-8 text only; hand off other files' bytes via `getTemporaryLink`.
 - **Dropbox Business/team admin** (member management, team folders, groups) and **Dropbox Paper** — out of scope here.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -21,7 +34,7 @@ This connector is the same artifact across four shapes: MCP server, CLI bin, imp
 ```bash
 # Run a script with zero install — npx fetches the package on first use
 export <ENV_VAR>=xxx
-npx @zapier/dropbox-connector@latest run <script> '<input-json>' --connection access-token:<ENV_VAR>
+npx @zapier/dropbox-connector@latest run <script> '<input-json>' --connection env:<ENV_VAR>
 
 # Install as a dependency to import the functions in your own code
 npm install @zapier/dropbox-connector
@@ -49,11 +62,11 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 }
 ```
 
-`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"access-token:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
+`--connection` is optional — omit it to pass a connection per tool call, or add `"--connection", "zapier:<connection-id>"` (or `"env:<ENV_VAR>"` with `"env": { "<ENV_VAR>": "xxx" }`) to `args` to set a default.
 
 ## Scripts
 
-**Files — write & organize**
+<!-- BEGIN:readme-scripts-table -->
 
 | Script             | Description                                                                       |
 | ------------------ | --------------------------------------------------------------------------------- |
@@ -94,11 +107,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `listFileRequests`  | List the account's file requests.                                       |
 | `getCurrentAccount` | Identify the authenticated account and its team/personal namespace ids. |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/dropbox-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
-Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "access-token:<ENV_VAR>" }`.
+Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { searchFiles } from "@zapier/dropbox-connector";
@@ -110,6 +127,8 @@ const { data } = await searchFiles(
   { connection: "access-token:DROPBOX_ACCESS_TOKEN" }, // reads DROPBOX_ACCESS_TOKEN
 );
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -124,8 +143,16 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/dropbox)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Dropbox API v2 reference](https://www.dropbox.com/developers/documentation/http/documentation) — the vendor API this wraps
 - [`references/dropbox-api-gotchas.md`](references/dropbox-api-gotchas.md) — durable per-app API knowledge
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -140,3 +167,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
