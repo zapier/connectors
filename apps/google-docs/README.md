@@ -1,19 +1,32 @@
 # @zapier/google-docs-connector
 
-_Independent, unofficial connector for Google Docs. Not affiliated with, endorsed by, or sponsored by Google Docs. "Google Docs" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Google Docs tools wrapping the [Google Docs API v1](https://developers.google.com/workspace/docs/api/reference/rest) (`https://docs.googleapis.com/v1/`) for document content and the [Google Drive API v3](https://developers.google.com/workspace/drive/api/reference/rest/v3/files) (`https://www.googleapis.com/drive/v3/`) for find / export / copy-template / folder operations: create documents (blank, from text/Markdown, or from a template), read structured content and tabs, export as text/Markdown, find documents by name, and edit content — append / insert / find-and-replace / delete text, locate text positions, apply character and paragraph formatting, make bulleted/numbered lists, insert and edit tables, create headers/footers/footnotes, insert and replace inline images, and set page style. 22 tools. Auth is a single Google OAuth 2.0 access token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection.
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Google Docs. Not affiliated with, endorsed by, or sponsored by Google Docs. "Google Docs" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
 
+<!-- BEGIN:readme-when-to-use -->
+
 Reach for this connector when an agent needs to act on Google Docs documents directly: drafting a new document from text or Markdown, filling a templated document, reading a document's content (prefer `exportDocument` markdown for reading, `getDocument` for editing at a position), or making targeted edits — text, find-and-replace, formatting, images, or page style. `findDocuments` resolves a human-named document to the id every other tool needs.
+<!-- END:readme-when-to-use -->
 
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Binary file upload / conversion** (uploading a `.docx` and converting to a Doc) — that's a Drive job; use a Drive connector.
 - **Managing comments or suggestions** (creating/resolving comments, accepting/rejecting suggested edits) — not exposed here; `getDocument` can _read_ suggested edits via `suggestionsViewMode`, but there is no write tool.
 - **Spreadsheets or presentations** — use a Google Sheets / Slides connector.
 - **Polling for document changes** — connectors are non-trigger; there is no change feed.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -54,6 +67,8 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
+<!-- BEGIN:readme-scripts-table -->
+
 | Script                       | Description                                                                                |
 | ---------------------------- | ------------------------------------------------------------------------------------------ |
 | `createDocument`             | Create a new document, optionally with initial text/Markdown and in a folder.              |
@@ -79,11 +94,15 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 | `createFooter`               | Create the default footer with its text; returns the segmentId for styling via formatText. |
 | `createFootnote`             | Insert a footnote reference; returns its segmentId for insertText.                         |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/google-docs-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { findDocuments, exportDocument } from "@zapier/google-docs-connector";
@@ -97,6 +116,7 @@ console.log(data.content); // the document as Markdown
 ```
 
 `meta.outputDataValidation` reports whether any API fields were stripped against the script's `outputSchema`; pass `{ skipOutputDataValidation: true }` in the run options to get the raw result. See [`SKILL.md`](SKILL.md#output-format) for the full envelope contract.
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -111,7 +131,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/google-docs)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Google Docs API reference](https://developers.google.com/workspace/docs/api/reference/rest) — vendor API docs
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -126,3 +154,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->

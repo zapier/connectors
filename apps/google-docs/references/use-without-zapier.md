@@ -4,6 +4,8 @@ This is the direct-auth path: you hold and pass Google Docs's credential yoursel
 
 ## Getting credentials
 
+<!-- BEGIN:use-without-zapier-getting-credentials -->
+
 Register the credential in the [Google Cloud Console](https://console.cloud.google.com/), then run an OAuth 2.0 authorization flow yourself to mint an access token — this connector's direct resolver takes the token itself, not a client id/secret.
 
 1. Create or select a project, then enable both the **Google Docs API** and the **Google Drive API** (APIs & Services → Library) — the connector calls both hosts under the one token.
@@ -11,11 +13,16 @@ Register the credential in the [Google Cloud Console](https://console.cloud.goog
 3. Run the OAuth 2.0 flow requesting the scopes the operations you need require. The full catalog needs `https://www.googleapis.com/auth/documents` (read/write document content) **plus** `https://www.googleapis.com/auth/drive` (the find / export / copy-template / folder operations act on arbitrary existing documents, which the narrower `drive.file` scope can't reach). Read-only use can request `https://www.googleapis.com/auth/documents.readonly` + `https://www.googleapis.com/auth/drive.readonly` instead — covers `getDocument` / `findDocuments` / `exportDocument`, no writes. For quick testing without writing OAuth client code, Google's [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) can mint a token against these scopes.
 4. Access tokens are short-lived (Google issues them for about an hour); mint a fresh one when a call starts failing rather than assuming the credential is permanently broken. A `403 insufficient authentication scopes` response means reconnect with a token that has edit access (the scopes above); a `403 caller does not have permission` means the token itself is fine but the account it belongs to has view-only (or commenter) access to that specific document — a sharing problem, not a scope/reconnect problem.
 
+<!-- END:use-without-zapier-getting-credentials -->
+
 ## Passing the credential
 
 Pass it as a direct-token resolver in the `[<resolver>:]<value>` connection string — see [`SKILL.md`](../SKILL.md#auth) for the resolver model, and the reference you loaded from `SKILL.md`'s `## Setup` router for the exact syntax in your shape.
 
+<!-- BEGIN:use-without-zapier-passing-credential -->
+
 Google Docs's direct-token resolver is `env:<ENV_VAR>` — the value is the name of an environment variable holding the access token from above (conventionally something like `GOOGLE_DOCS_ACCESS_TOKEN`), sent as `Authorization: Bearer <token>`. The same token authorizes both the Docs and Drive hosts, so this one resolver covers every script. It's a fallback: prefer routing through a Zapier connection ([`references/use-with-zapier.md`](use-with-zapier.md)) when you can, since **this resolver does not refresh the token** — once it expires, mint a fresh one (see Getting credentials above) or switch to the Zapier-managed connection.
+<!-- END:use-without-zapier-passing-credential -->
 
 ## Safely reading the credential from the user
 
