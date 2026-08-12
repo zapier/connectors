@@ -1,18 +1,32 @@
 # @zapier/notion-connector
 
-_Independent, unofficial connector for Notion. Not affiliated with, endorsed by, or sponsored by Notion. "Notion" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- BEGIN:readme-intro -->
 
 Agent-callable Notion tools wrapping the [Notion API](https://developers.notion.com/reference/intro) (`https://api.notion.com/v1/`, API version `2025-09-03`): search pages and data sources, read and create pages, query data-source rows, append and edit block content, manage database / data-source schemas, read and post comments. 24 scripts across search, read, write, schema, comments, and cross-workspace copy. This version uses Notion's **data sources** model — a database is a container holding one or more data sources, and a data source carries the schema + the rows. Auth is a single Notion bearer token, resolved either from an environment variable (direct mode) or through a Zapier-managed connection (`copyPage` is the exception — it uses two connections to copy across workspaces).
 
+<!-- legal:disclaimer -->
+
+_Independent, unofficial connector for Notion. Not affiliated with, endorsed by, or sponsored by Notion. "Notion" is a trademark of its owner, used only to identify the service this connector works with._
+<!-- /legal:disclaimer -->
+<!-- END:readme-intro -->
+
 ## When to use this
+
+<!-- BEGIN:readme-when-to-use -->
 
 - The agent needs **authenticated** access to a real Notion workspace — find, read, create, and edit pages and content, query data-source rows, manage database / data-source schemas, and work with comments.
 - You want one artifact that works as an MCP tool, a CLI, or an imported function — without re-implementing each surface.
 
+<!-- END:readme-when-to-use -->
+
 ## When NOT to use this
+
+<!-- BEGIN:readme-when-not-to-use -->
 
 - **Permanently deleting** content, or deleting a whole database or data source — Notion only trashes (everything is reversible), and the API has no hard delete or container-delete.
 - **Workspace administration** — inviting members, changing roles / permissions, or managing database views. The user tools here are read-only and views aren't exposed by the API.
+
+<!-- END:readme-when-not-to-use -->
 
 ## Install
 
@@ -53,7 +67,7 @@ Run the connector as an MCP server over stdio so any MCP-aware client (Claude De
 
 ## Scripts
 
-All scripts use the single `notion` connection, except `copyPage`, which uses two (`source` + `target`) to copy a page across workspaces.
+<!-- BEGIN:readme-scripts-table -->
 
 | Script                | Description                                                                                        |
 | --------------------- | -------------------------------------------------------------------------------------------------- |
@@ -82,11 +96,15 @@ All scripts use the single `notion` connection, except `copyPage`, which uses tw
 | `createComment`       | Add a comment to a page or reply to an existing thread.                                            |
 | `copyPage`            | Copy a page (title + top-level blocks) from one workspace to another. Uses two Notion connections. |
 
+<!-- END:readme-scripts-table -->
+
 Run `npx @zapier/notion-connector@latest run <script> --help` to see any script's exact input contract + the available resolvers.
 
 ## Usage
 
 Each named export is the consumer-facing `(input, opts) => Promise<{ data, meta }>` function. Pass auth as one `[<resolver>:]<value>` string, e.g. `{ connection: "env:<ENV_VAR>" }`.
+
+<!-- BEGIN:readme-usage-example -->
 
 ```ts
 import { search } from "@zapier/notion-connector";
@@ -96,6 +114,8 @@ const results = await search(
   { connection: "env:<ENV_VAR>" },
 );
 ```
+
+<!-- END:readme-usage-example -->
 
 ## Auth
 
@@ -110,7 +130,15 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 
 - [`SKILL.md`](SKILL.md) — runtime guidance for agents
 - [Source](https://github.com/zapier/connectors/tree/main/apps/notion)
+
+<!-- BEGIN:readme-links-extra -->
+
 - [Notion API reference](https://developers.notion.com/reference/intro)
+
+<!-- END:readme-links-extra -->
+
+<!-- BEGIN:readme-footer? -->
+<!-- legal:footer -->
 
 ## Legal
 
@@ -125,3 +153,5 @@ Already have a connection value? Pass it as shown above — `--connection` for t
 **Forks.** You may fork and modify this connector under the Elastic License 2.0. You may state that your fork is "based on" Zapier's connector, but you may not use the "Zapier" name or logo as the name or branding of your fork, or in any way that suggests Zapier produces, endorses, or supports it.
 
 Licensed under the Elastic License 2.0. See the repository LICENSE and NOTICE.
+<!-- /legal:footer -->
+<!-- END:readme-footer -->
