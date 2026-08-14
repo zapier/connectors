@@ -1,5 +1,17 @@
 # @zapier/clay-connector
 
+## 0.0.6
+
+### Patch Changes
+
+- 9792330: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
+
+  - `SKILL.md`
+
+- 9792330: Automated dependency update from Renovate.
+
+  - File changes as a result of (external) dependency updates.
+
 ## 0.0.5
 
 ### Patch Changes
