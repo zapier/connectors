@@ -1,0 +1,708 @@
+{
+  "skill_name": "microsoft-onedrive",
+  "version": "7980e0d",
+  "description": "Intent-anchored eval scenarios for the microsoft-onedrive connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true capability profile. arrange-act scenarios self-provision their world (create then act then clean up); act-only scenarios target the caller's own ambient OneDrive; negative scenarios expect a clean refusal of an unsupported capability. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-call hygiene, our-arm-only). {{run_id}} namespaces created assets. The mix is usage-tiered from real Graph/OneDrive production demand (getItem / export / upload / list dominate) and diversified with the connector's own non-obvious behaviors (search-index lag, cross-drive move is a lossy copy-then-delete, replace preserves the item id, name-collision disambiguation before a destructive write). Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "check-storage-quota",
+      "kind": "act-only",
+      "description": "Read-only probe against the caller's ambient OneDrive: report remaining storage.",
+      "steps": [
+        {
+          "intent": "How much storage do I have left in my OneDrive?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the caller's OneDrive storage quota, including at least the remaining (or used and total) amount."
+            ],
+            "mechanism": [
+              "Reads the drive metadata for the caller's own OneDrive without requiring or guessing a drive id."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "browse-onedrive-root",
+      "kind": "act-only",
+      "description": "Read-only probe: list the top level of the caller's own OneDrive.",
+      "steps": [
+        {
+          "intent": "List the files and folders at the top level of my OneDrive.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the items at the root of the caller's OneDrive, or clearly states the root is empty."
+            ],
+            "mechanism": [
+              "Lists the caller's own drive root; does not fabricate file or folder names or ids that were not returned."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "list-my-drives",
+      "kind": "act-only",
+      "description": "Read-only probe of the drive resolver: enumerate the drives the caller can reach.",
+      "steps": [
+        {
+          "intent": "What OneDrive drives do I have access to?",
+          "assertions": {
+            "outcome": [
+              "The reply reports at least the caller's own drive, naming or identifying each drive returned."
+            ],
+            "mechanism": [
+              "Enumerates the caller's available drives; does not invent drive ids or names that were not returned."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "read-file-contents",
+      "kind": "arrange-act",
+      "description": "Cold-start round-trip: create a text file with known content, read its contents back, then delete it.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'eval-read {{run_id}}.txt' in my OneDrive containing the text 'The passphrase is {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'eval-read {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result, not a hard-coded or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Read the contents of the 'eval-read {{run_id}}.txt' file you just created and tell me exactly what it says.",
+          "assertions": {
+            "outcome": [
+              "The reply states the file's contents as 'The passphrase is {{run_id}}' (the exact text written to it)."
+            ],
+            "mechanism": [
+              "Fetches the file's actual contents (via its download URL) using the id resolved in this session; does not fabricate or guess the text."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-read {{run_id}}.txt' file.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-read {{run_id}}.txt' file is no longer present in the caller's OneDrive (moved to the recycle bin)."
+            ],
+            "mechanism": [
+              "Deletes the file resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "create-text-file-and-share",
+      "kind": "arrange-act",
+      "description": "Cold-start lifecycle: create a text file, create a view link for it, then delete it — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'eval-notes {{run_id}}.txt' in my OneDrive containing the text 'Hello from eval {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'eval-notes {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result, not a hard-coded or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Create a view-only sharing link for the 'eval-notes {{run_id}}.txt' file you just created.",
+          "assertions": {
+            "outcome": [
+              "A shareable view (read-only) link URL for the 'eval-notes {{run_id}}.txt' file is returned."
+            ],
+            "mechanism": [
+              "Creates a read-only link on the file just created in this session, using its own id rather than a substituted or invented id."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'eval-notes {{run_id}}.txt' file.",
+          "assertions": {
+            "outcome": [
+              "The 'eval-notes {{run_id}}.txt' file is no longer present in the caller's OneDrive (moved to the recycle bin)."
+            ],
+            "mechanism": [
+              "Deletes the file resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "organize-file-into-folder",
+      "kind": "arrange-act",
+      "description": "Cold-start lifecycle: create a folder, place a file inside it, list to confirm, then delete the folder.",
+      "steps": [
+        {
+          "intent": "Create a folder named 'Eval Reports {{run_id}}' in my OneDrive.",
+          "assertions": {
+            "outcome": [
+              "A folder named 'Eval Reports {{run_id}}' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single create-folder call; the folder id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Create a text file named 'summary {{run_id}}.txt' inside the 'Eval Reports {{run_id}}' folder you just created, containing the text 'summary body'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'summary {{run_id}}.txt' now exists inside the 'Eval Reports {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Uploads into the folder created earlier in this session (targets its id as the parent), not the drive root."
+            ]
+          }
+        },
+        {
+          "intent": "List the contents of the 'Eval Reports {{run_id}}' folder.",
+          "assertions": {
+            "outcome": [
+              "The reply lists 'summary {{run_id}}.txt' among the contents of the 'Eval Reports {{run_id}}' folder."
+            ],
+            "mechanism": [
+              "Lists the children of the folder created earlier in this session by its id, not the drive root."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'Eval Reports {{run_id}}' folder.",
+          "assertions": {
+            "outcome": [
+              "The 'Eval Reports {{run_id}}' folder is no longer present in the caller's OneDrive (moved to the recycle bin)."
+            ],
+            "mechanism": [
+              "Deletes the folder resolved earlier in this session; does not delete an unrelated folder."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "rename-file",
+      "kind": "arrange-act",
+      "description": "Cold-start move/rename: create a file, rename it in place, confirm the new name, then delete it.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'draft {{run_id}}.txt' in my OneDrive with the text 'rename me'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'draft {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Rename the 'draft {{run_id}}.txt' file to 'final {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The file is renamed to 'final {{run_id}}.txt' and keeps the same underlying item (a new file is not created)."
+            ],
+            "mechanism": [
+              "Renames the existing item created earlier in this session by its id (does not upload a new file or copy it)."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the 'final {{run_id}}.txt' file.",
+          "assertions": {
+            "outcome": [
+              "The 'final {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the renamed item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "copy-file",
+      "kind": "arrange-act",
+      "description": "Cold-start async copy: create a file, copy it (async), confirm the copy completed via its monitor, then clean up both.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'orig {{run_id}}.txt' in my OneDrive with the text 'copy me'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'orig {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Make a copy of the 'orig {{run_id}}.txt' file named 'orig-copy {{run_id}}.txt' in my OneDrive, and confirm when the copy has finished.",
+          "assertions": {
+            "outcome": [
+              "The reply confirms a copy named 'orig-copy {{run_id}}.txt' was created and that the copy operation completed (not merely started)."
+            ],
+            "mechanism": [
+              "Starts the copy on the source item resolved in this session, then polls the copy's monitor to confirm completion rather than assuming instant success."
+            ]
+          }
+        },
+        {
+          "intent": "Delete both 'orig {{run_id}}.txt' and 'orig-copy {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "Neither 'orig {{run_id}}.txt' nor 'orig-copy {{run_id}}.txt' is present in the caller's OneDrive any more."
+            ],
+            "mechanism": [
+              "Deletes the two items created earlier in this session by their ids; does not delete unrelated files."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "upload-file-from-url",
+      "kind": "arrange-act",
+      "description": "Cold-start binary upload from a source URL, then clean up. Robust to the source host being unreachable from the run environment.",
+      "steps": [
+        {
+          "intent": "Upload a file to my OneDrive named 'eval-upload {{run_id}}.md' from this URL: https://raw.githubusercontent.com/zapier/connectors/main/README.md",
+          "assertions": {
+            "outcome": [
+              "Either a file named 'eval-upload {{run_id}}.md' is created in the caller's OneDrive from that URL and its id is reported, or the reply clearly states the source URL could not be fetched — it does not claim a successful upload that did not happen."
+            ],
+            "mechanism": [
+              "Attempts the upload from the given source URL rather than fabricating file contents; if the fetch fails, the failure is attributed to fetching the source, not to OneDrive."
+            ]
+          }
+        },
+        {
+          "intent": "If 'eval-upload {{run_id}}.md' was created, delete it; otherwise say there is nothing to delete.",
+          "assertions": {
+            "outcome": [
+              "Either the 'eval-upload {{run_id}}.md' file is removed from the caller's OneDrive, or the reply states there was no such file to delete — consistent with whether the upload succeeded."
+            ],
+            "mechanism": [
+              "Only deletes a file it actually created earlier in this session; does not delete an unrelated file or fabricate a deletion."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "replace-file-contents",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: replacing a file's contents keeps the same item id (and its existing sharing link), rather than creating a new file. Robust to the replacement source being unreachable.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'living-doc {{run_id}}.txt' in my OneDrive with the text 'version one'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'living-doc {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Create a view-only sharing link for 'living-doc {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "A shareable view (read-only) link URL for 'living-doc {{run_id}}.txt' is returned."
+            ],
+            "mechanism": [
+              "Creates the link on the file created earlier in this session, using its own id."
+            ]
+          }
+        },
+        {
+          "intent": "Replace the contents of 'living-doc {{run_id}}.txt' with the file at this URL: https://raw.githubusercontent.com/zapier/connectors/main/README.md",
+          "assertions": {
+            "outcome": [
+              "Either the contents of 'living-doc {{run_id}}.txt' are replaced while it remains the same underlying item (its id is unchanged and the earlier sharing link still points to it), or the reply clearly states the replacement source could not be fetched — it does not create a separate new file or claim a replacement that did not happen."
+            ],
+            "mechanism": [
+              "Replaces contents against the existing item's id resolved earlier in this session (preserving that id) rather than uploading a brand-new file; a fetch failure is attributed to the source URL."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'living-doc {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The 'living-doc {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "export-file-as-pdf",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: converting a file to PDF returns a download link, and unconvertible source types are reported honestly rather than faked. A plain .txt is not a convertible Office source, so the honest branch is expected here.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'convert-me {{run_id}}.txt' in my OneDrive with the text 'please convert'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'convert-me {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Give me a PDF version of 'convert-me {{run_id}}.txt' that I can download.",
+          "assertions": {
+            "outcome": [
+              "Either a downloadable PDF (a link or file) for that document is produced, or the reply clearly states this file type cannot be converted to PDF — it does not invent a download link or claim a conversion that did not happen."
+            ],
+            "mechanism": [
+              "Requests a PDF conversion for the item created earlier in this session; if conversion is unsupported for the type, the error is attributed to conversion rather than reported as success."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'convert-me {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The 'convert-me {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "resolve-shared-link",
+      "kind": "arrange-act",
+      "description": "Cold-start net-new path: create a file, mint a sharing link, then resolve that pasted link back to the actionable item — one chained session.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'shared-link {{run_id}}.txt' in my OneDrive with the text 'resolve me', then give me a view link to it.",
+          "assertions": {
+            "outcome": [
+              "A file named 'shared-link {{run_id}}.txt' exists in the caller's OneDrive and a view (read-only) link URL to it is returned."
+            ],
+            "mechanism": [
+              "Creates the file, then creates a read-only link on that same item using its id from this session."
+            ]
+          }
+        },
+        {
+          "intent": "Here is a OneDrive link someone pasted me — tell me what file it points to (its name): the link you just generated.",
+          "assertions": {
+            "outcome": [
+              "The reply identifies the linked file as 'shared-link {{run_id}}.txt' by resolving the sharing URL to the underlying item."
+            ],
+            "mechanism": [
+              "Resolves the pasted sharing URL to a drive item rather than guessing; the resolved name matches the file created earlier in this session."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'shared-link {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The 'shared-link {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-file-by-name",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent: freshly written items can lag the search index, so an empty immediate search must not be treated as authoritative — fall back to a direct listing/lookup rather than declaring the file missing.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'needle {{run_id}}.txt' in my OneDrive with the text 'findable'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'needle {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Find the file named 'needle {{run_id}}.txt' in my OneDrive and tell me it exists.",
+          "assertions": {
+            "outcome": [
+              "The reply correctly confirms that 'needle {{run_id}}.txt' exists in the caller's OneDrive (it does not claim the file cannot be found)."
+            ],
+            "mechanism": [
+              "Does not treat an empty immediate search result as authoritative for a just-created file — if search returns nothing, it falls back to listing or a direct lookup rather than reporting the file missing."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'needle {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The 'needle {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "find-shared-item-by-keyword",
+      "kind": "act-only",
+      "description": "Read-only net-new probe of cross-content (own + shared) keyword search; robust to the account having no matching items.",
+      "steps": [
+        {
+          "intent": "Search across everything I can access in OneDrive — including files shared with me — for Word documents (.docx) and list what you find.",
+          "assertions": {
+            "outcome": [
+              "The reply reports the matching documents found across the caller's own and shared content, or clearly states none were found — without fabricating file names or results."
+            ],
+            "mechanism": [
+              "Uses the cross-content search path (not a single-folder listing) to span owned and shared items; does not invent hits."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "manage-item-permissions",
+      "kind": "arrange-act",
+      "description": "Cold-start permissions lifecycle: create a file, create a link (which grants a permission), list the item's permissions, revoke that permission, then clean up.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'perm-test {{run_id}}.txt' in my OneDrive with the text 'permission probe', then create a view link for it.",
+          "assertions": {
+            "outcome": [
+              "A file named 'perm-test {{run_id}}.txt' exists in the caller's OneDrive and a view (read-only) link URL to it is returned."
+            ],
+            "mechanism": [
+              "Creates the file, then a read-only link on that same item using its id from this session."
+            ]
+          }
+        },
+        {
+          "intent": "Show me the current sharing permissions on 'perm-test {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The reply lists the current permissions on 'perm-test {{run_id}}.txt', including the link/permission just created."
+            ],
+            "mechanism": [
+              "Lists permissions for the item resolved earlier in this session by its id; the permission ids come from that listing, not invented."
+            ]
+          }
+        },
+        {
+          "intent": "Remove that sharing link / permission from 'perm-test {{run_id}}.txt' so it is no longer shared.",
+          "assertions": {
+            "outcome": [
+              "The previously-created sharing permission on 'perm-test {{run_id}}.txt' is revoked (the item is no longer shared via that link)."
+            ],
+            "mechanism": [
+              "Revokes the specific permission id discovered from the listing in this session; does not remove an unrelated permission or fabricate the removal."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'perm-test {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The 'perm-test {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "invite-person-to-file",
+      "kind": "arrange-act",
+      "description": "Cold-start invite: create a file and grant a named person read access. Robust to tenant sharing policy blocking external invitations.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'invite-doc {{run_id}}.txt' in my OneDrive with the text 'shared doc'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'invite-doc {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Give teammate.eval.{{run_id}}@example.com read-only access to 'invite-doc {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "Either read-only access is granted to that recipient for 'invite-doc {{run_id}}.txt', or the reply clearly reports that the invitation could not be completed (e.g. sharing is restricted or the recipient is invalid) — it does not claim access was granted when it was not."
+            ],
+            "mechanism": [
+              "Invites the named recipient with a read role on the item created earlier in this session; any per-recipient failure is surfaced rather than reported as blanket success."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'invite-doc {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "The 'invite-doc {{run_id}}.txt' file is no longer present in the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item resolved earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "delete-file-by-ambiguous-name",
+      "kind": "negative",
+      "description": "Guidance-dependent + destructive: two files share the same name in different folders, so a delete-by-name request must disambiguate rather than delete arbitrarily or delete both. Marked `negative` because the crux delete step is a correct no-op (ask, don't act) — a zero-connector-call pass that the suspect guard would otherwise false-flag; the surrounding arrange/cleanup steps still make real calls and grade normally.",
+      "steps": [
+        {
+          "intent": "Create two folders in my OneDrive named 'Alpha {{run_id}}' and 'Beta {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "Two folders, 'Alpha {{run_id}}' and 'Beta {{run_id}}', now exist in the caller's OneDrive and their ids are reported."
+            ],
+            "mechanism": [
+              "Creates each folder once; the ids come from the create results."
+            ]
+          }
+        },
+        {
+          "intent": "Put a text file named 'report {{run_id}}.txt' (text 'in alpha') inside 'Alpha {{run_id}}', and another text file also named 'report {{run_id}}.txt' (text 'in beta') inside 'Beta {{run_id}}'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'report {{run_id}}.txt' now exists inside 'Alpha {{run_id}}' and another file named 'report {{run_id}}.txt' exists inside 'Beta {{run_id}}'."
+            ],
+            "mechanism": [
+              "Uploads each file into the correct folder created earlier in this session (targets each folder's id as the parent), not the drive root."
+            ]
+          }
+        },
+        {
+          "intent": "Delete the file named 'report {{run_id}}.txt'.",
+          "assertions": {
+            "outcome": [
+              "Because two different files are named 'report {{run_id}}.txt', the reply asks which one to delete (or otherwise surfaces both candidates with a distinguishing detail) instead of silently deleting one or deleting both."
+            ],
+            "mechanism": [
+              "Does not delete either 'report {{run_id}}.txt' before disambiguating; no delete is issued when the name matches two items."
+            ]
+          }
+        },
+        {
+          "intent": "Never mind — delete both 'Alpha {{run_id}}' and 'Beta {{run_id}}' folders to clean up.",
+          "assertions": {
+            "outcome": [
+              "Both the 'Alpha {{run_id}}' and 'Beta {{run_id}}' folders are removed from the caller's OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the two folders created earlier in this session by their ids; does not delete unrelated items."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "move-file-across-drives",
+      "kind": "arrange-act",
+      "description": "Guidance-dependent + destructive: there is no native cross-drive move; relocating to another drive is a lossy copy-then-delete (new id/URL, sharing not preserved) and must be surfaced, not presented as a plain move.",
+      "steps": [
+        {
+          "intent": "Create a text file named 'relocate {{run_id}}.txt' in my OneDrive with the text 'move across'.",
+          "assertions": {
+            "outcome": [
+              "A file named 'relocate {{run_id}}.txt' now exists in the caller's OneDrive and its id is reported."
+            ],
+            "mechanism": [
+              "Uses a single text-upload call; the file id comes from the create result."
+            ]
+          }
+        },
+        {
+          "intent": "Move 'relocate {{run_id}}.txt' to a different drive (for example a SharePoint document library I can access).",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear that moving a file to another drive is not a native move but a copy-then-delete (the copy gets a new id and URL, and sharing links/permissions do not carry over), rather than silently reporting a completed plain move; if it proceeds it does so as an explicit copy-then-delete and confirms the copy before removing the original."
+            ],
+            "mechanism": [
+              "Does not attempt a same-drive move to relocate across drives, and does not delete the original until a cross-drive copy is confirmed."
+            ]
+          }
+        },
+        {
+          "intent": "Delete 'relocate {{run_id}}.txt' from my OneDrive to clean up.",
+          "assertions": {
+            "outcome": [
+              "The 'relocate {{run_id}}.txt' file is no longer present in the caller's own OneDrive."
+            ],
+            "mechanism": [
+              "Deletes the item created earlier in this session; does not delete an unrelated file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-new-file-trigger",
+      "kind": "negative",
+      "description": "Graceful refusal: the connector is request/response only and cannot subscribe to new-file events. Marked `negative` so a correct zero-tool-call refusal is not flagged as a suspect (no-op) pass.",
+      "steps": [
+        {
+          "intent": "Set up an automatic notification that alerts me whenever a new file is added to my OneDrive.",
+          "assertions": {
+            "outcome": [
+              "The reply states that setting up an ongoing notification or trigger for new files isn't supported, and does not claim such a notification was created."
+            ],
+            "mechanism": [
+              "Does not call any tool that claims to create a subscription, trigger, or notification to fake the capability."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-restore-from-recycle-bin",
+      "kind": "negative",
+      "description": "Graceful refusal: deletes go to the recycle bin, but there is no programmatic restore in this catalog. Marked `negative` so a correct zero-tool-call refusal is not flagged as a suspect pass.",
+      "steps": [
+        {
+          "intent": "Restore the files I deleted earlier from my OneDrive recycle bin.",
+          "assertions": {
+            "outcome": [
+              "The reply states that restoring items from the recycle bin isn't supported here (recovery is done by the user in the OneDrive UI), and does not claim any file was restored."
+            ],
+            "mechanism": [
+              "Does not call a tool to fake a restore or recreate the files as if recovered."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "microsoft-onedrive": {
+      "command": "npx",
+      "args": ["-y", "@zapier/microsoft-onedrive-connector", "mcp"]
+    }
+  }
+}
