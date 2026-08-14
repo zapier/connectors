@@ -3,7 +3,7 @@
   "name": "harvest",
   "displayName": "Harvest",
   "description": "Agent-callable Harvest tools — track time (log hours, start/stop timers), and manage the projects, clients, contacts, and tasks time is logged against, plus read invoices and account settings. Use when the user wants to log or edit time, manage Harvest projects/clients/tasks, or check what was billed — even if they don't name Harvest explicitly.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
