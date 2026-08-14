@@ -1,5 +1,17 @@
 # @zapier/microsoft-outlook-connector
 
+## 0.2.18
+
+### Patch Changes
+
+- 9792330: Automated dependency update from Renovate.
+
+  - File changes as a result of (external) dependency updates.
+
+- 9792330: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
+
+  - `SKILL.md`
+
 ## 0.2.17
 
 ### Patch Changes
