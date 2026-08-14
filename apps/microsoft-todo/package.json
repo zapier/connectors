@@ -60,7 +60,7 @@
     "vitest": "4.1.10"
   },
   "homepage": "https://github.com/zapier/connectors/tree/main/apps/microsoft-todo",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publishConfig": {
     "access": "public"
   }
