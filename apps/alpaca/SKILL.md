@@ -38,6 +38,8 @@ This is an [agentskills.io](https://agentskills.io) skill.
 
 If the connector has not been installed as a skill yet, install it first with `npx skills add zapier/connectors --skill alpaca` (or your harness's own skill-install mechanism), then continue here. Installing the skill copies these files, not dependencies. Before running the CLI, a local MCP server, or `zapier-sdk` auth commands, run `npm install --omit=dev` here once. Importing the published package as a dependency in your own project instead? That `npm install` already resolves everything — see [`references/use-as-sdk.md`](references/use-as-sdk.md).
 
+Want the actual repo source instead — to browse `references/`, run this connector's tests, or hack on it? See [`README.md`](README.md#cloning-the-source) for a scoped `git clone`.
+
 The connector runs on **Node.js 22.18+**. Pick the reference that matches how you're running it, and load it before doing anything else:
 
 | You have...                                                                                                                                                 | Load                                                         |
