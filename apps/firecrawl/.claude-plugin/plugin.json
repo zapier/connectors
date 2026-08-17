@@ -3,7 +3,7 @@
   "name": "firecrawl",
   "displayName": "Firecrawl",
   "description": "Agent-callable Firecrawl tools — scrape a URL to clean Markdown, crawl a site, search the web, map site URLs, and extract structured data. Use when the user wants to read, scrape, crawl, or search web pages, even if they don't name Firecrawl.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
