@@ -3,7 +3,7 @@
   "name": "microsoft-onedrive",
   "displayName": "Microsoft OneDrive",
   "description": "Agent-callable Microsoft OneDrive tools — browse, search, upload, download and convert, move, copy, and share files and folders. Use when the user mentions OneDrive or wants to work with their OneDrive files, folders, or sharing links, even if they don't name OneDrive explicitly.",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "author": {
     "name": "Zapier",
     "email": "support@zapier.com",
