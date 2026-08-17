@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "microsoft-onedrive",
+  "displayName": "Microsoft OneDrive",
+  "description": "Agent-callable Microsoft OneDrive tools — browse, search, upload, download and convert, move, copy, and share files and folders. Use when the user mentions OneDrive or wants to work with their OneDrive files, folders, or sharing links, even if they don't name OneDrive explicitly.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/microsoft-onedrive",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "microsoft-onedrive",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "onedrive",
+    "files",
+    "file-storage",
+    "drive",
+    "documents",
+    "cloud-storage",
+    "microsoft-365",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
