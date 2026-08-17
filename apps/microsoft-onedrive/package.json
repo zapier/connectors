@@ -1,6 +1,5 @@
 {
   "name": "@zapier/microsoft-onedrive-connector",
-  "private": true,
   "description": "Agent-callable Microsoft OneDrive tools — browse, search, upload, download and convert, move, copy, and share files and folders. Use when the user mentions OneDrive or wants to work with their OneDrive files, folders, or sharing links, even if they don't name OneDrive explicitly.",
   "license": "Elastic-2.0",
   "type": "module",
@@ -66,5 +65,9 @@
     "tsup": "8.5.1",
     "typescript": "5.9.3",
     "vitest": "4.1.10"
+  },
+  "version": "0.0.0",
+  "publishConfig": {
+    "access": "public"
   }
 }
