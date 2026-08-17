@@ -1,0 +1,306 @@
+{
+  "skill_name": "firecrawl",
+  "version": "f11c484",
+  "description": "Intent-anchored eval scenarios for the firecrawl connector, arranged on the setup spectrum so a 3-arm run (with_skill / without_skill / native) reveals native's true web-data capability profile. The connector's world is the public web, given in each intent (a URL or query), so most scenarios are act-only or arrange-act (async crawl/batch/agent jobs started then polled in one session); no fixtures are needed. Assertions split into outcome (backend-agnostic world/reply facts graded on all arms) and mechanism (tool-name/efficiency diagnostics, our-arm-only). {{run_id}} namespaces any created assets. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "scrape-url-to-markdown",
+      "kind": "act-only",
+      "description": "Single-capability probe: scrape a named public URL and return its clean text content.",
+      "steps": [
+        {
+          "intent": "Fetch the main text content of https://example.com and give it to me as clean markdown.",
+          "assertions": {
+            "outcome": [
+              "The reply contains the readable text content of https://example.com (e.g. its heading and body copy), presented as clean text/markdown rather than raw HTML."
+            ],
+            "mechanism": [
+              "Scrapes the exact URL given in the request (https://example.com) in a single scrape call; the returned content comes from the tool result, not fabricated from prior knowledge of the page."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "scrape-extract-structured-json",
+      "kind": "act-only",
+      "description": "Guidance-dependent: extract structured data from a known URL (the JSON/extraction path), not just prose.",
+      "steps": [
+        {
+          "intent": "From https://news.ycombinator.com, extract the titles of the front-page stories as a JSON list.",
+          "assertions": {
+            "outcome": [
+              "The reply returns a structured list of front-page story titles from https://news.ycombinator.com (multiple items), not a single blob of prose."
+            ],
+            "mechanism": [
+              "Requests structured extraction from the given URL (the scrape json format with a prompt/schema, or the agent), rather than only fetching markdown and hand-parsing; the titles come from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "scrape-page-screenshot",
+      "kind": "act-only",
+      "description": "Single-capability probe: capture a screenshot of a named URL.",
+      "steps": [
+        {
+          "intent": "Take a screenshot of https://example.com and give me the image link.",
+          "assertions": {
+            "outcome": [
+              "The reply provides a screenshot image URL for https://example.com."
+            ],
+            "mechanism": [
+              "Scrapes the given URL requesting the screenshot format; the returned URL comes from the tool result rather than being invented."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "scrape-js-rendered-content",
+      "kind": "act-only",
+      "description": "Guidance-dependent: scrape a page whose content is rendered by JavaScript, so a naive raw-HTML fetch returns nothing — the scrape must wait for/execute rendering.",
+      "steps": [
+        {
+          "intent": "The quotes on https://quotes.toscrape.com/js/ are loaded by JavaScript. Scrape that page, waiting for the quotes to render, and list the quote texts you find.",
+          "assertions": {
+            "outcome": [
+              "The reply lists actual quote texts from https://quotes.toscrape.com/js/ (multiple quotes) — content that only appears after the page's JavaScript has rendered, not an empty result or an error."
+            ],
+            "mechanism": [
+              "Scrapes the given URL in a way that captures JavaScript-rendered content (e.g. a wait before scraping, or the default rendered scrape), rather than reporting the page as empty."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-web-and-summarize",
+      "kind": "discover-act",
+      "description": "Head-to-head: search the web for a query and summarize the top results.",
+      "steps": [
+        {
+          "intent": "Search the web for 'open source vector database comparison' and summarize what the top results say.",
+          "assertions": {
+            "outcome": [
+              "The reply summarizes several relevant web results for the query, referencing real result titles or URLs returned by the search rather than invented sources."
+            ],
+            "mechanism": [
+              "Uses a web search for the given query and bases the summary on the returned results; result URLs/titles come from the tool output, not fabricated."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-recent-news",
+      "kind": "act-only",
+      "description": "Single-capability probe: get recent news headlines for a topic (news source).",
+      "steps": [
+        {
+          "intent": "Find recent news about OpenAI and list the headlines with their links.",
+          "assertions": {
+            "outcome": [
+              "The reply lists several news headlines about OpenAI, each with a link, drawn from search results."
+            ],
+            "mechanism": [
+              "Runs a search that includes the news source for the topic; the headlines and links come from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "map-site-find-pricing-page",
+      "kind": "discover-act",
+      "description": "Head-to-head: discover a specific page's URL on a site without being given it.",
+      "steps": [
+        {
+          "intent": "Find the pricing page URL on stripe.com.",
+          "assertions": {
+            "outcome": [
+              "The reply returns a URL on the stripe.com domain that is its pricing page."
+            ],
+            "mechanism": [
+              "Discovers the URL by mapping/searching stripe.com (e.g. map with a relevance term) rather than guessing or hard-coding a URL; the returned URL comes from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "crawl-docs-site-and-read",
+      "kind": "arrange-act",
+      "description": "Coverage probe: crawl a small real site end-to-end (start → poll to completion → content) in one session. Small target + low limit so it finishes fast with continuous real activity.",
+      "steps": [
+        {
+          "intent": "Crawl the first few pages of https://quotes.toscrape.com (limit it to about 5 pages), wait for the crawl to finish, and give me the content it collected.",
+          "assertions": {
+            "outcome": [
+              "Real scraped content from the crawled quotes.toscrape.com pages (e.g. quote text from more than one page) is returned, not fabricated."
+            ],
+            "mechanism": [
+              "Starts a crawl on the given URL with a small page limit (~5), then polls the crawl status until it completes using the returned job id, and presents that content — does not invent a job id or fabricate pages."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "batch-scrape-url-list",
+      "kind": "act-only",
+      "description": "Coverage probe: retrieve the content of a larger fixed list of URLs in one go. Outcome is path-agnostic (any correct path returns the content); using the batch tool is a mechanism diagnostic.",
+      "steps": [
+        {
+          "intent": "Get me the page content of these four URLs: https://example.com, https://example.org, https://example.net, https://www.w3.org/",
+          "assertions": {
+            "outcome": [
+              "The reply returns real scraped content for the four given URLs — covering all four, not just one, and not fabricated."
+            ],
+            "mechanism": [
+              "Uses batchScrape to fetch the set as one job (then reads its results) rather than issuing four separate one-off scrape calls."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "research-papers-and-read",
+      "kind": "discover-act",
+      "description": "Head-to-head: search the academic index for a topic, then read passages from the top paper — one chained session.",
+      "steps": [
+        {
+          "intent": "Find recent research papers about retrieval-augmented generation.",
+          "assertions": {
+            "outcome": [
+              "The reply returns a ranked list of relevant papers on retrieval-augmented generation, each with a title (and an identifier)."
+            ],
+            "mechanism": [
+              "Uses the research-paper search for the query; the papers and their ids come from the tool result, not invented citations."
+            ]
+          }
+        },
+        {
+          "intent": "Read the top paper and give me its 2-3 main points, based on what the paper actually says.",
+          "assertions": {
+            "outcome": [
+              "The reply gives 2-3 main points from the top paper, grounded in the paper's actual content (quoted passages or a faithful summary of them), not an invented or generic RAG description."
+            ],
+            "mechanism": [
+              "Reads the paper using the id from the search result earlier in this session (passing a query to pull relevant passages); the points are grounded in that tool output, not fabricated."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-developer-index",
+      "kind": "act-only",
+      "description": "Single-capability probe: search the developer index (GitHub issues/PRs/docs) for a technical question.",
+      "steps": [
+        {
+          "intent": "Search for GitHub issues about Playwright timeouts on headless Chromium.",
+          "assertions": {
+            "outcome": [
+              "The reply returns relevant developer results (issues/PRs/docs) about Playwright timeouts, each with a link."
+            ],
+            "mechanism": [
+              "Uses the developer-index search for the query; results and links come from the tool output."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "agent-extract-without-url",
+      "kind": "arrange-act",
+      "description": "Coverage probe: open-ended structured extraction where the user gives no URL — the agent must find and extract, then be polled.",
+      "steps": [
+        {
+          "intent": "I don't have a URL — research Vercel's current pricing tiers and return them as structured data (tier name and monthly price).",
+          "assertions": {
+            "outcome": [
+              "The reply returns structured pricing tiers for Vercel (tier names with their prices), gathered from the web rather than only from prior knowledge."
+            ],
+            "mechanism": [
+              "Because no URL was given, uses the autonomous agent (start an agent job, then poll its status) or a web search to find the data, rather than scraping a guessed URL; the data comes from tool results."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "check-remaining-credits",
+      "kind": "act-only",
+      "description": "Single-capability account probe: report the remaining Firecrawl credit balance.",
+      "steps": [
+        {
+          "intent": "How many Firecrawl credits do I have left?",
+          "assertions": {
+            "outcome": [
+              "The reply reports the remaining credit balance for the account as a number."
+            ],
+            "mechanism": [
+              "Reads the credit usage via a single account call; the number comes from the tool result, not invented."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "recover-lost-crawl-job",
+      "kind": "discover-act",
+      "description": "Head-to-head: the user lost a job id — recover recent jobs from account activity rather than inventing one.",
+      "steps": [
+        {
+          "intent": "I started a crawl a little while ago but lost the job id — can you find my recent crawl jobs and tell me their status?",
+          "assertions": {
+            "outcome": [
+              "The reply lists the account's recent crawl job(s) with their ids and/or status, or clearly reports that no recent crawl jobs were found."
+            ],
+            "mechanism": [
+              "Recovers the jobs by reading recent account activity or active crawls rather than inventing a job id; any ids reported come from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-parse-local-file",
+      "kind": "act-only",
+      "description": "Refusal-plus-fallback probe: Firecrawl scrapes URLs, not local files. The agent should say the local file can't be fetched via Firecrawl and instead scrape the public URL the user offers as the fallback.",
+      "steps": [
+        {
+          "intent": "Parse the PDF on my laptop at ~/Downloads/q3-report.pdf with Firecrawl and pull out the revenue table. If Firecrawl can't read a file on my laptop, then instead scrape this public page and give me its content: https://example.com",
+          "assertions": {
+            "outcome": [
+              "The reply makes clear the Firecrawl tools work on URLs rather than a file on the user's laptop, and returns the scraped content of https://example.com as the fallback; it does not fabricate the local PDF's revenue table."
+            ],
+            "mechanism": [
+              "Scrapes the provided public URL (https://example.com) and does not call a Firecrawl scrape/extract tool against a made-up URL to fake reading the local file."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "refuse-scheduled-monitoring",
+      "kind": "act-only",
+      "description": "Refusal-plus-fallback probe: the user asks for scheduled monitoring (unsupported); the agent should say so and offer the one thing it can do — read the current page now.",
+      "steps": [
+        {
+          "intent": "Watch https://example.com and email me whenever its content changes. If you can't set up ongoing monitoring, tell me that and just grab the current page content once so I have a baseline.",
+          "assertions": {
+            "outcome": [
+              "The reply states that scheduled/recurring monitoring and email alerts are not supported and does not claim to have set up any watch or alert; it returns the current content of https://example.com as the requested one-time baseline."
+            ],
+            "mechanism": [
+              "Scrapes https://example.com exactly once for the baseline and does not call any tool to fabricate a monitor, schedule, or recurring alert."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
