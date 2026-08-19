@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "perplexity": {
+      "command": "npx",
+      "args": ["-y", "@zapier/perplexity-connector", "mcp"]
+    }
+  }
+}

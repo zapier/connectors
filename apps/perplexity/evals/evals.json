@@ -1,0 +1,187 @@
+{
+  "skill_name": "perplexity",
+  "version": "566eafd",
+  "description": "Intent-anchored eval scenarios for the Perplexity connector. Perplexity is an all-reads / generative connector (web-grounded answers + web search over the open web), so scenarios are act-only against public information, plus a deep-research submit-then-poll chain — there is no user workspace to arrange, so no fixtures. Assertions split into outcome (backend-agnostic answer/reply facts graded on all arms — with_skill / without_skill / native) and mechanism (our-arm-only tool-call hygiene). {{run_id}} namespaces any unique tokens. Run per the agentskills.io eval methodology.",
+  "evals": [
+    {
+      "id": "answer-question-with-citations",
+      "kind": "act-only",
+      "description": "The core intent: ask a factual question and get a current, web-grounded answer that cites its sources.",
+      "steps": [
+        {
+          "intent": "What is the James Webb Space Telescope's primary mirror made of, and why was that material chosen?",
+          "assertions": {
+            "outcome": [
+              "The reply answers that the mirror segments are beryllium coated with gold, and gives a reason (e.g. beryllium's low weight and thermal stability, gold's infrared reflectivity).",
+              "The reply is grounded in web sources — it includes citations or source URLs rather than only unattributed prose."
+            ],
+            "mechanism": [
+              "Fulfills the request with a single web-grounded answer call (web search enabled); the returned sources/citations come from the tool result, not invented URLs."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "recent-event-lookup",
+      "kind": "act-only",
+      "description": "Get up-to-date information about a recent development — the value web grounding adds over a model's training cutoff.",
+      "steps": [
+        {
+          "intent": "What are the most significant AI model releases announced in the last month? Give me the highlights with sources.",
+          "assertions": {
+            "outcome": [
+              "The reply lists specific recent AI model releases and attributes each to a dated web source (title/URL), rather than answering only from static knowledge.",
+              "The reply does not claim it cannot access recent information — it returns current, sourced results."
+            ],
+            "mechanism": [
+              "Runs the answer with web search enabled and a recency-scoped search (e.g. a recency filter) so the sources are recent; does not fabricate publication dates."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "search-web-for-sources",
+      "kind": "act-only",
+      "description": "The user wants the ranked source pages themselves, not a synthesized answer.",
+      "steps": [
+        {
+          "intent": "Find me the top web pages about the health effects of intermittent fasting — I want the links, not a summary.",
+          "assertions": {
+            "outcome": [
+              "The reply returns a ranked list of web results, each with a title and a real URL (and a snippet where available).",
+              "The reply presents source links rather than a single synthesized prose answer."
+            ],
+            "mechanism": [
+              "Fulfills this with the web-search tool (not the answer/agent tool); the returned results carry real URLs from the tool result."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "batch-related-searches",
+      "kind": "act-only",
+      "description": "Run several related web searches together in one request (multi-query batch).",
+      "steps": [
+        {
+          "intent": "Search the web for all three of these at once: 'best noise-cancelling headphones 2026', 'wired vs wireless headphones latency', and 'open-back headphones for mixing'. Return results for each.",
+          "assertions": {
+            "outcome": [
+              "The reply returns ranked web results covering all three queries, each result with a title and URL."
+            ],
+            "mechanism": [
+              "Batches the three queries into a single web-search call (a multi-line / array query) rather than three separate calls."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "domain-scoped-answer",
+      "kind": "act-only",
+      "description": "Restrict a grounded answer to specific, trusted sources.",
+      "steps": [
+        {
+          "intent": "Using only sources from nature.com and science.org, summarize what recent research says about CRISPR off-target effects. Cite the sources you used.",
+          "assertions": {
+            "outcome": [
+              "The reply summarizes the research and cites sources, and the cited sources are limited to the requested domains (nature.com / science.org).",
+              "The reply does not cite sources from domains outside the requested allowlist."
+            ],
+            "mechanism": [
+              "Passes the requested domains as a domain filter on the web search rather than filtering the results itself after an unrestricted search."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "structured-json-extraction",
+      "kind": "act-only",
+      "description": "Get typed, schema-shaped JSON output from a grounded answer (structured output).",
+      "steps": [
+        {
+          "intent": "Give me the current CEO, headquarters city, and year founded for OpenAI, Anthropic, and Google DeepMind — as a JSON array of objects with keys company, ceo, headquarters, and founded.",
+          "assertions": {
+            "outcome": [
+              "The reply is valid JSON: an array of objects, each with the keys company, ceo, headquarters, and founded, one per requested organization.",
+              "The values are grounded (drawn from web sources), not fabricated placeholders."
+            ],
+            "mechanism": [
+              "Requests typed output via a json_schema response format whose schema names those fields, rather than only asking for JSON in the prompt."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "deep-research-background-job",
+      "kind": "arrange-act",
+      "description": "Submit a long-running deep-research job in the background and poll it to completion — the submit-then-poll chain, run as one session.",
+      "steps": [
+        {
+          "intent": "Kick off a deep research job on this question, running it in the background: 'Compare the total cost of ownership of heat pumps vs natural gas furnaces for a cold-climate US home over 15 years.' Give me the job id once it's started.",
+          "assertions": {
+            "outcome": [
+              "A background research job is started and its id is reported back, with a status indicating it is queued or in progress (not yet complete)."
+            ],
+            "mechanism": [
+              "Starts the run asynchronously (background) using a deep-research-capable model or preset; the returned id comes from the start-run result, not invented."
+            ]
+          }
+        },
+        {
+          "intent": "Check on the deep research job you just started and, once it's finished, give me its findings.",
+          "assertions": {
+            "outcome": [
+              "The job is polled until it reaches a completed status, and the final research findings (a comparison of heat pumps vs gas furnaces with figures and sources) are returned."
+            ],
+            "mechanism": [
+              "Retrieves the run by the id from earlier in this session and waits for a terminal status before reporting; does not fabricate findings while the job is still running."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "discover-available-models",
+      "kind": "act-only",
+      "description": "Discover which models can be used before running a task.",
+      "steps": [
+        {
+          "intent": "Which Perplexity models can I use, and is there one suited to in-depth research?",
+          "assertions": {
+            "outcome": [
+              "The reply lists available model identifiers and points out at least one that is suited to in-depth / deep research.",
+              "The model list is a real, retrieved set (provider/model style ids), not an invented one."
+            ],
+            "mechanism": [
+              "Fetches the model list from the connector's list-models tool rather than answering from memory."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "graceful-refusal-image-generation",
+      "kind": "act-only",
+      "description": "Coverage probe for a capability the connector doesn't ship — it should decline cleanly rather than fake success.",
+      "steps": [
+        {
+          "intent": "Generate an image of a golden retriever wearing a spacesuit on Mars and give me the image file.",
+          "assertions": {
+            "outcome": [
+              "The final reply states that generating or returning image files isn't something this connector can do, and does not claim to have produced an image.",
+              "The reply offers no fabricated image URL or file as if the action had succeeded."
+            ],
+            "mechanism": [
+              "Does not call any tool claiming to have created or returned an image file."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

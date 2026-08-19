@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "perplexity",
+  "displayName": "Perplexity",
+  "description": "Agent-callable Perplexity tools — ask web-grounded questions with citations, run and poll deep research, list models, and search the web. Use when the user mentions Perplexity or wants a cited web answer or search, even if they don't name Perplexity.",
+  "version": "0.0.0",
+  "author": {
+    "name": "Zapier",
+    "email": "support@zapier.com",
+    "url": "https://zapier.com"
+  },
+  "homepage": "https://github.com/zapier/connectors/tree/main/apps/perplexity",
+  "repository": "https://github.com/zapier/connectors",
+  "license": "Elastic-2.0",
+  "keywords": [
+    "perplexity",
+    "agent-skills",
+    "mcp",
+    "connector",
+    "zapier",
+    "tools",
+    "skills",
+    "agent",
+    "ai",
+    "automation"
+  ],
+  "mcpServers": "./.mcp.json"
+}
