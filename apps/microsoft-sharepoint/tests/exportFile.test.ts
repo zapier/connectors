@@ -27,7 +27,7 @@ function redirectResponse(location: string): Response {
   } as unknown as Response;
 }
 
-const DOWNLOAD = "https://contoso-my.sharepoint.com/download/preauth?token=xyz";
+const DOWNLOAD = "test-export-download-location";
 
 describe("exportFile: run", () => {
   it("GETs /content?format= with redirect:manual and returns the Location as downloadUrl", async () => {
