@@ -1,5 +1,11 @@
 # @zapier/microsoft-sharepoint-connector
 
+## 0.1.13
+
+### Patch Changes
+
+- 70f35f6: Replace suspicious test fixture URLs to fix Snyk agent-scan E005 security flag
+
 ## 0.1.12
 
 ### Patch Changes
