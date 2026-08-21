@@ -1,5 +1,11 @@
 # @zapier/dropbox-connector
 
+## 0.2.18
+
+### Patch Changes
+
+- bc86905: Remove example Dropbox URLs from tool descriptions to fix Snyk agent-scan E005 security flag
+
 ## 0.2.17
 
 ### Patch Changes
