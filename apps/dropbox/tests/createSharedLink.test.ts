@@ -42,7 +42,7 @@ describe("createSharedLink: run", () => {
     const fakeFetch: typeof globalThis.fetch = (async () =>
       jsonResponse({
         ".tag": "file",
-        url: "https://www.dropbox.com/s/a/f.txt?dl=0",
+        url: "http://localhost/test-shared-link?dl=0",
         name: "f.txt",
         path_lower: "/f.txt",
       })) as typeof globalThis.fetch;
@@ -53,7 +53,7 @@ describe("createSharedLink: run", () => {
     );
 
     expect(result.type).toBe("file");
-    expect(result.url_download).toBe("https://www.dropbox.com/s/a/f.txt?dl=1");
+    expect(result.url_download).toBe("http://localhost/test-shared-link?dl=1");
     expect(Object.prototype.hasOwnProperty.call(result, ".tag")).toBe(false);
     expect(outputSchema.safeParse(result).success).toBe(true);
   });
@@ -67,7 +67,7 @@ describe("createSharedLink: run", () => {
       calls.push({ init });
       return jsonResponse({
         ".tag": "file",
-        url: "https://www.dropbox.com/s/a/f.txt?dl=0",
+        url: "http://localhost/test-shared-link?dl=0",
       });
     }) as typeof globalThis.fetch;
 
@@ -95,7 +95,10 @@ describe("createSharedLink: run", () => {
       // Second call: list_shared_links returns the existing link.
       return jsonResponse({
         links: [
-          { ".tag": "file", url: "https://www.dropbox.com/s/a/f.txt?dl=0" },
+          {
+            ".tag": "file",
+            url: "http://localhost/test-shared-link?dl=0",
+          },
         ],
       });
     }) as typeof globalThis.fetch;
@@ -109,7 +112,7 @@ describe("createSharedLink: run", () => {
     expect(calls[0]).toContain("create_shared_link_with_settings");
     expect(calls[1]).toContain("list_shared_links");
     expect(result.type).toBe("file");
-    expect(result.url_download).toBe("https://www.dropbox.com/s/a/f.txt?dl=1");
+    expect(result.url_download).toBe("http://localhost/test-shared-link?dl=1");
   });
 
   it("rethrows a non-already-exists error", async () => {

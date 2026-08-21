@@ -16,7 +16,7 @@ const inputSchema = z
     url: z
       .string()
       .describe(
-        "The existing shared-link URL to modify, e.g. https://www.dropbox.com/s/abc/file.txt?dl=0. Find it via listSharedLinks.",
+        "The existing shared-link URL to modify. Find it via listSharedLinks.",
       ),
     requested_visibility: z
       .enum(["public", "team_only", "password"])

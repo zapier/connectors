@@ -106,7 +106,7 @@ export const fileRequestSchema = z.object({
   url: z
     .string()
     .describe(
-      "Public upload page URL, e.g. https://www.dropbox.com/request/abc123.",
+      "Public upload page URL where others can submit files to this request.",
     ),
   title: z.string(),
   destination: z.string().describe("Folder path where uploads land."),
