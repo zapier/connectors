@@ -31,7 +31,7 @@ describe("findSites: run", () => {
       calls.push({ url, init });
       return jsonResponse({
         value: [
-          { id: "site-1", displayName: "Marketing", webUrl: "https://x" },
+          { id: "site-1", displayName: "Marketing", webUrl: "test-site-url" },
         ],
         "@odata.nextLink":
           "https://graph.microsoft.com/v1.0/sites?skiptoken=abc",

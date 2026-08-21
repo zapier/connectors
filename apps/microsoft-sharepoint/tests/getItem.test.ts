@@ -33,7 +33,7 @@ describe("getItem: run", () => {
         id: "item-1",
         name: "Report.docx",
         file: { mimeType: "application/vnd.ms-word" },
-        "@microsoft.graph.downloadUrl": "https://download.example/xyz",
+        "@microsoft.graph.downloadUrl": "test-download-url-item-1",
       });
     }) as typeof globalThis.fetch;
 

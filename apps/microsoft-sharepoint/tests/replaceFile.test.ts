@@ -9,8 +9,8 @@ import replaceFileDefinition from "../scripts/replaceFile.ts";
 const { outputSchema } = replaceFileDefinition;
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
-const SOURCE_URL = "https://files.example.com/source/v2.bin";
-const UPLOAD_URL = "https://upload.sharepoint.example.com/session/def456";
+const SOURCE_URL = "http://localhost/test-source";
+const UPLOAD_URL = "test-upload-session-url";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;
@@ -60,7 +60,7 @@ function makeFetch(
       return jsonResponse(
         {
           id: "01EXISTINGITEM",
-          name: "v2.bin",
+          name: "v2.dat",
           size: bytes.byteLength,
           file: { mimeType: "application/octet-stream" },
         },
