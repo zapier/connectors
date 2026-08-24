@@ -1,5 +1,13 @@
 # @zapier/algolia-connector
 
+## 0.1.5
+
+### Patch Changes
+
+- a650548: Synced with the updated Zapier platform tooling and policy (`connectors-dev validate --fix`):
+
+  - `package.json`
+
 ## 0.1.4
 
 ### Patch Changes
