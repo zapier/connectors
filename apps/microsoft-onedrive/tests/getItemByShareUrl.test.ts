@@ -34,7 +34,7 @@ describe("getItemByShareUrl: run", () => {
       return jsonResponse(SHARED_ITEM);
     }) as typeof globalThis.fetch;
 
-    const sharingUrl = "https://contoso-my.sharepoint.com/:w:/g/abc123";
+    const sharingUrl = "http://localhost/share-test";
     const { data } = await getItemByShareUrlDefinition.run(
       { sharingUrl },
       { fetch: fakeFetch },

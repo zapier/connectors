@@ -19,7 +19,7 @@ function jsonResponse(body: unknown): Response {
 
 const PERMISSION = {
   id: "perm-1",
-  link: { type: "view", scope: "anonymous", webUrl: "https://1drv.ms/abc" },
+  link: { type: "view", scope: "anonymous", webUrl: "test-sharing-link-url" },
 };
 
 describe("createSharingLink: run", () => {
@@ -43,7 +43,7 @@ describe("createSharingLink: run", () => {
     expect(JSON.parse(calls[0]?.init?.body as string)).toEqual({
       type: "view",
     });
-    expect(data.link?.webUrl).toBe("https://1drv.ms/abc");
+    expect(data.link?.webUrl).toBe("test-sharing-link-url");
     expect(outputSchema.safeParse(data).success).toBe(true);
   });
 
