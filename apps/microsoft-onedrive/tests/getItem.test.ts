@@ -26,7 +26,7 @@ function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
 const ITEM = {
   id: "01FILE",
   name: "report.docx",
-  "@microsoft.graph.downloadUrl": "https://dl.example.com/preauth?token=xyz",
+  "@microsoft.graph.downloadUrl": "test-download-url",
 };
 
 describe("getItem: run", () => {
@@ -43,7 +43,7 @@ describe("getItem: run", () => {
     );
 
     expect(calls[0]).toBe(`${GRAPH}/me/drive/items/01FILE`);
-    expect(data["@microsoft.graph.downloadUrl"]).toContain("preauth");
+    expect(data["@microsoft.graph.downloadUrl"]).toContain("test-download");
     expect(outputSchema.safeParse(data).success).toBe(true);
   });
 

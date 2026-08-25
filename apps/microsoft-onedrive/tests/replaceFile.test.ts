@@ -9,8 +9,8 @@ import replaceFileDefinition from "../scripts/replaceFile.ts";
 const { outputSchema } = replaceFileDefinition;
 
 const GRAPH = "https://graph.microsoft.com/v1.0";
-const SOURCE_URL = "https://files.example.com/source/report.pdf";
-const UPLOAD_URL = "https://upload.onedrive.example.com/session/abc123";
+const SOURCE_URL = "http://localhost/test-source";
+const UPLOAD_URL = "test-upload-session-url";
 
 function jsonResponse(body: unknown, init: { status?: number } = {}): Response {
   const status = init.status ?? 200;
